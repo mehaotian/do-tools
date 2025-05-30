@@ -218,30 +218,18 @@ class RestReminderManager {
    * 显示休息提醒
    */
   show() {
-    console.log("showRestReminder 函数被调用");
-
-    // 如果已有提醒在显示，先关闭
     if (this.currentOverlay) {
       this.closeReminder();
     }
 
-    // 初始化动画样式
     initRestReminderAnimations();
     
-    // 添加休息提醒样式
     createStyleElement(REST_REMINDER_STYLES, 'rest-reminder-styles');
 
-    // 创建并显示覆盖层
     this.currentOverlay = this.createOverlay();
     document.body.appendChild(this.currentOverlay);
 
-    // 设置事件监听器
     this.setupEventListeners(this.currentOverlay);
-
-    console.log(
-      "overlay已添加到页面，当前body子元素数量：",
-      document.body.children.length
-    );
   }
 }
 
@@ -251,8 +239,63 @@ const restReminderManager = new RestReminderManager();
 /**
  * 显示休息提醒（全局函数）
  */
-export function showRestReminder() {
-  restReminderManager.show();
+export function showRestReminder(totalMinutes) {
+  const existingReminder = document.getElementById('rest-reminder-overlay');
+  if (existingReminder) {
+    existingReminder.remove();
+  }
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'rest-reminder-overlay';
+  overlay.className = 'rest-reminder-overlay';
+  
+  const suggestedRestMinutes = Math.max(2, Math.min(10, Math.ceil(totalMinutes / 5)));
+  
+  overlay.innerHTML = `
+    <div class="rest-reminder-content">
+      <div class="rest-reminder-icon">
+        <div class="icon-circle">
+          <div class="icon-inner">⏰</div>
+        </div>
+      </div>
+      
+      <h2 class="rest-reminder-title">时间到！该休息一下了</h2>
+      
+      <p class="rest-reminder-subtitle">
+        您已专注工作 <strong>${totalMinutes}</strong> 分钟
+      </p>
+      
+      <p class="rest-reminder-suggestion">
+        建议休息 <strong>${suggestedRestMinutes}</strong> 分钟，让眼睛和大脑放松一下
+      </p>
+      
+      <div class="rest-reminder-tips">
+        💡 <strong>休息小贴士：</strong>远眺窗外、做做眼保健操、起身活动一下
+      </div>
+      
+      <div class="rest-reminder-buttons">
+        <button class="continue-btn">继续工作</button>
+        <button class="close-btn">知道了</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  
+  const continueBtn = overlay.querySelector('.continue-btn');
+  const closeBtn = overlay.querySelector('.close-btn');
+  
+  if (continueBtn) {
+    continueBtn.addEventListener('click', () => {
+      overlay.remove();
+    });
+  }
+  
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      overlay.remove();
+    });
+  }
 }
 
 /**

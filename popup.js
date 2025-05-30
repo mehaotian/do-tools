@@ -1,18 +1,16 @@
-// DO 助手 - Popup 脚本
-console.log("DO 助手已加载");
+/**
+ * DO助手弹窗脚本
+ */
 
-// 导入模块
 import { formatTime, showNotification } from './modules/utils.js';
 import { popupUIManager } from './modules/uiManager.js';
 import { initPopupAnimations } from './modules/animations.js';
 
-
-// 定时器功能已迁移到 background.js 中进行全局管理
-// 倒计时显示将通过 content script 在页面中展示
-
-// CSS动画实现
+/**
+ * 初始化CSS动画
+ * @param {HTMLElement} popup - 弹窗元素
+ */
 function initCSSAnimations(popup) {
-  // 添加CSS动画样式 - 恢复正确的心跳和水波纹效果
   const style = document.createElement("style");
   style.textContent = `
     @keyframes gradientShift {
@@ -36,7 +34,7 @@ function initCSSAnimations(popup) {
     `;
   document.head.appendChild(style);
 
-  // 触发动画
+
   setTimeout(() => {
     popup.style.opacity = "1";
     popup.style.transform = "translateY(0) scale(1)";
@@ -49,27 +47,13 @@ function initCSSAnimations(popup) {
 
   const timeText = popup.querySelector(".time-text");
   if (timeText) {
-    // 取消倒计时文字的跳动动画
     timeText.style.animation = "none";
   }
-
-  // 倒计时数字变化动画已迁移到全局定时器管理
 }
 
-// 功能处理器将通过模块动态加载
-
-// 时间设置界面通过 uiManager 模块处理
-
-// 计时器启动逻辑通过 featureHandlers 模块处理
-
-// 字数统计功能已移至 featureHandlers.js 模块
-
-// 主题切换功能已移至 featureHandlers.js 模块
-
-// 通知显示功能已移至 utils.js 模块
-
-// DOM加载完成后初始化
+/**
+ * DOM加载完成后初始化
+ */
 document.addEventListener("DOMContentLoaded", () => {
-  // 初始化弹窗UI管理器
   popupUIManager.init();
 });

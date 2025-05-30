@@ -1,7 +1,6 @@
 /**
  * 功能处理器模块
  * 处理各种扩展功能的业务逻辑
- * 适配全局定时器模式
  */
 
 import { showNotification } from './utils.js';
@@ -129,12 +128,8 @@ function countWordsInPage() {
  */
 class ReadingTimeHandler {
   static handle() {
-    console.log("执行深耕提醒功能");
-    // 这里应该调用显示时间设置界面的函数
     if (typeof showTimerSettings === 'function') {
       showTimerSettings();
-    } else {
-      console.warn('showTimerSettings 函数未定义');
     }
   }
 }
@@ -144,11 +139,9 @@ class ReadingTimeHandler {
  */
 class WordCountHandler {
   static async handle() {
-    console.log("执行字数统计功能");
     try {
       await ChromeAPIManager.executeScript(countWordsInPage);
     } catch (error) {
-      console.error('字数统计失败:', error);
       showNotification('字数统计失败', 'error');
     }
   }
@@ -159,13 +152,11 @@ class WordCountHandler {
  */
 class BookmarkHandler {
   static async handle() {
-    console.log("执行快速收藏功能");
     try {
       const tab = await ChromeAPIManager.getCurrentTab();
       await ChromeAPIManager.createBookmark(tab.title, tab.url);
       showNotification("页面已收藏", "success");
     } catch (error) {
-      console.error('收藏失败:', error);
       showNotification('收藏失败', 'error');
     }
   }
@@ -176,7 +167,6 @@ class BookmarkHandler {
  */
 class ThemeHandler {
   static async handle() {
-    console.log("执行主题切换功能");
     try {
       const currentTheme = await ChromeAPIManager.getTheme();
       const newTheme = currentTheme === "light" ? "dark" : "light";
@@ -186,7 +176,6 @@ class ThemeHandler {
         "success"
       );
     } catch (error) {
-      console.error('主题切换失败:', error);
       showNotification('主题切换失败', 'error');
     }
   }
@@ -197,11 +186,9 @@ class ThemeHandler {
  */
 class SettingsHandler {
   static handle() {
-    console.log("打开设置页面");
     try {
       chrome.runtime.openOptionsPage();
     } catch (error) {
-      console.error('打开设置页面失败:', error);
       showNotification('打开设置页面失败', 'error');
     }
   }
@@ -209,7 +196,6 @@ class SettingsHandler {
 
 /**
  * 计时器功能处理器
- * 适配全局定时器模式
  */
 class TimerHandler {
   /**
@@ -217,13 +203,10 @@ class TimerHandler {
    * @param {number} minutes - 计时分钟数
    */
   static handle(minutes) {
-    console.log(`启动全局计时器: ${minutes}分钟`);
     try {
-      // 使用全局定时器初始化函数
       initializeTimer(minutes);
       showNotification(`深耕提醒已设置：${minutes}分钟`, "success");
     } catch (error) {
-      console.error('启动计时器失败:', error);
       showNotification('启动计时器失败', 'error');
     }
   }
@@ -232,12 +215,10 @@ class TimerHandler {
    * 停止计时器
    */
   static stop() {
-    console.log('停止全局计时器');
     try {
       ChromeAPIManager.sendMessage({ action: "stopTimer" });
       showNotification('计时器已停止', 'info');
     } catch (error) {
-      console.error('停止计时器失败:', error);
       showNotification('停止计时器失败', 'error');
     }
   }

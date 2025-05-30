@@ -1,7 +1,6 @@
 /**
  * 计时器模块
  * 处理深耕提醒计时器的创建、显示和管理
- * 适配全局定时器模式，在content script中显示
  */
 
 import { createStyleElement, safeRemoveElement } from './utils.js';
@@ -143,21 +142,15 @@ class TimerManager {
 const timerManager = new TimerManager();
 
 /**
- * 初始化计时器
+ * 初始化全局计时器
  * @param {number} minutes - 计时分钟数
- * 通过background script启动全局定时器
  */
 export function initializeTimer(minutes) {
-  console.log("开始初始化全局计时器，时长：", minutes, "分钟");
-
-  // 发送消息到background script启动全局定时器
   if (typeof chrome !== 'undefined' && chrome.runtime) {
     chrome.runtime.sendMessage({
       action: 'startTimer',
       minutes: minutes
     });
-  } else {
-    console.error('Chrome runtime API 不可用');
   }
 }
 

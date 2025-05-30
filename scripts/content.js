@@ -1,10 +1,7 @@
 /**
  * DO助手内容脚本
  * 负责在网页中显示全局定时器和休息提醒
- * 基于temp中的原始设计，保持样式和逻辑一致
  */
-
-// 全局定时器显示管理器
 class GlobalTimerDisplay {
   constructor() {
     this.timerElement = null;
@@ -14,14 +11,13 @@ class GlobalTimerDisplay {
 
   /**
    * 创建定时器显示元素
-   * 使用temp中的样式设计
    */
   createTimerElement() {
     if (this.timerElement) {
       return;
     }
 
-    // 创建定时器容器，使用temp中的样式
+
     this.timerElement = document.createElement('div');
     this.timerElement.className = 'deep-work-timer';
     this.timerElement.style.cssText = `
@@ -47,22 +43,22 @@ class GlobalTimerDisplay {
       transform: translateZ(0) !important;
     `;
 
-    // 添加字体样式
+
     this.addFontStyles();
     
-    // 添加动画样式
+
     this.addAnimationStyles();
 
-    // 创建悬停遮罩和停止按钮
+
     this.createHoverOverlay();
     
-    // 添加鼠标事件
+
     this.addMouseEvents();
     
-    // 添加到页面
+
     document.body.appendChild(this.timerElement);
     
-    // 启动动画
+
     this.startTimerAnimation();
   }
 
@@ -70,7 +66,7 @@ class GlobalTimerDisplay {
    * 创建悬停遮罩和停止按钮
    */
   createHoverOverlay() {
-    // 创建悬停遮罩
+
     this.hoverOverlay = document.createElement('div');
     this.hoverOverlay.className = 'timer-hover-overlay';
     this.hoverOverlay.style.cssText = `
@@ -92,7 +88,7 @@ class GlobalTimerDisplay {
       z-index: 10 !important;
     `;
 
-    // 创建停止按钮
+
     this.stopButton = document.createElement('button');
     this.stopButton.className = 'timer-stop-button';
     this.stopButton.innerHTML = '⏹ 停止计时';
@@ -114,7 +110,7 @@ class GlobalTimerDisplay {
       transform: scale(0.9) !important;
     `;
 
-    // 停止按钮悬停效果
+
     this.stopButton.addEventListener('mouseenter', () => {
       this.stopButton.style.transform = 'scale(1) translateY(-2px) !important';
       this.stopButton.style.boxShadow = '0 6px 20px rgba(255, 71, 87, 0.6) !important';
@@ -125,15 +121,14 @@ class GlobalTimerDisplay {
       this.stopButton.style.boxShadow = '0 4px 15px rgba(255, 71, 87, 0.4) !important';
     });
 
-    // 停止按钮点击事件
+
     this.stopButton.addEventListener('click', (e) => {
       e.stopPropagation();
       this.stopTimer();
     });
 
     this.hoverOverlay.appendChild(this.stopButton);
-    // 确保悬停遮罩在最后添加，这样z-index才能正确工作
-    // 先不添加，等内容容器创建后再添加
+
   }
 
   /**
@@ -152,13 +147,16 @@ class GlobalTimerDisplay {
   }
 
   /**
-   * 停止定时器
+   * 停止计时器
    */
   stopTimer() {
-    // 发送停止定时器消息到后台
-    chrome.runtime.sendMessage({ action: 'stopTimer' });
-    
-    // 添加关闭动画
+    if (isExtensionContextValid()) {
+      try {
+        chrome.runtime.sendMessage({ action: 'stopTimer' });
+      } catch (error) {
+        // 静默处理扩展上下文失效错误
+      }
+    }
     this.hideTimerWithAnimation();
   }
 
@@ -168,12 +166,10 @@ class GlobalTimerDisplay {
   hideTimerWithAnimation() {
     if (!this.timerElement) return;
     
-    // 添加关闭动画
     this.timerElement.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
     this.timerElement.style.transform = 'translateY(20px) scale(0.8)';
     this.timerElement.style.opacity = '0';
     
-    // 动画完成后移除元素
     setTimeout(() => {
       if (this.timerElement && this.timerElement.parentNode) {
         this.timerElement.parentNode.removeChild(this.timerElement);
@@ -312,7 +308,7 @@ class GlobalTimerDisplay {
     this.showTimer();
     this.currentState = timerState;
 
-    // 检查是否已有内容容器，如果没有则创建
+
     let contentContainer = this.timerElement.querySelector('.timer-content');
     if (!contentContainer) {
       contentContainer = document.createElement('div');
@@ -320,13 +316,13 @@ class GlobalTimerDisplay {
       contentContainer.style.cssText = 'position: relative; z-index: 1;';
       this.timerElement.appendChild(contentContainer);
       
-      // 在内容容器创建后添加悬停遮罩
+
       if (this.hoverOverlay && !this.timerElement.contains(this.hoverOverlay)) {
         this.timerElement.appendChild(this.hoverOverlay);
       }
     }
 
-    // 只更新内容部分，保留悬停遮罩
+
     contentContainer.innerHTML = this.formatTimeDisplay(
       timerState.remainingSeconds, 
       timerState.totalMinutes
@@ -363,7 +359,6 @@ class GlobalTimerDisplay {
   /**
    * 显示休息提醒
    * @param {number} totalMinutes - 总计时分钟数
-   * 保持与temp中一致的设计风格
    */
   showRestReminder(totalMinutes) {
     this.hideTimer();
@@ -375,11 +370,11 @@ class GlobalTimerDisplay {
       <div class="rest-overlay">
         <div class="rest-content">
           <div class="rest-icon">🎉</div>
-          <h2 class="rest-title">深耕时间结束！</h2>
-          <p class="rest-message">您已疯狂摄取 ${totalMinutes} 分钟知识，超过0.1%佬友，做得很棒！</p>
+          <h2 class="rest-title">计时结束！</h2>
+          <p class="rest-message">您已疯狂摄取 ${totalMinutes} 分钟知识，超过0.1%佬友</p>
+          <p class="rest-message">你做的很棒！！！</p>
           <p class="rest-tip">建议休息 5-10 分钟，放松一下眼睛和身体</p>
           <div class="rest-actions">
-            <button class="continue-btn">继续深耕</button>
             <button class="close-btn">关闭提醒</button>
           </div>
         </div>
@@ -389,8 +384,7 @@ class GlobalTimerDisplay {
     // 添加休息提醒样式
     this.addRestReminderStyles();
 
-    // 添加事件监听
-    const continueBtn = reminderElement.querySelector('.continue-btn');
+
     const closeBtn = reminderElement.querySelector('.close-btn');
     
     const closeReminder = () => {
@@ -399,10 +393,11 @@ class GlobalTimerDisplay {
       }
     };
     
-    continueBtn.addEventListener('click', closeReminder);
-    closeBtn.addEventListener('click', closeReminder);
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeReminder);
+    }
 
-    // 30秒后自动关闭
+
     setTimeout(closeReminder, 30000);
 
     document.body.appendChild(reminderElement);
@@ -536,13 +531,13 @@ class GlobalTimerDisplay {
   }
 }
 
-// 创建全局定时器显示实例
+
 const globalTimerDisplay = new GlobalTimerDisplay();
 
-// 监听来自后台脚本的消息
+/**
+ * 监听来自后台脚本的消息
+ */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Content script 收到消息:', request);
-  
   switch (request.action) {
     case 'timerUpdate':
       globalTimerDisplay.updateDisplay(request.timerState);
@@ -555,39 +550,58 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'timerStopped':
       globalTimerDisplay.hideTimer();
       break;
-      
-    default:
-      console.log('未知消息类型:', request.action);
   }
 });
 
-// 获取定时器状态的函数
-function getTimerState() {
-  chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
-    if (response && response.timerState) {
-      globalTimerDisplay.updateDisplay(response.timerState);
-    }
-  });
+/**
+ * 检查扩展上下文是否有效
+ */
+function isExtensionContextValid() {
+  try {
+    return chrome.runtime && chrome.runtime.id;
+  } catch (error) {
+    return false;
+  }
 }
 
-// 页面加载时获取当前定时器状态
+/**
+ * 获取定时器状态
+ */
+function getTimerState() {
+  if (!isExtensionContextValid()) {
+    return;
+  }
+  
+  try {
+    chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
+      if (chrome.runtime.lastError) {
+        return;
+      }
+      if (response && response.timerState) {
+        globalTimerDisplay.updateDisplay(response.timerState);
+      }
+    });
+  } catch (error) {
+    // 静默处理扩展上下文失效错误
+  }
+}
+
 getTimerState();
 
-// 监听页面可见性变化
+/**
+ * 监听页面可见性变化
+ */
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
-    // 页面变为可见时，重新获取定时器状态
-    console.log('页面变为可见，重新获取定时器状态');
+  if (!document.hidden && isExtensionContextValid()) {
     getTimerState();
   }
 });
 
-// 监听窗口焦点变化
+/**
+ * 监听窗口焦点变化
+ */
 window.addEventListener('focus', () => {
-  // 窗口获得焦点时，重新获取定时器状态
-  console.log('窗口获得焦点，重新获取定时器状态');
-  getTimerState();
+  if (isExtensionContextValid()) {
+    getTimerState();
+  }
 });
-
-// 计时器初始化逻辑已移至 timer.js 模块
-// 休息提醒逻辑已移至 restReminder.js 模块

@@ -359,7 +359,7 @@ class TimerSettingsManager {
     const input = this.settingsContainer.querySelector('#timer-minutes');
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        this.handleStartTimer();
+        this.startTimer();
       }
     });
 
@@ -372,10 +372,10 @@ class TimerSettingsManager {
    */
   async checkTimerStatus() {
     try {
-      const status = await TimerHandler.getStatus();
+      const status = await this.getTimerStatus();
       this.updateStatusDisplay(status);
     } catch (error) {
-      console.error('获取计时器状态失败:', error);
+      // 静默处理错误
     }
   }
 
@@ -430,7 +430,6 @@ class TimerSettingsManager {
     // 关闭设置界面
     this.hide();
   }
-
 
 
   /**
@@ -499,7 +498,6 @@ class PopupUIManager {
     const featureId = item.getAttribute('data-feature');
     
     if (!featureId) {
-      console.warn('功能项缺少 data-feature 属性');
       return;
     }
 
@@ -525,13 +523,9 @@ class PopupUIManager {
       const handler = featureHandlers[featureId];
       if (typeof handler === 'function') {
         await handler();
-      } else {
-        console.warn(`未找到功能处理器: ${featureId}`);
-        showNotification('功能暂不可用', 'error');
       }
     } catch (error) {
-      console.error(`执行功能失败 [${featureId}]:`, error);
-      showNotification('功能执行失败', 'error');
+      // 静默处理错误
     }
   }
 
@@ -542,7 +536,7 @@ class PopupUIManager {
     try {
       initPopupAnimations();
     } catch (error) {
-      console.warn('初始化动画失败:', error);
+      // 静默处理错误
     }
   }
 

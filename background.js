@@ -2,7 +2,6 @@
  * DO助手后台脚本
  * 负责处理popup和content script之间的消息转发
  */
-console.log("DO助手后台脚本已加载");
 
 /**
  * 全局定时器管理器
@@ -24,12 +23,8 @@ class GlobalTimerManager {
    * @param {number} minutes - 定时分钟数
    */
   async startTimer(minutes) {
-    // 清除已存在的定时器
     this.clearExistingTimer();
-
-    console.log(`启动全局定时器: ${minutes}分钟`);
     
-    // 设置定时器状态
     this.timerState = {
       isActive: true,
       totalMinutes: minutes,
@@ -70,9 +65,7 @@ class GlobalTimerManager {
   async stopTimer() {
     this.clearExistingTimer();
     this.timerState.isActive = false;
-    console.log('全局定时器已停止');
     
-    // 广播停止状态到所有标签页
     await this.broadcastMessage({
       action: 'timerStopped'
     });
@@ -82,18 +75,15 @@ class GlobalTimerManager {
    * 定时器完成处理
    */
   async onTimerComplete() {
-    console.log('定时器完成');
     const totalMinutes = this.timerState.totalMinutes;
     this.clearExistingTimer();
     this.timerState.isActive = false;
     
-    // 只向当前激活的标签页发送定时器完成消息
     await this.sendToActiveTab({
       action: 'timerComplete',
       totalMinutes: totalMinutes
     });
     
-    // 向其他标签页发送定时器停止消息
     await this.broadcastMessage({
       action: 'timerStopped'
     });
@@ -130,13 +120,12 @@ class GlobalTimerManager {
       if (activeTab) {
         try {
           await chrome.tabs.sendMessage(activeTab.id, message);
-          console.log(`消息已发送到激活标签页 ${activeTab.id}`);
         } catch (error) {
-          console.debug(`无法向激活标签页 ${activeTab.id} 发送消息:`, error.message);
+          // 忽略无法发送消息的标签页
         }
       }
     } catch (error) {
-      console.error('发送消息到激活标签页失败:', error);
+      // 发送失败时静默处理
     }
   }
 
@@ -153,11 +142,10 @@ class GlobalTimerManager {
           await chrome.tabs.sendMessage(tab.id, message);
         } catch (error) {
           // 忽略无法发送消息的标签页（如chrome://页面）
-          console.debug(`无法向标签页 ${tab.id} 发送消息:`, error.message);
         }
       }
     } catch (error) {
-      console.error('广播消息失败:', error);
+      // 广播失败时静默处理
     }
   }
 
@@ -177,7 +165,6 @@ class MessageHandler {
    * @param {number} request.minutes - 计时分钟数
    */
   static async handleStartTimer(request) {
-    console.log(`收到启动计时器消息: ${request.minutes}分钟`);
     await globalTimer.startTimer(request.minutes);
   }
 
@@ -185,7 +172,6 @@ class MessageHandler {
    * 处理停止计时器消息
    */
   static async handleStopTimer() {
-    console.log('收到停止计时器消息');
     await globalTimer.stopTimer();
   }
 
@@ -195,7 +181,6 @@ class MessageHandler {
    */
   static handleGetTimerState(sendResponse) {
     const state = globalTimer.getTimerState();
-    console.log('返回计时器状态:', state);
     sendResponse({ timerState: state });
   }
   
@@ -204,7 +189,7 @@ class MessageHandler {
    * @param {Object} request - 消息请求对象
    */
   static handleUnknownAction(request) {
-    console.warn(`收到未知消息类型: ${request.action}`);
+    // 静默处理未知消息类型
   }
 }
 
@@ -218,43 +203,38 @@ const messageRouter = {
   'getTimerState': MessageHandler.handleGetTimerState
 };
 
-// 监听来自popup和content script的消息
+/**
+ * 监听来自popup和content script的消息
+ */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('收到消息:', request);
-  
   const handler = messageRouter[request.action];
   
   if (handler) {
-    // 特殊处理需要同步响应的消息
     if (request.action === 'getTimerState') {
       handler(sendResponse);
-      return true; // 保持消息通道开放
+      return true;
     } else {
-      // 异步处理其他消息
       handler(request).catch(error => {
-        console.error(`处理消息 ${request.action} 时发生错误:`, error);
+        // 静默处理错误
       });
     }
   } else {
     MessageHandler.handleUnknownAction(request);
   }
   
-  // 返回true表示异步响应
   return true;
 });
 
-// 扩展安装或启动时的初始化
+/**
+ * 扩展安装或启动时的初始化
+ */
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('DO助手扩展已安装/更新:', details.reason);
-  
-  if (details.reason === 'install') {
-    console.log('欢迎使用DO助手！');
-  } else if (details.reason === 'update') {
-    console.log('DO助手已更新到新版本');
-  }
+  // 扩展安装或更新时的初始化逻辑
 });
 
-// 扩展启动时
+/**
+ * 扩展启动时的处理
+ */
 chrome.runtime.onStartup.addListener(() => {
-  console.log('DO助手后台服务已启动');
+  // 扩展启动时的初始化逻辑
 });

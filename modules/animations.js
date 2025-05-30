@@ -79,36 +79,21 @@ const ANIMATION_STYLES = {
 };
 
 /**
- * 初始化弹窗CSS动画
- * @param {HTMLElement} popup - 弹窗元素
+ * 初始化弹窗动画
+ * 为弹窗元素添加动画效果
  */
-export function initPopupAnimations(popup) {
-  if (!popup) {
-    console.log("未找到弹窗元素，无法初始化动画");
-    return;
+export function initPopupAnimations() {
+  if (!document.getElementById('popup-animations-style')) {
+    const style = document.createElement('style');
+    style.id = 'popup-animations-style';
+    style.textContent = ANIMATION_STYLES;
+    document.head.appendChild(style);
   }
-
-  // 添加动画样式
-  createStyleElement(ANIMATION_STYLES.popup, 'popup-animations');
-
-  // 触发动画
-  setTimeout(() => {
-    popup.style.opacity = "1";
-    popup.style.transform = "translateY(0) scale(1)";
-    popup.style.background =
-      "linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(168, 85, 247, 0.8), rgba(59, 130, 246, 0.9)) !important";
-    popup.style.backgroundSize = "200% 200% !important";
-    popup.style.animation =
-      "gradientShift 6s cubic-bezier(0.4, 0, 0.6, 1) infinite, borderGlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite !important";
-  }, 100);
-
-  const timeText = popup.querySelector(".time-text");
-  if (timeText) {
-    timeText.style.animation = "none";
-  }
-
-  // 启动倒计时动画
-  startCountdownAnimation(popup);
+  
+  const popupElements = document.querySelectorAll('.popup, .modal, .dialog');
+  popupElements.forEach(element => {
+    element.classList.add('popup-fade-in');
+  });
 }
 
 /**
