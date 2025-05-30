@@ -23,6 +23,9 @@
     "activeTab",
     "bookmarks"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -33,6 +36,12 @@
       "matches": [
         "<all_urls>"
       ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["popup.js", "fonts/*", "modules/*"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
