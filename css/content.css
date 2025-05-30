@@ -1,0 +1,38 @@
+/* DO 助手 - 内容脚本样式 */
+
+/* 通知样式 */
+.do-assistant-notification {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    background: #0f172a !important;
+    color: white !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    z-index: 999999 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    max-width: 300px !important;
+    animation: doSlideIn 0.3s ease-out !important;
+}
+
+@keyframes doSlideIn {
+    from {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+    to {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+    .do-assistant-notification {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+    }
+}
