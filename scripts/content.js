@@ -370,7 +370,7 @@ class GlobalTimerDisplay {
       <div class="rest-overlay">
         <div class="rest-content">
           <div class="rest-icon">🎉</div>
-          <h2 class="rest-title">计时结束！</h2>
+          <h2 class="rest-title">L站虽好，但也要注意节制哦~</h2>
           <p class="rest-message">您已疯狂摄取 ${totalMinutes} 分钟知识，超过0.1%佬友</p>
           <p class="rest-message">你做的很棒！！！</p>
           <p class="rest-tip">建议休息 5-10 分钟，放松一下眼睛和身体</p>
