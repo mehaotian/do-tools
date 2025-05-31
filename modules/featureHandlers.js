@@ -4,6 +4,7 @@
  */
 
 import { showNotification } from './utils.js';
+import { showToast } from './toast.js';
 
 /**
  * Chrome API 操作类
@@ -141,7 +142,7 @@ class WordCountHandler {
     try {
       await ChromeAPIManager.executeScript(countWordsInPage);
     } catch (error) {
-      showNotification('字数统计失败', 'error');
+      showToast('字数统计失败', 'error');
     }
   }
 }
@@ -154,9 +155,9 @@ class BookmarkHandler {
     try {
       const tab = await ChromeAPIManager.getCurrentTab();
       await ChromeAPIManager.createBookmark(tab.title, tab.url);
-      showNotification("页面已收藏", "success");
+      showToast("页面已收藏", "success");
     } catch (error) {
-      showNotification('收藏失败', 'error');
+      showToast('收藏失败', 'error');
     }
   }
 }
@@ -170,12 +171,12 @@ class ThemeHandler {
       const currentTheme = await ChromeAPIManager.getTheme();
       const newTheme = currentTheme === "light" ? "dark" : "light";
       await ChromeAPIManager.setTheme(newTheme);
-      showNotification(
-        `已切换到${newTheme === "dark" ? "深色" : "浅色"}主题`,
-        "success"
+      showToast(
+        `主题已切换为：${newTheme === 'dark' ? '深色' : '浅色'}模式`,
+        'success'
       );
     } catch (error) {
-      showNotification('主题切换失败', 'error');
+      showToast('主题切换失败', 'error');
     }
   }
 }
@@ -188,7 +189,7 @@ class SettingsHandler {
     try {
       chrome.runtime.openOptionsPage();
     } catch (error) {
-      showNotification('打开设置页面失败', 'error');
+      showToast('打开设置页面失败', 'error');
     }
   }
 }

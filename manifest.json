@@ -21,7 +21,8 @@
     "alarms",
     "scripting",
     "activeTab",
-    "bookmarks"
+    "bookmarks",
+    "notifications"
   ],
   "host_permissions": [
     "<all_urls>"

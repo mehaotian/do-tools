@@ -185,6 +185,23 @@ class MessageHandler {
   }
   
   /**
+   * 处理显示通知消息
+   * @param {Object} request - 消息请求对象
+   * @param {string} request.title - 通知标题
+   * @param {string} request.message - 通知内容
+   */
+  static async handleShowNotification(request) {
+    if (typeof chrome !== 'undefined' && chrome.notifications) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'logo.png',
+        title: request.title,
+        message: request.message
+      });
+    }
+  }
+  
+  /**
    * 处理未知消息类型
    * @param {Object} request - 消息请求对象
    */
@@ -200,7 +217,8 @@ class MessageHandler {
 const messageRouter = {
   'startTimer': MessageHandler.handleStartTimer,
   'stopTimer': MessageHandler.handleStopTimer,
-  'getTimerState': MessageHandler.handleGetTimerState
+  'getTimerState': MessageHandler.handleGetTimerState,
+  'showNotification': MessageHandler.handleShowNotification
 };
 
 /**

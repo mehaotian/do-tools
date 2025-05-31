@@ -37,7 +37,7 @@ class GlobalTimerDisplay {
 
     this.stopButton = document.createElement('button');
     this.stopButton.className = 'timer-stop-button';
-    this.stopButton.innerHTML = '⏹ 停止计时';
+    this.stopButton.innerHTML = '⏹ 停止自律';
     this.stopButton.addEventListener('click', (e) => {
       e.stopPropagation();
       this.stopTimer();

@@ -299,6 +299,322 @@ body {
     margin: 0;
 }
 
+/* Toast 提示组件样式 */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    min-width: 300px;
+    max-width: 400px;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.toast::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: currentColor;
+}
+
+.toast-show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-hide {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+.toast-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: #0f172a;
+}
+
+.toast-close {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: 400;
+    color: #64748b;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.toast-close:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #0f172a;
+    opacity: 1;
+}
+
+/* Toast 类型样式 */
+.toast-success {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #bbf7d0;
+    color: #15803d;
+}
+
+.toast-success .toast-icon {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.toast-error .toast-icon {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.toast-warning {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: #fed7aa;
+    color: #d97706;
+}
+
+.toast-warning .toast-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.toast-info {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-color: #bfdbfe;
+    color: #2563eb;
+}
+
+.toast-info .toast-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+/* 暗色主题 */
+.dark-theme {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+.dark-theme .popup-container {
+    background-color: #0f172a;
+}
+
+.dark-theme .header {
+    border-bottom-color: #334155;
+}
+
+.dark-theme .title {
+    color: #f1f5f9;
+}
+
+.dark-theme .subtitle {
+    color: #94a3b8;
+}
+
+.dark-theme .feature-item {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+.dark-theme .feature-item:hover {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+.dark-theme .feature-icon {
+    background-color: #334155;
+}
+
+.dark-theme .feature-title {
+    color: #f1f5f9;
+}
+
+.dark-theme .feature-description {
+    color: #94a3b8;
+}
+
+.dark-theme .timer-display {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+.dark-theme .timer-time {
+    color: #10b981;
+}
+
+.dark-theme .timer-label {
+    color: #94a3b8;
+}
+
+.dark-theme .timer-controls .btn {
+    background-color: #334155;
+    color: #f1f5f9;
+    border-color: #475569;
+}
+
+.dark-theme .timer-controls .btn:hover {
+    background-color: #475569;
+}
+
+.dark-theme .timer-controls .btn.btn-danger {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+.dark-theme .timer-controls .btn.btn-danger:hover {
+    background-color: #b91c1c;
+}
+
+.dark-theme .custom-timer {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+.dark-theme .custom-timer input {
+    background-color: #334155;
+    border-color: #475569;
+    color: #f1f5f9;
+}
+
+.dark-theme .custom-timer input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dark-theme .custom-timer .btn {
+    background-color: #334155;
+    color: #f1f5f9;
+    border-color: #475569;
+}
+
+.dark-theme .custom-timer .btn:hover {
+    background-color: #475569;
+}
+
+.dark-theme .custom-timer .btn.btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.dark-theme .custom-timer .btn.btn-primary:hover {
+    background-color: #2563eb;
+}
+
+/* 暗色主题下的 Toast 样式 */
+.dark-theme .toast {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .toast-message {
+    color: #f1f5f9;
+}
+
+.dark-theme .toast-close {
+    color: #94a3b8;
+}
+
+.dark-theme .toast-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+.dark-theme .toast-icon {
+    background: rgba(30, 41, 59, 0.8);
+}
+
+.dark-theme .toast-success {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+    border-color: #047857;
+    color: #6ee7b7;
+}
+
+.dark-theme .toast-success .toast-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.dark-theme .toast-error {
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border-color: #dc2626;
+    color: #fca5a5;
+}
+
+.dark-theme .toast-error .toast-icon {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.dark-theme .toast-warning {
+    background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+    border-color: #d97706;
+    color: #fcd34d;
+}
+
+.dark-theme .toast-warning .toast-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.dark-theme .toast-info {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+.dark-theme .toast-info .toast-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     body {

@@ -15,15 +15,14 @@ export function formatTime(seconds) {
 }
 
 /**
- * 显示通知
+ * 显示系统通知
  * @param {string} title - 通知标题
  * @param {string} message - 通知内容
  */
 export function showNotification(title, message) {
-  if (typeof chrome !== 'undefined' && chrome.notifications) {
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/icon48.png',
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.sendMessage({
+      action: 'showNotification',
       title: title,
       message: message
     });
