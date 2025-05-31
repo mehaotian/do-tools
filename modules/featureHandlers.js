@@ -415,18 +415,19 @@ class TimerHandler {
   static async handle(minutes) {
     try {
       if (!ChromeAPIManager.isExtensionContextValid()) {
-        throw new Error('Extension context is invalid');
+        throw new Error('扩展上下文无效');
       }
       
       // 验证输入参数
       if (typeof minutes !== 'number' || isNaN(minutes) || minutes <= 0) {
-        throw new Error('Invalid minutes value');
+        throw new Error('时间数字无效');
       }
       
       if (minutes > 24 * 60) {
-        throw new Error('Timer duration cannot exceed 24 hours');
+        throw new Error('计时器持续时间不能超过24小时');
       }
       
+      // 发送消息给后台脚本，通知后台脚本开始计时
       await ChromeAPIManager.sendMessage({
         action: 'startTimer',
         minutes: minutes

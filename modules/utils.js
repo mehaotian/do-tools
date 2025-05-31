@@ -23,29 +23,29 @@ export function showNotification(title, message) {
   try {
     // 参数验证
     if (!title || typeof title !== 'string') {
-      console.warn('showNotification: Invalid title parameter');
+      console.warn('通知显示: 标题参数无效');
       return;
     }
     
     if (!message || typeof message !== 'string') {
-      console.warn('showNotification: Invalid message parameter');
+      console.warn('通知显示: 消息参数无效');
       return;
     }
     
     // 检查Chrome扩展环境
     if (typeof chrome === 'undefined') {
-      console.warn('showNotification: Chrome API not available');
+      console.warn('通知显示: Chrome API不可用');
       return;
     }
     
     if (!chrome.runtime) {
-      console.warn('showNotification: Chrome runtime not available');
+      console.warn('通知显示: Chrome运行时不可用');
       return;
     }
     
     // 检查扩展上下文是否有效
     if (chrome.runtime.id === undefined) {
-      console.warn('showNotification: Extension context is invalid');
+      console.warn('通知显示: 扩展上下文无效');
       return;
     }
     
@@ -93,13 +93,13 @@ export function createStyleElement(css, id) {
   try {
     // 参数验证
     if (!css || typeof css !== 'string') {
-      console.warn('createStyleElement: Invalid CSS parameter');
+      console.warn('样式元素创建: CSS参数无效');
       return null;
     }
     
     // 检查DOM环境
     if (typeof document === 'undefined') {
-      console.warn('createStyleElement: Document not available');
+      console.warn('样式元素创建: 文档对象不可用');
       return null;
     }
     

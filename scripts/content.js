@@ -2,14 +2,19 @@
  * DO助手内容脚本
  * 负责在网页中显示全局定时器和休息提醒
  */
+
+/**
+ * 全局定时器显示类
+ * 负责在网页中显示全局定时器
+ */
 class GlobalTimerDisplay {
   constructor() {
-    this.timerElement = null;
-    this.isVisible = false;
-    this.currentState = null;
-    this.isDestroyed = false;
+    this.timerElement = null; // 存储定时器元素
+    this.isVisible = false; // 存储定时器是否可见
+    this.currentState = null; // 存储当前状态
+    this.isDestroyed = false; // 标记是否已销毁
     this.eventListeners = new Map(); // 跟踪事件监听器
-    this.animationFrameId = null;
+    this.animationFrameId = null; // 存储动画帧ID
     
     // 绑定方法到实例
     this.cleanup = this.cleanup.bind(this);
@@ -144,8 +149,6 @@ class GlobalTimerDisplay {
     document.head.appendChild(style);
   }
 
-
-
   /**
    * 启动定时器动画
    */
@@ -176,8 +179,6 @@ class GlobalTimerDisplay {
         .toString()
         .padStart(2, "0")}`;
     }
-
-    const progressOffset = 2 * Math.PI * 15 * (totalSeconds / (originalMinutes * 60));
 
     return `
       <div class="timer-display-content">
@@ -232,16 +233,6 @@ class GlobalTimerDisplay {
     }
 
     this.updateTimerContent(timerState);
-  }
-
-  /**
-   * 显示定时器
-   */
-  showTimer() {
-    if (this.timerElement && !this.isVisible) {
-      this.timerElement.style.display = 'block';
-      this.isVisible = true;
-    }
   }
 
   /**
@@ -392,7 +383,7 @@ class GlobalTimerDisplay {
 }
 
 
-// 创建全局实例
+// 创建全局时间实例
 let globalTimerDisplay = null;
 
 // 初始化函数

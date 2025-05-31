@@ -9,14 +9,15 @@
  */
 class GlobalTimerManager {
   constructor() {
-    this.currentTimer = null;
+    this.currentTimer = null; // 存储当前定时器的引用
+    // 初始化定时器状态
     this.timerState = {
       isActive: false,
       totalMinutes: 0,
       remainingSeconds: 0,
       startTime: null
     };
-    this.isDestroyed = false;
+    this.isDestroyed = false; // 标记是否已销毁
     
     // 绑定清理方法到实例
     this.cleanup = this.cleanup.bind(this);
@@ -34,18 +35,20 @@ class GlobalTimerManager {
   async startTimer(minutes) {
     // 检查实例是否已销毁
     if (this.isDestroyed) {
-      console.warn('Timer manager has been destroyed');
+      console.warn('计时器管理器已被摧毁');
       return;
     }
     
     // 验证输入参数
     if (!Number.isInteger(minutes) || minutes <= 0 || minutes > 1440) {
-      console.error('Invalid timer duration:', minutes);
+      console.error('无效的计时器持续时间:', minutes);
       return;
     }
     
+    // 清除现有定时器，如果存在则清除
     this.clearExistingTimer();
     
+    // 设置新的定时器状态
     this.timerState = {
       isActive: true,
       totalMinutes: minutes,
@@ -195,12 +198,11 @@ class GlobalTimerManager {
    * @param {Object} message - 要广播的消息
    */
   async broadcastMessage(message) {
-    if (this.isDestroyed) {
-      return;
-    }
+    if (this.isDestroyed) return;
     
     try {
       const tabs = await chrome.tabs.query({});
+      // 确定广播页面和排除广播页面
       const validTabs = tabs.filter(tab => 
         tab.id && 
         tab.url && 
@@ -214,7 +216,7 @@ class GlobalTimerManager {
         validTabs.map(tab => 
           chrome.tabs.sendMessage(tab.id, message).catch(error => {
             // 记录但不抛出错误
-            console.debug(`Failed to send message to tab ${tab.id}:`, error.message);
+            console.debug(`未能将消息发送到选项卡 ${tab.id}:`, error.message);
           })
         )
       );

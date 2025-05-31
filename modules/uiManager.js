@@ -7,16 +7,197 @@ import { showToast } from "./toast.js";
 import { TimerHandler } from "./featureHandlers.js";
 
 /**
+ * 弹窗UI管理器 ==> index.html 直接操作
+ */
+class PopupUIManager {
+  constructor() {
+    this.timerSettings = new TimerSettingsManager(); // 时间设置管理器
+    this.isInitialized = false; // 是否已经初始化
+    this.isDestroyed = false; // 是否已经销毁
+    this.eventListeners = new Map(); // 事件监听器
+  }
+
+  /**
+   * 初始化弹窗UI
+   */
+  init() {
+    // 确保只初始化一次
+    if (this.isInitialized || this.isDestroyed) return;
+
+    try {
+      // 注册事件监听器
+      this.bindFeatureEvents();
+      // 初始化完成，状态设置为已初始化
+      this.isInitialized = true;
+    } catch (error) {
+      console.error("弹窗UI初始化失败:", error);
+    }
+  }
+
+  /**
+   * 添加事件监听器并跟踪
+   */
+  addEventListenerTracked(element, event, handler) {
+    if (!element || this.isDestroyed) return;
+
+    element.addEventListener(event, handler);
+
+    // 检查是否已经添加过监听器，如果没有则创建一个空数组
+    if (!this.eventListeners.has(element)) {
+      this.eventListeners.set(element, []);
+    }
+    // 将事件监听器添加到列表
+    this.eventListeners.get(element).push({ event, handler });
+  }
+
+  /**
+   * 绑定功能项事件
+   */
+  bindFeatureEvents() {
+    // 检测是否已经销毁
+    if (this.isDestroyed) return;
+
+    try {
+      const featureItems = document.querySelectorAll(".feature-item");
+
+      featureItems.forEach((item) => {
+        // 点击事件回调
+        const clickHandler = (e) => {
+          e.preventDefault();
+          this.handleFeatureClick(item);
+        };
+        // 注册点击事件并追踪事件
+        this.addEventListenerTracked(item, "click", clickHandler);
+
+        // 键盘事件回调
+        const keydownHandler = (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            this.handleFeatureClick(item);
+          }
+        };
+        // 注册键盘事件并追踪事件
+        this.addEventListenerTracked(item, "keydown", keydownHandler);
+
+        // 确保可聚焦
+        if (!item.hasAttribute("tabindex")) {
+          item.setAttribute("tabindex", "0");
+        }
+      });
+    } catch (error) {
+      console.error("绑定事件失败:", error);
+    }
+  }
+
+  /**
+   * 处理功能项点击
+   * @param {HTMLElement} item - 被点击的功能项
+   */
+  handleFeatureClick(item) {
+    if (this.isDestroyed || !item) return;
+
+    try {
+      // 获取弹窗可点击列表句柄
+      const featureId = item.getAttribute("data-feature");
+
+      if (!featureId) {
+        console.warn("获取功能项ID失败");
+        return;
+      }
+
+      // 因为时间提醒需要当前页面弹窗，单独处理
+      if (featureId === "reading-time") {
+        this.timerSettings.show();
+        return;
+      }
+
+      // 处理其他功能
+      this.executeFeature(featureId);
+    } catch (error) {
+      console.error("Failed to handle feature click:", error);
+    }
+  }
+
+  /**
+   * 执行功能
+   * @param {string} featureId - 功能ID
+   */
+  async executeFeature(featureId) {
+    if (this.isDestroyed) return;
+
+    try {
+      // 动态导入功能处理器
+      const { featureHandlers } = await import("./featureHandlers.js");
+
+      const handler = featureHandlers[featureId];
+      if (typeof handler === "function") {
+        await handler();
+      } else {
+        console.warn(`找不到功能的处理程序: ${featureId}`);
+      }
+    } catch (error) {
+      console.error(`无法执行功能 ${featureId}:`, error);
+    }
+  }
+
+  /**
+   * 显示计时器设置
+   */
+  showTimerSettings() {
+    if (this.isDestroyed) return;
+
+    try {
+      this.timerSettings.show();
+    } catch (error) {
+      console.error("Failed to show timer settings:", error);
+    }
+  }
+
+  /**
+   * 清理资源
+   */
+  cleanup() {
+    if (this.isDestroyed) return;
+
+    // 清理事件监听器
+    this.eventListeners.forEach((listeners, element) => {
+      listeners.forEach(({ event, handler }) => {
+        try {
+          element.removeEventListener(event, handler);
+        } catch (error) {
+          // 静默处理移除事件监听器的错误
+        }
+      });
+    });
+    this.eventListeners.clear();
+
+    // 清理计时器设置管理器
+    if (this.timerSettings) {
+      this.timerSettings.destroy();
+    }
+  }
+
+  /**
+   * 销毁管理器
+   */
+  destroy() {
+    this.isDestroyed = true;
+    this.cleanup();
+    this.isInitialized = false;
+  }
+}
+
+/**
  * 时间设置界面管理器
  */
 class TimerSettingsManager {
   constructor() {
-    this.isVisible = false;
-    this.settingsContainer = null;
-    this.isDestroyed = false;
-    this.eventListeners = new Map();
-    this.statusCheckInterval = null;
-    this.keydownHandler = null;
+    this.isVisible = false; // 时间设置界面是否可见
+    this.settingsContainer = null; // 时间设置容器
+    this.isDestroyed = false; // 时间设置管理器是否已经销毁
+    this.eventListeners = new Map(); // 事件监听器
+    this.statusCheckInterval = null; // 状态检查间隔
+    this.keydownHandler = null; // 键盘事件处理函数
   }
 
   /**
@@ -26,12 +207,17 @@ class TimerSettingsManager {
     if (this.isVisible || this.isDestroyed) return;
 
     try {
+      // 创建设置界面UI
       this.createSettingsUI();
+      // 绑定事件
       this.bindEvents();
+      // 检查计时器状态
       await this.checkTimerStatus();
+      // 设置可见状态
       this.isVisible = true;
     } catch (error) {
-      console.error('Failed to show timer settings:', error);
+      console.error("Failed to show timer settings:", error);
+      // 如果启动时间控件失败，则清理资源
       this.cleanup();
     }
   }
@@ -43,12 +229,13 @@ class TimerSettingsManager {
     if (!this.isVisible || !this.settingsContainer || this.isDestroyed) return;
 
     try {
+      // 关闭后清理资源，清理时间控制器容器，防止内存泄露
       this.cleanup();
       this.settingsContainer.remove();
       this.settingsContainer = null;
       this.isVisible = false;
     } catch (error) {
-      console.error('Failed to hide timer settings:', error);
+      console.error("计时器关闭设置失败:", error);
     }
   }
 
@@ -128,6 +315,9 @@ class TimerSettingsManager {
    * 添加样式
    */
   addStyles() {
+
+    // 因为是执行在 popup.js 中，所以需要使用 document.createElement 来创建元素
+    // 样式无法直接使用外部样式类，所需要要手动添加样式
     const styles = `
       .timer-settings-overlay {
         position: fixed;
@@ -386,8 +576,8 @@ class TimerSettingsManager {
 
 
     `;
-
-    const styleElement = document.createElement("style");
+    // 创建样式元素并添加到页面
+    const styleElement = document.createElement("style"); 
     styleElement.textContent = styles;
     document.head.appendChild(styleElement);
   }
@@ -397,9 +587,9 @@ class TimerSettingsManager {
    */
   addEventListenerTracked(element, event, handler) {
     if (!element || this.isDestroyed) return;
-    
+
     element.addEventListener(event, handler);
-    
+
     if (!this.eventListeners.has(element)) {
       this.eventListeners.set(element, []);
     }
@@ -428,7 +618,9 @@ class TimerSettingsManager {
       // 开始计时按钮
       const startBtn = this.settingsContainer.querySelector(".start-timer-btn");
       if (startBtn) {
-        this.addEventListenerTracked(startBtn, "click", () => this.startTimer());
+        this.addEventListenerTracked(startBtn, "click", () =>
+          this.startTimer()
+        );
       }
 
       // 停止计时器按钮
@@ -456,7 +648,7 @@ class TimerSettingsManager {
               TimerHandler.handle(minutes);
               this.hide();
             } catch (error) {
-              console.error('Failed to start timer:', error);
+              console.error("计时开始失败:", error);
             }
           }
         });
@@ -478,17 +670,19 @@ class TimerSettingsManager {
       document.addEventListener("keydown", this.keydownHandler);
 
       // 输入框事件
-      const minutesInput = this.settingsContainer.querySelector("#timer-minutes");
+      const minutesInput =
+        this.settingsContainer.querySelector("#timer-minutes");
       const hoursInput = this.settingsContainer.querySelector("#timer-hours");
 
       [minutesInput, hoursInput].forEach((input) => {
         if (input) {
           this.addEventListenerTracked(input, "keydown", (e) => {
+            // 设置回车键直接确定
             if (e.key === "Enter") {
               this.startTimer();
             }
           });
-          
+          // 获取焦点
           this.addEventListenerTracked(input, "focus", (e) => {
             e.target.select();
           });
@@ -512,7 +706,7 @@ class TimerSettingsManager {
             this.value = "59";
           }
         });
-        
+
         // 自动聚焦输入框
         setTimeout(() => {
           if (!this.isDestroyed && minutesInput) {
@@ -521,7 +715,7 @@ class TimerSettingsManager {
         }, 100);
       }
     } catch (error) {
-      console.error('Failed to bind events:', error);
+      console.error("绑定事件失败:", error);
     }
   }
 
@@ -531,25 +725,30 @@ class TimerSettingsManager {
   async getTimerStatus() {
     return new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
+        // 发送消息到后台脚本获取定时器状态
+        chrome.runtime.sendMessage({ action: "getTimerState" }, (response) => {
+          // 处理 chorome.runtime.lastError 错误
           if (chrome.runtime.lastError) {
-            console.warn('Error getting timer state:', chrome.runtime.lastError.message);
+            console.warn(
+              "Error getting timer state:",
+              chrome.runtime.lastError.message
+            );
             resolve(null);
             return;
           }
-          
+
           if (response && response.timerState) {
             resolve({
               isRunning: response.timerState.isActive,
               remainingSeconds: response.timerState.remainingSeconds,
-              originalMinutes: response.timerState.originalMinutes
+              originalMinutes: response.timerState.originalMinutes,
             });
           } else {
             resolve(null);
           }
         });
       } catch (error) {
-        console.error('Failed to get timer status:', error);
+        console.error("获取时间状态失败:", error);
         resolve(null);
       }
     });
@@ -560,12 +759,12 @@ class TimerSettingsManager {
    */
   async checkTimerStatus() {
     if (this.isDestroyed) return;
-    
+
     try {
       const status = await this.getTimerStatus();
       if (!this.isDestroyed) {
         this.updateStatusDisplay(status);
-        
+
         // 如果计时器正在运行，启动状态检查间隔
         if (status && status.isRunning && !this.statusCheckInterval) {
           this.statusCheckInterval = setInterval(() => {
@@ -580,7 +779,7 @@ class TimerSettingsManager {
         }
       }
     } catch (error) {
-      console.error('Failed to check timer status:', error);
+      console.error("检查定时器错误:", error);
     }
   }
 
@@ -594,10 +793,14 @@ class TimerSettingsManager {
     }
 
     const statusDiv = this.settingsContainer.querySelector("#timer-status");
-    const inputGroup = this.settingsContainer.querySelector("#time-input-group");
-    const presetButtons = this.settingsContainer.querySelector("#preset-buttons");
-    const actionButtons = this.settingsContainer.querySelector("#action-buttons");
-    const remainingTimeSpan = this.settingsContainer.querySelector("#remaining-time");
+    const inputGroup =
+      this.settingsContainer.querySelector("#time-input-group");
+    const presetButtons =
+      this.settingsContainer.querySelector("#preset-buttons");
+    const actionButtons =
+      this.settingsContainer.querySelector("#action-buttons");
+    const remainingTimeSpan =
+      this.settingsContainer.querySelector("#remaining-time");
 
     if (status.isRunning) {
       // 显示运行状态
@@ -633,7 +836,8 @@ class TimerSettingsManager {
     const modeBtns = this.settingsContainer.querySelectorAll(".mode-btn");
     const presetMode = this.settingsContainer.querySelector("#preset-mode");
     const customMode = this.settingsContainer.querySelector("#custom-mode");
-    const actionButtons = this.settingsContainer.querySelector("#action-buttons");
+    const actionButtons =
+      this.settingsContainer.querySelector("#action-buttons");
 
     // 更新按钮状态
     modeBtns.forEach((btn) => {
@@ -651,50 +855,10 @@ class TimerSettingsManager {
       if (actionButtons) actionButtons.style.display = "flex"; // 显示开始和取消按钮
       // 聚焦到分钟输入框
       setTimeout(() => {
-        const minutesInput = this.settingsContainer?.querySelector("#timer-minutes");
+        const minutesInput =
+          this.settingsContainer?.querySelector("#timer-minutes");
         minutesInput?.focus();
       }, 100);
-    }
-  }
-
-  /**
-   * 验证时间输入
-   */
-  validateTimeInput(input, min, max) {
-    let value = parseInt(input.value);
-
-    // 如果输入为空，允许用户继续输入
-    if (input.value === "") {
-      return;
-    }
-
-    if (isNaN(value) || value < min) {
-      input.value = min;
-    } else if (value > max) {
-      input.value = max;
-    }
-
-    // 检查总时间是否超过24小时
-    this.validateTotalTime();
-  }
-
-  /**
-   * 验证总时间不超过24小时
-   */
-  validateTotalTime() {
-    const hoursInput = this.settingsContainer.querySelector("#timer-hours");
-    const minutesInput = this.settingsContainer.querySelector("#timer-minutes");
-
-    if (!hoursInput || !minutesInput) return;
-
-    const hours = parseInt(hoursInput.value) || 0;
-    const minutes = parseInt(minutesInput.value) || 0;
-    const totalMinutes = hours * 60 + minutes;
-
-    if (totalMinutes > 24 * 60) {
-      // 如果超过24小时，重置为24小时
-      hoursInput.value = 24;
-      minutesInput.value = 0;
     }
   }
 
@@ -703,13 +867,14 @@ class TimerSettingsManager {
    */
   startTimer() {
     if (this.isDestroyed || !this.settingsContainer) return;
-    
+
     try {
       const hoursInput = this.settingsContainer.querySelector("#timer-hours");
-      const minutesInput = this.settingsContainer.querySelector("#timer-minutes");
+      const minutesInput =
+        this.settingsContainer.querySelector("#timer-minutes");
 
       if (!hoursInput || !minutesInput) {
-        console.error('Timer input elements not found');
+        console.error("未找到计时器输入元素");
         return;
       }
 
@@ -775,7 +940,7 @@ class TimerSettingsManager {
       TimerHandler.handle(totalMinutes);
       this.hide();
     } catch (error) {
-      console.error('Failed to start timer:', error);
+      console.error("启动计时器失败:", error);
       showToast("启动计时器失败，请重试！", "error");
     }
   }
@@ -785,12 +950,12 @@ class TimerSettingsManager {
    */
   stopTimer() {
     if (this.isDestroyed) return;
-    
+
     try {
       TimerHandler.stop();
       this.hide();
     } catch (error) {
-      console.error('Failed to stop timer:', error);
+      console.error("Failed to stop timer:", error);
       showToast("停止计时器失败，请重试！", "error");
     }
   }
@@ -810,7 +975,7 @@ class TimerSettingsManager {
    */
   cleanup() {
     if (this.isDestroyed) return;
-    
+
     // 清理事件监听器
     this.eventListeners.forEach((listeners, element) => {
       listeners.forEach(({ event, handler }) => {
@@ -822,13 +987,13 @@ class TimerSettingsManager {
       });
     });
     this.eventListeners.clear();
-    
+
     // 清理全局键盘事件
     if (this.keydownHandler) {
       document.removeEventListener("keydown", this.keydownHandler);
       this.keydownHandler = null;
     }
-    
+
     // 清理状态检查间隔
     this.clearStatusInterval();
   }
@@ -839,7 +1004,7 @@ class TimerSettingsManager {
   destroy() {
     this.isDestroyed = true;
     this.cleanup();
-    
+
     if (this.settingsContainer) {
       try {
         this.settingsContainer.remove();
@@ -848,180 +1013,8 @@ class TimerSettingsManager {
       }
       this.settingsContainer = null;
     }
-    
+
     this.isVisible = false;
-  }
-}
-
-/**
- * 弹窗UI管理器
- */
-class PopupUIManager {
-  constructor() {
-    this.timerSettings = new TimerSettingsManager();
-    this.isInitialized = false;
-    this.isDestroyed = false;
-    this.eventListeners = new Map();
-  }
-
-  /**
-   * 初始化弹窗UI
-   */
-  init() {
-    if (this.isInitialized || this.isDestroyed) return;
-
-    try {
-      this.bindFeatureEvents();
-      this.isInitialized = true;
-    } catch (error) {
-      console.error('Failed to initialize popup UI:', error);
-    }
-  }
-
-  /**
-   * 添加事件监听器并跟踪
-   */
-  addEventListenerTracked(element, event, handler) {
-    if (!element || this.isDestroyed) return;
-    
-    element.addEventListener(event, handler);
-    
-    if (!this.eventListeners.has(element)) {
-      this.eventListeners.set(element, []);
-    }
-    this.eventListeners.get(element).push({ event, handler });
-  }
-
-  /**
-   * 绑定功能项事件
-   */
-  bindFeatureEvents() {
-    if (this.isDestroyed) return;
-    
-    try {
-      const featureItems = document.querySelectorAll(".feature-item");
-
-      featureItems.forEach((item) => {
-        // 点击事件
-        const clickHandler = (e) => {
-          e.preventDefault();
-          this.handleFeatureClick(item);
-        };
-        this.addEventListenerTracked(item, "click", clickHandler);
-
-        // 键盘事件
-        const keydownHandler = (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            this.handleFeatureClick(item);
-          }
-        };
-        this.addEventListenerTracked(item, "keydown", keydownHandler);
-
-        // 确保可聚焦
-        if (!item.hasAttribute("tabindex")) {
-          item.setAttribute("tabindex", "0");
-        }
-      });
-    } catch (error) {
-      console.error('Failed to bind feature events:', error);
-    }
-  }
-
-  /**
-   * 处理功能项点击
-   * @param {HTMLElement} item - 被点击的功能项
-   */
-  handleFeatureClick(item) {
-    if (this.isDestroyed || !item) return;
-    
-    try {
-      const featureId = item.getAttribute("data-feature");
-
-      if (!featureId) {
-        console.warn('Feature item missing data-feature attribute');
-        return;
-      }
-
-      // 特殊处理自律提醒功能
-      if (featureId === "reading-time") {
-        this.timerSettings.show();
-        return;
-      }
-
-      // 处理其他功能
-      this.executeFeature(featureId);
-    } catch (error) {
-      console.error('Failed to handle feature click:', error);
-    }
-  }
-
-  /**
-   * 执行功能
-   * @param {string} featureId - 功能ID
-   */
-  async executeFeature(featureId) {
-    if (this.isDestroyed) return;
-    
-    try {
-      // 动态导入功能处理器
-      const { featureHandlers } = await import("./featureHandlers.js");
-
-      const handler = featureHandlers[featureId];
-      if (typeof handler === "function") {
-        await handler();
-      } else {
-        console.warn(`No handler found for feature: ${featureId}`);
-      }
-    } catch (error) {
-      console.error(`Failed to execute feature ${featureId}:`, error);
-    }
-  }
-
-  /**
-   * 显示计时器设置
-   */
-  showTimerSettings() {
-    if (this.isDestroyed) return;
-    
-    try {
-      this.timerSettings.show();
-    } catch (error) {
-      console.error('Failed to show timer settings:', error);
-    }
-  }
-
-  /**
-   * 清理资源
-   */
-  cleanup() {
-    if (this.isDestroyed) return;
-    
-    // 清理事件监听器
-    this.eventListeners.forEach((listeners, element) => {
-      listeners.forEach(({ event, handler }) => {
-        try {
-          element.removeEventListener(event, handler);
-        } catch (error) {
-          // 静默处理移除事件监听器的错误
-        }
-      });
-    });
-    this.eventListeners.clear();
-    
-    // 清理计时器设置管理器
-    if (this.timerSettings) {
-      this.timerSettings.destroy();
-    }
-  }
-
-  /**
-   * 销毁管理器
-   */
-  destroy() {
-    this.isDestroyed = true;
-    this.cleanup();
-    this.isInitialized = false;
   }
 }
 
