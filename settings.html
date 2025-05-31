@@ -4,239 +4,113 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DO 助手 - 设置</title>
-    <link rel="stylesheet" href="css/main.css">
-    <style>
-        body {
-            width: 350px;
-            min-height: 500px;
-            margin: 0;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-        }
-        
-        .settings-container {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .settings-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        
-        .settings-header h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #333;
-            font-weight: 600;
-        }
-        
-        .settings-section {
-            margin-bottom: 24px;
-        }
-        
-        .settings-section h3 {
-            margin: 0 0 12px 0;
-            font-size: 16px;
-            color: #555;
-            font-weight: 500;
-        }
-        
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .setting-item:last-child {
-            border-bottom: none;
-        }
-        
-        .setting-label {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .setting-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .toggle-switch {
-            position: relative;
-            width: 44px;
-            height: 24px;
-            background: #ddd;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .toggle-switch.active {
-            background: #667eea;
-        }
-        
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
-        }
-        
-        .toggle-switch.active::after {
-            transform: translateX(20px);
-        }
-        
-        .input-field {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            width: 80px;
-        }
-        
-        .select-field {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            background: white;
-            cursor: pointer;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #5a6fd8;
-        }
-        
-        .btn-secondary {
-            background: #f8f9fa;
-            color: #666;
-            border: 1px solid #ddd;
-        }
-        
-        .btn-secondary:hover {
-            background: #e9ecef;
-        }
-        
-        .settings-footer {
-            text-align: center;
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid #f0f0f0;
-        }
-        
-        .version-info {
-            font-size: 12px;
-            color: #999;
-            margin-top: 8px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/settings.css">
 </head>
 <body>
-    <div class="settings-container">
-        <div class="settings-header">
-            <h1>设置</h1>
-        </div>
-        
-        <div class="settings-section">
-            <h3>通用设置</h3>
-            <div class="setting-item">
-                <span class="setting-label">启用通知</span>
-                <div class="setting-control">
-                    <div class="toggle-switch" id="notificationToggle"></div>
-                </div>
-            </div>
-            <div class="setting-item">
-                <span class="setting-label">自动保存</span>
-                <div class="setting-control">
-                    <div class="toggle-switch active" id="autoSaveToggle"></div>
-                </div>
-            </div>
-            <div class="setting-item">
-                <span class="setting-label">主题</span>
-                <div class="setting-control">
-                    <select class="select-field" id="themeSelect">
-                        <option value="auto">跟随系统</option>
-                        <option value="light">浅色</option>
-                        <option value="dark">深色</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        
-        <div class="settings-section">
-            <h3>计时器设置</h3>
-            <div class="setting-item">
-                <span class="setting-label">默认时长（分钟）</span>
-                <div class="setting-control">
-                    <input type="number" class="input-field" id="defaultDuration" value="25" min="1" max="120">
-                </div>
-            </div>
-            <div class="setting-item">
-                <span class="setting-label">声音提醒</span>
-                <div class="setting-control">
-                    <div class="toggle-switch active" id="soundToggle"></div>
-                </div>
-            </div>
-            <div class="setting-item">
-                <span class="setting-label">桌面通知</span>
-                <div class="setting-control">
-                    <div class="toggle-switch active" id="desktopNotificationToggle"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="settings-section">
-            <h3>书签设置</h3>
-            <div class="setting-item">
-                <span class="setting-label">默认文件夹</span>
-                <div class="setting-control">
-                    <select class="select-field" id="bookmarkFolderSelect">
-                        <option value="default">默认文件夹</option>
-                        <option value="custom">自定义文件夹</option>
-                    </select>
-                </div>
-            </div>
-            <div class="setting-item">
-                <span class="setting-label">自动分类</span>
-                <div class="setting-control">
-                    <div class="toggle-switch" id="autoClassifyToggle"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="settings-footer">
-            <button class="btn btn-primary" id="saveSettings">保存设置</button>
+    <div class="settings-header">
+        <h1>DO 助手设置</h1>
+        <div class="header-actions">
             <button class="btn btn-secondary" id="resetSettings">重置默认</button>
-            <div class="version-info">
-                DO 助手 v1.0
+            <button class="btn btn-primary" id="saveSettings">保存设置</button>
+        </div>
+    </div>
+    
+    <div class="settings-container">
+        <div class="settings-content">
+            <div class="settings-card">
+                <div class="settings-section">
+                    <h3>通用设置</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-label">启用通知</div>
+                            <div class="setting-description">允许扩展发送系统通知</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch" id="notificationToggle"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-label">自动保存</div>
+                            <div class="setting-description">自动保存您的设置更改</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" id="autoSaveToggle"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-label">主题</div>
+                            <div class="setting-description">选择界面主题外观</div>
+                        </div>
+                        <div class="setting-control">
+                            <select class="select-field" id="themeSelect">
+                                <option value="auto">跟随系统</option>
+                                <option value="light">浅色</option>
+                                <option value="dark">深色</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>计时器设置</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-label">默认时长</div>
+                            <div class="setting-description">设置计时器的默认分钟数 (1-120)</div>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" class="input-field" id="defaultDuration" value="25" min="1" max="120">
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-label">声音提醒</div>
+                            <div class="setting-description">计时器结束时播放提示音</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" id="soundToggle"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-label">桌面通知</div>
+                            <div class="setting-description">计时器结束时显示桌面通知</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch active" id="desktopNotificationToggle"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>书签设置</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-label">默认文件夹</div>
+                            <div class="setting-description">选择保存书签的默认位置</div>
+                        </div>
+                        <div class="setting-control">
+                            <select class="select-field" id="bookmarkFolderSelect">
+                                <option value="default">默认文件夹</option>
+                                <option value="custom">自定义文件夹</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-label">自动分类</div>
+                            <div class="setting-description">根据网站类型自动整理书签</div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle-switch" id="autoClassifyToggle"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
+            
+            <div class="version-info">DO 助手 v1.0</div>
         </div>
     </div>
     
