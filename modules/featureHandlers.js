@@ -124,7 +124,7 @@ function countWordsInPage() {
 }
 
 /**
- * 深耕提醒功能处理器
+ * 自律提醒功能处理器
  */
 class ReadingTimeHandler {
   static handle() {
@@ -205,7 +205,7 @@ class TimerHandler {
   static handle(minutes) {
     try {
       initializeTimer(minutes);
-      showNotification(`深耕提醒已设置：${minutes}分钟`, "success");
+      showNotification(`自律提醒已设置：${minutes}分钟`, "success");
     } catch (error) {
       showNotification('启动计时器失败', 'error');
     }

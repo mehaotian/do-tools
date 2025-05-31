@@ -51,7 +51,7 @@ class TimerSettingsManager {
     this.settingsContainer.innerHTML = `
       <div class="timer-settings-modal">
         <div class="timer-settings-header">
-          <h3>设置深耕提醒时间</h3>
+          <h3>设置自律提醒时间</h3>
           <button class="close-btn" type="button">&times;</button>
         </div>
         <div class="timer-settings-content">
@@ -73,7 +73,7 @@ class TimerSettingsManager {
             <button class="preset-btn" data-minutes="60">60分钟</button>
           </div>
           <div class="action-buttons" id="action-buttons">
-            <button class="start-timer-btn" type="button">开始深耕</button>
+            <button class="start-timer-btn" type="button">开始自律</button>
             <button class="cancel-btn" type="button">取消</button>
           </div>
         </div>
@@ -501,7 +501,7 @@ class PopupUIManager {
       return;
     }
 
-    // 特殊处理深耕提醒功能
+    // 特殊处理自律提醒功能
     if (featureId === 'reading-time') {
       this.timerSettings.show();
       return;

@@ -1,6 +1,6 @@
 /**
  * 休息提醒模块
- * 处理深耕结束后的休息提醒界面
+ * 处理自律结束后的休息提醒界面
  */
 
 import { createStyleElement, safeRemoveElement } from './utils.js';
@@ -122,8 +122,8 @@ const REST_CONFIG = {
   ],
   autoCloseDelay: 30000, // 30秒自动关闭
   title: '该休息一下啦！',
-  subtitle: '深耕时光已结束，让眼睛和心灵都放松一下吧',
-  buttonText: '继续深耕'
+  subtitle: '自律时光已结束，让眼睛和心灵都放松一下吧',
+  buttonText: '继续自律'
 };
 
 /**

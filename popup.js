@@ -2,9 +2,7 @@
  * DO助手弹窗脚本
  */
 
-import { formatTime, showNotification } from './modules/utils.js';
 import { popupUIManager } from './modules/uiManager.js';
-import { initPopupAnimations } from './modules/animations.js';
 
 /**
  * 初始化CSS动画

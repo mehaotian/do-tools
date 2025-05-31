@@ -17,48 +17,14 @@ class GlobalTimerDisplay {
       return;
     }
 
-
     this.timerElement = document.createElement('div');
     this.timerElement.className = 'deep-work-timer';
-    this.timerElement.style.cssText = `
-      position: fixed !important;
-      bottom: 30px !important;
-      right: 30px !important;
-      background: linear-gradient(135deg, rgba(45, 55, 72, 0.95), rgba(74, 85, 104, 0.9)) !important;
-      backdrop-filter: blur(20px) !important;
-      -webkit-backdrop-filter: blur(20px) !important;
-      color: white !important;
-      padding: 18px !important;
-      border-radius: 16px !important;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-      z-index: 2147483647 !important;
-      font-family: 'Digital', BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-      border: 1px solid rgba(255, 255, 255, 0.2) !important;
-      min-width: 100px !important;
-      user-select: none !important;
-      opacity: 0;
-      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      overflow: hidden;
-      will-change: transform, opacity !important;
-      transform: translateZ(0) !important;
-    `;
-
 
     this.addFontStyles();
-    
-
-    this.addAnimationStyles();
-
-
     this.createHoverOverlay();
-    
-
     this.addMouseEvents();
-    
 
     document.body.appendChild(this.timerElement);
-    
-
     this.startTimerAnimation();
   }
 
@@ -66,69 +32,19 @@ class GlobalTimerDisplay {
    * 创建悬停遮罩和停止按钮
    */
   createHoverOverlay() {
-
     this.hoverOverlay = document.createElement('div');
     this.hoverOverlay.className = 'timer-hover-overlay';
-    this.hoverOverlay.style.cssText = `
-      position: absolute !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      background: rgba(255, 255, 255, 0.9) !important;
-      border-radius: 16px !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      opacity: 0 !important;
-      visibility: hidden !important;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-      backdrop-filter: blur(10px) !important;
-      -webkit-backdrop-filter: blur(10px) !important;
-      z-index: 10 !important;
-    `;
-
 
     this.stopButton = document.createElement('button');
     this.stopButton.className = 'timer-stop-button';
     this.stopButton.innerHTML = '⏹ 停止计时';
-    this.stopButton.style.cssText = `
-      background: linear-gradient(135deg, #ff4757, #ff3742) !important;
-      color: white !important;
-      border: none !important;
-      padding: 12px 20px !important;
-      border-radius: 25px !important;
-      font-size: 14px !important;
-      font-weight: bold !important;
-      cursor: pointer !important;
-      transition: all 0.3s ease !important;
-      box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4) !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 6px !important;
-      transform: scale(0.9) !important;
-    `;
-
-
-    this.stopButton.addEventListener('mouseenter', () => {
-      this.stopButton.style.transform = 'scale(1) translateY(-2px) !important';
-      this.stopButton.style.boxShadow = '0 6px 20px rgba(255, 71, 87, 0.6) !important';
-    });
-
-    this.stopButton.addEventListener('mouseleave', () => {
-      this.stopButton.style.transform = 'scale(0.9) !important';
-      this.stopButton.style.boxShadow = '0 4px 15px rgba(255, 71, 87, 0.4) !important';
-    });
-
-
     this.stopButton.addEventListener('click', (e) => {
       e.stopPropagation();
       this.stopTimer();
     });
 
     this.hoverOverlay.appendChild(this.stopButton);
-
+    this.timerElement.appendChild(this.hoverOverlay);
   }
 
   /**
@@ -136,13 +52,11 @@ class GlobalTimerDisplay {
    */
   addMouseEvents() {
     this.timerElement.addEventListener('mouseenter', () => {
-      this.hoverOverlay.style.opacity = '1';
-      this.hoverOverlay.style.visibility = 'visible';
+      this.hoverOverlay.classList.add('visible');
     });
 
     this.timerElement.addEventListener('mouseleave', () => {
-      this.hoverOverlay.style.opacity = '0';
-      this.hoverOverlay.style.visibility = 'hidden';
+      this.hoverOverlay.classList.remove('visible');
     });
   }
 
@@ -166,9 +80,7 @@ class GlobalTimerDisplay {
   hideTimerWithAnimation() {
     if (!this.timerElement) return;
     
-    this.timerElement.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-    this.timerElement.style.transform = 'translateY(20px) scale(0.8)';
-    this.timerElement.style.opacity = '0';
+    this.timerElement.classList.add('timer-hiding');
     
     setTimeout(() => {
       if (this.timerElement && this.timerElement.parentNode) {
@@ -200,48 +112,14 @@ class GlobalTimerDisplay {
     document.head.appendChild(style);
   }
 
-  /**
-   * 添加动画样式
-   */
-  addAnimationStyles() {
-    if (document.getElementById('do-timer-animation-styles')) {
-      return;
-    }
 
-    const style = document.createElement('style');
-    style.id = 'do-timer-animation-styles';
-    style.textContent = `
-      @keyframes gradientShift {
-        0%, 100% { background-position: 0% 50%; }
-        33.33% { background-position: 100% 50%; }
-        66.66% { background-position: 200% 50%; }
-      }
-      @keyframes borderGlow {
-        0%, 100% { 
-          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1), 
-                      inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 rgba(45, 55, 72, 0); 
-        }
-        50% { 
-          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25), 0 4px 8px rgba(0, 0, 0, 0.1), 
-                      inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 20px rgba(45, 55, 72, 0.4); 
-        }
-      }
-    `;
-    document.head.appendChild(style);
-  }
 
   /**
    * 启动定时器动画
    */
   startTimerAnimation() {
     setTimeout(() => {
-      this.timerElement.style.opacity = "1";
-      this.timerElement.style.transform = "translateY(0) scale(1)";
-      this.timerElement.style.background =
-        "linear-gradient(135deg, rgba(45, 55, 72, 0.95), rgba(74, 85, 104, 0.9), rgba(113, 128, 150, 0.85)) !important";
-      this.timerElement.style.backgroundSize = "200% 200% !important";
-      this.timerElement.style.animation =
-        "gradientShift 6s cubic-bezier(0.4, 0, 0.6, 1) infinite, borderGlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite !important";
+      this.timerElement.classList.add('timer-active');
     }, 100);
   }
 
@@ -270,20 +148,21 @@ class GlobalTimerDisplay {
     const progressOffset = 2 * Math.PI * 15 * (totalSeconds / (originalMinutes * 60));
 
     return `
-      <div style="display: flex !important; flex-direction: column !important; align-items: center !important; gap: 4px !important; position: relative !important;font-family: 'Digital', sans-serif;">
-          <div style="opacity: 0.9 !important; z-index: 10 !important; position: relative !important; color: #FFB74D !important;">
+      <div class="timer-display-content">
+          <div class="timer-label-text">
               距离休息还有
           </div>
-          <div style="font-size: 22px !important; font-weight: bold !important; font-family: 'Digital','Courier New', 'Lucida Console', monospace !important; text-shadow: 0 0 10px rgba(255, 183, 77, 0.8), 0 0 20px rgba(255, 183, 77, 0.4), 0 0 30px rgba(255, 183, 77, 0.2) !important; letter-spacing: 2px !important; z-index: 10 !important; position: relative !important; color: #FFB74D !important; background: rgba(0, 0, 0, 0.2) !important; padding: 6px 12px !important; border-radius: 8px !important; border: 1px solid rgba(255, 183, 77, 0.3) !important;">${timeText}</div>
-          <div style="font-size: 12px !important; opacity: 0.9 !important; font-weight: 600 !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; z-index: 10 !important; position: relative !important;">疯狂摄取知识中</div>
-          <div style="position: absolute !important; top: -8px !important; left: 50% !important; transform: translateX(-50%) !important; opacity: 0.25 !important;">
-              <div style="transform: scale(0.4) !important;">
+          <div class="timer-time-display">${timeText}</div>
+          <div class="timer-status-text">疯狂摄取知识中</div>
+          <div class="timer-progress-container">
+              <div class="timer-progress-svg">
                   <svg width="40" height="40" viewBox="0 0 35 35">
                       <circle cx="17.5" cy="17.5" r="15" fill="none" stroke="rgba(255, 183, 77, 0.2)" stroke-width="1"/>
                       <circle cx="17.5" cy="17.5" r="15" fill="none" stroke="rgba(255, 183, 77, 0.7)" stroke-width="1.5" 
+                          class="timer-progress-circle"
                           stroke-dasharray="${2 * Math.PI * 15}" 
                           stroke-dashoffset="${progressOffset}"
-                          transform="rotate(-90 17.5 17.5)" style="transition: stroke-dashoffset 1s ease-in-out !important; filter: drop-shadow(0 0 3px rgba(255, 183, 77, 0.5)) !important;"/>
+                          transform="rotate(-90 17.5 17.5)"/>
                   </svg>
               </div>
           </div>
@@ -371,8 +250,8 @@ class GlobalTimerDisplay {
         <div class="rest-content">
           <div class="rest-icon">🎉</div>
           <h2 class="rest-title">L站虽好，但也要注意节制哦~</h2>
-          <p class="rest-message">您已疯狂摄取 ${totalMinutes} 分钟知识，超过0.1%佬友</p>
-          <p class="rest-message">你做的很棒！！！</p>
+          <p class="rest-message">您已经学习 ${totalMinutes} 分钟，超过0.1%佬友</p>
+          <p class="rest-message">佬友你太牛逼了！！！</p>
           <p class="rest-tip">建议休息 5-10 分钟，放松一下眼睛和身体</p>
           <div class="rest-actions">
             <button class="close-btn">关闭提醒</button>
@@ -380,10 +259,6 @@ class GlobalTimerDisplay {
         </div>
       </div>
     `;
-
-    // 添加休息提醒样式
-    this.addRestReminderStyles();
-
 
     const closeBtn = reminderElement.querySelector('.close-btn');
     
@@ -397,138 +272,12 @@ class GlobalTimerDisplay {
       closeBtn.addEventListener('click', closeReminder);
     }
 
-
     setTimeout(closeReminder, 30000);
 
     document.body.appendChild(reminderElement);
   }
 
-  /**
-   * 添加休息提醒样式
-   */
-  addRestReminderStyles() {
-    if (document.getElementById('do-rest-reminder-styles')) {
-      return;
-    }
 
-    const style = document.createElement('style');
-    style.id = 'do-rest-reminder-styles';
-    style.textContent = `
-      #do-rest-reminder {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 10001;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      }
-
-      .rest-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        animation: fadeIn 0.5s ease;
-      }
-
-      .rest-content {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 40px;
-        border-radius: 20px;
-        text-align: center;
-        max-width: 400px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        animation: slideIn 0.5s ease;
-      }
-
-      .rest-icon {
-        font-size: 60px;
-        margin-bottom: 20px;
-        animation: bounce 2s ease infinite;
-      }
-
-      .rest-title {
-        font-size: 28px;
-        margin-bottom: 16px;
-        font-weight: bold;
-      }
-
-      .rest-message {
-        font-size: 18px;
-        margin-bottom: 12px;
-        opacity: 0.9;
-      }
-
-      .rest-tip {
-        font-size: 14px;
-        margin-bottom: 30px;
-        opacity: 0.8;
-      }
-
-      .rest-actions {
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-      }
-
-      .continue-btn, .close-btn {
-        border: none;
-        padding: 12px 24px;
-        border-radius: 25px;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .continue-btn {
-        background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-        color: white;
-        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-      }
-
-      .continue-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
-      }
-
-      .close-btn {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-      }
-
-      .close-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-      }
-
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-
-      @keyframes slideIn {
-        from { transform: translateY(-50px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-      }
-
-      @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(-10px); }
-        60% { transform: translateY(-5px); }
-      }
-    `;
-
-    document.head.appendChild(style);
-  }
 }
 
 

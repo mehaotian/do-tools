@@ -1,4 +1,289 @@
-/* DO 助手 - 内容脚本样式 */
+/* DO助手内容样式 */
+
+/* 字体定义 */
+@font-face {
+  font-family: 'Digital';
+  src: url(chrome-extension://EXTENSION_ID/fonts/digital.ttf) format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* 定时器主体样式 */
+.deep-work-timer {
+  position: fixed !important;
+  bottom: 30px !important;
+  right: 30px !important;
+  background: linear-gradient(135deg, rgba(45, 55, 72, 0.95), rgba(74, 85, 104, 0.9)) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  color: white !important;
+  padding: 18px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  z-index: 2147483647 !important;
+  font-family: 'Digital', BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  min-width: 100px !important;
+  user-select: none !important;
+  opacity: 0;
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+  will-change: transform, opacity !important;
+  transform: translateZ(0) !important;
+}
+
+.deep-work-timer.timer-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  background: linear-gradient(135deg, rgba(45, 55, 72, 0.95), rgba(74, 85, 104, 0.9), rgba(113, 128, 150, 0.85)) !important;
+  background-size: 200% 200% !important;
+  animation: gradientShift 6s cubic-bezier(0.4, 0, 0.6, 1) infinite, borderGlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+.deep-work-timer.timer-hiding {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(20px) scale(0.8);
+  opacity: 0;
+}
+
+/* 定时器悬停遮罩 */
+.timer-hover-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  z-index: 10 !important;
+}
+
+.timer-hover-overlay.visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* 停止按钮 */
+.timer-stop-button {
+  background: linear-gradient(135deg, #ff4757, #ff3742) !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 20px !important;
+  border-radius: 25px !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transform: scale(0.9) !important;
+}
+
+.timer-stop-button:hover {
+  transform: scale(1) translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.6) !important;
+}
+
+/* 定时器显示内容 */
+.timer-display-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+  position: relative !important;
+  font-family: 'Digital', sans-serif;
+}
+
+.timer-label-text {
+  opacity: 0.9 !important;
+  z-index: 10 !important;
+  position: relative !important;
+  color: #FFB74D !important;
+}
+
+.timer-time-display {
+  font-size: 22px !important;
+  font-weight: bold !important;
+  font-family: 'Digital','Courier New', 'Lucida Console', monospace !important;
+  text-shadow: 0 0 10px rgba(255, 183, 77, 0.8), 0 0 20px rgba(255, 183, 77, 0.4), 0 0 30px rgba(255, 183, 77, 0.2) !important;
+  letter-spacing: 2px !important;
+  z-index: 10 !important;
+  position: relative !important;
+  color: #FFB74D !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 183, 77, 0.3) !important;
+}
+
+.timer-status-text {
+  font-size: 12px !important;
+  opacity: 0.9 !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+.timer-progress-container {
+  position: absolute !important;
+  top: -8px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  opacity: 0.25 !important;
+}
+
+.timer-progress-svg {
+  transform: scale(0.4) !important;
+}
+
+.timer-progress-circle {
+  transition: stroke-dashoffset 1s ease-in-out !important;
+  filter: drop-shadow(0 0 3px rgba(255, 183, 77, 0.5)) !important;
+}
+
+/* 休息提醒样式 */
+#do-rest-reminder {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10001;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.rest-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.5s ease;
+}
+
+.rest-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.5s ease;
+}
+
+.rest-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+  animation: bounce 2s ease infinite;
+}
+
+.rest-title {
+  font-size: 28px;
+  margin-bottom: 16px;
+  font-weight: bold;
+}
+
+.rest-message {
+  font-size: 18px;
+  margin-bottom: 12px;
+  opacity: 0.9;
+}
+
+.rest-tip {
+  font-size: 14px;
+  margin-bottom: 30px;
+  opacity: 0.8;
+}
+
+.rest-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.continue-btn, .close-btn {
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.continue-btn {
+  background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+}
+
+.continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* 动画定义 */
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  33.33% { background-position: 100% 50%; }
+  66.66% { background-position: 200% 50%; }
+}
+
+@keyframes borderGlow {
+  0%, 100% { 
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 rgba(45, 55, 72, 0); 
+  }
+  50% { 
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25), 0 4px 8px rgba(0, 0, 0, 0.1), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 20px rgba(45, 55, 72, 0.4); 
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
 
 /* 通知样式 */
 .do-assistant-notification {

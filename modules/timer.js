@@ -1,11 +1,8 @@
 /**
  * 计时器模块
- * 处理深耕提醒计时器的创建、显示和管理
+ * 处理自律提醒计时器的创建、显示和管理
  */
 
-import { createStyleElement, safeRemoveElement } from './utils.js';
-import { initTimerAnimations } from './animations.js';
-import { showRestReminder } from './restReminder.js';
 
 /**
  * 计时器样式常量
