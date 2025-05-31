@@ -40,7 +40,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["popup.js", "fonts/*", "modules/*"],
+      "resources": ["popup.js", "fonts/*"],
       "matches": ["<all_urls>"]
     }
   ]

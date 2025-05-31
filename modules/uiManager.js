@@ -5,7 +5,6 @@
 
 import { showNotification } from './utils.js';
 import { TimerHandler } from './featureHandlers.js';
-import { initPopupAnimations } from './animations.js';
 
 /**
  * 时间设置界面管理器
@@ -283,21 +282,7 @@ class TimerSettingsManager {
         background: #e5e7eb;
       }
 
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
 
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(-20px) scale(0.95);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      }
     `;
 
     const styleElement = document.createElement('style');
@@ -458,7 +443,6 @@ class PopupUIManager {
     if (this.isInitialized) return;
 
     this.bindFeatureEvents();
-    this.initAnimations();
     this.isInitialized = true;
   }
 
@@ -524,17 +508,6 @@ class PopupUIManager {
       if (typeof handler === 'function') {
         await handler();
       }
-    } catch (error) {
-      // 静默处理错误
-    }
-  }
-
-  /**
-   * 初始化动画
-   */
-  initAnimations() {
-    try {
-      initPopupAnimations();
     } catch (error) {
       // 静默处理错误
     }

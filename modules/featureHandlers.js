@@ -4,7 +4,6 @@
  */
 
 import { showNotification } from './utils.js';
-import { initializeTimer } from './timer.js';
 
 /**
  * Chrome API 操作类
@@ -204,7 +203,10 @@ class TimerHandler {
    */
   static handle(minutes) {
     try {
-      initializeTimer(minutes);
+      ChromeAPIManager.sendMessage({
+        action: 'startTimer',
+        minutes: minutes
+      });
       showNotification(`自律提醒已设置：${minutes}分钟`, "success");
     } catch (error) {
       showNotification('启动计时器失败', 'error');
