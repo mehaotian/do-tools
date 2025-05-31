@@ -13,26 +13,26 @@ export function showToast(message, type = 'info', duration = 3000) {
   try {
     // 参数验证
     if (!message || typeof message !== 'string') {
-      console.warn('showToast: Invalid message parameter');
+      console.warn('showToast: 消息参数无效');
       return;
     }
     
     // 验证类型参数
     const validTypes = ['success', 'error', 'warning', 'info'];
     if (!validTypes.includes(type)) {
-      console.warn(`showToast: Invalid type '${type}', using 'info' instead`);
+      console.warn(`showToast: 类型参数 '${type}' 无效，使用默认类型 'info'`);
       type = 'info';
     }
     
     // 验证持续时间参数
     if (typeof duration !== 'number' || duration < 0) {
-      console.warn('showToast: Invalid duration, using default 3000ms');
+      console.warn('showToast: 持续时间参数无效，使用默认值3000ms');
       duration = 3000;
     }
     
     // 检查DOM环境
     if (typeof document === 'undefined') {
-      console.warn('showToast: Document not available');
+      console.warn('showToast: 文档对象不可用');
       return;
     }
     
@@ -46,7 +46,7 @@ export function showToast(message, type = 'info', duration = 3000) {
       if (document.body) {
         document.body.appendChild(toastContainer);
       } else {
-        console.error('showToast: Document body not available');
+        console.error('showToast: 文档body不可用');
         return;
       }
     }
@@ -95,7 +95,7 @@ export function showToast(message, type = 'info', duration = 3000) {
     toast._removeTimer = removeTimer;
     
   } catch (error) {
-    console.error('showToast: Failed to show toast:', error);
+    console.error('showToast: Toast显示失败:', error);
   }
 }
 
@@ -128,7 +128,7 @@ function removeToast(toast) {
             toast.parentNode.removeChild(toast);
           }
         } catch (error) {
-          console.error('removeToast: Failed to remove toast element:', error);
+          console.error('removeToast: Toast元素移除失败:', error);
         }
       }, 300);
       
@@ -136,7 +136,7 @@ function removeToast(toast) {
       toast._hideTimer = hideTimer;
     }
   } catch (error) {
-    console.error('removeToast: Failed to remove toast:', error);
+    console.error('removeToast: Toast移除失败:', error);
   }
 }
 

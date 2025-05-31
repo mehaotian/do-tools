@@ -22,7 +22,8 @@
     "scripting",
     "activeTab",
     "bookmarks",
-    "notifications"
+    "notifications",
+    "sidePanel"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -37,16 +38,25 @@
       "matches": [
         "<all_urls>"
       ]
+    },
+    {
+      "js": ["scripts/page-beautify-content.js"],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["popup.js", "settings.js", "fonts/*"],
+      "resources": ["index.html", "css/*", "js/*", "images/*", "settings.html", "settings.js", "page-beautify.html"],
       "matches": ["<all_urls>"]
     }
   ],
   "options_ui": {
     "page": "settings.html",
     "open_in_tab": true
+  },
+  "side_panel": {
+    "default_path": "page-beautify.html"
   }
 }

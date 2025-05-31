@@ -3,6 +3,12 @@
  * 负责处理popup和content script之间的消息转发
  */
 
+// 配置侧边栏行为
+chrome.runtime.onInstalled.addListener(() => {
+  // 设置点击扩展图标时不自动打开侧边栏
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
+});
+
 /**
  * 全局定时器管理器
  * 确保全局只有一个定时器实例，在所有页面同步显示
@@ -287,6 +293,30 @@ class MessageHandler {
   }
   
   /**
+   * 处理页面美化消息
+   * @param {Object} request - 消息请求对象
+   */
+  static async handlePageBeautify(request) {
+    try {
+      // 获取当前活动标签页
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0]) {
+        // 转发消息到内容脚本
+        const response = await chrome.tabs.sendMessage(tabs[0].id, {
+          type: request.type,
+          ...request.data
+        });
+        return response;
+      } else {
+        throw new Error('未找到活动标签页');
+      }
+    } catch (error) {
+      console.error('页面美化消息处理失败:', error);
+      throw error;
+    }
+  }
+  
+  /**
    * 处理未知消息类型
    * @param {Object} request - 消息请求对象
    */
@@ -303,7 +333,8 @@ const messageRouter = {
   'startTimer': MessageHandler.handleStartTimer,
   'stopTimer': MessageHandler.handleStopTimer,
   'getTimerState': MessageHandler.handleGetTimerState,
-  'showNotification': MessageHandler.handleShowNotification
+  'showNotification': MessageHandler.handleShowNotification,
+  'pageBeautify': MessageHandler.handlePageBeautify
 };
 
 /**
@@ -315,14 +346,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.warn('Invalid message format received:', request);
     return false;
   }
-  
+  console.log('Received message:', request);
   const handler = messageRouter[request.action];
+  console.log('Received handler:', handler);
   
   if (handler) {
     try {
       if (request.action === 'getTimerState') {
         handler(sendResponse);
         return true;
+      } else if (request.action === 'pageBeautify') {
+        // 异步处理页面美化消息并返回响应
+        handler(request).then(response => {
+          sendResponse({ success: true, data: response });
+        }).catch(error => {
+          console.error(`Error handling ${request.action}:`, error.message);
+          sendResponse({ success: false, error: error.message });
+        });
+        return true; // 保持消息通道开放
       } else {
         // 异步处理其他消息
         handler(request).catch(error => {

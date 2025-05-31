@@ -345,26 +345,23 @@ class BookmarkHandler {
 }
 
 /**
- * 主题切换功能处理器
+ * 页面美化功能处理器
  */
-class ThemeHandler {
+class PageBeautifyHandler {
   static async handle() {
     try {
       if (!ChromeAPIManager.isExtensionContextValid()) {
         throw new Error('Extension context is invalid');
       }
       
-      const currentTheme = await ChromeAPIManager.getTheme();
-      const newTheme = currentTheme === "light" ? "dark" : "light";
-      await ChromeAPIManager.setTheme(newTheme);
-      showToast(
-        `主题已切换为：${newTheme === 'dark' ? '深色' : '浅色'}模式`,
-        'success'
-      );
-    } catch (error) {
-      console.error('Failed to switch theme:', error);
+      // 使用Chrome扩展的原生侧边栏API
+      await chrome.sidePanel.open({ windowId: (await chrome.windows.getCurrent()).id });
+      showToast('页面美化工具已打开', 'success');
       
-      let errorMessage = '主题切换失败';
+    } catch (error) {
+      console.error('Failed to open page beautify:', error);
+      
+      let errorMessage = '页面美化工具打开失败';
       if (error.message.includes('Extension context is invalid')) {
         errorMessage = '扩展已失效，请刷新页面重试';
       }
@@ -498,7 +495,7 @@ export const featureHandlers = {
   "reading-time": ReadingTimeHandler.handle,
   "word-count": WordCountHandler.handle,
   "bookmark": BookmarkHandler.handle,
-  "theme": ThemeHandler.handle,
+  "page-beautify": PageBeautifyHandler.handle,
   "settings": SettingsHandler.handle,
 };
 
@@ -508,7 +505,7 @@ export {
   ReadingTimeHandler,
   WordCountHandler,
   BookmarkHandler,
-  ThemeHandler,
+  PageBeautifyHandler,
   SettingsHandler,
   TimerHandler,
   countWordsInPage

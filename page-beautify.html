@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>页面美化</title>
+    <link rel="stylesheet" href="css/page-beautify.css" />
+  </head>
+  <body>
+    <div class="beautify-header">
+      <h1>页面美化</h1>
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="resetStyles">重置样式</button>
+        <button class="btn btn-primary" id="applyStyles">应用样式</button>
+      </div>
+    </div>
+
+    <div class="beautify-container">
+      <div class="beautify-content">
+        <div class="beautify-section">
+          <h3>快速主题</h3>
+          <div class="theme-presets">
+            <div class="theme-preset" data-theme="default">
+              <div class="theme-preview default"></div>
+              <span>默认</span>
+            </div>
+            <div class="theme-preset" data-theme="dark">
+              <div class="theme-preview dark"></div>
+              <span>深色</span>
+            </div>
+            <div class="theme-preset" data-theme="blue">
+              <div class="theme-preview blue"></div>
+              <span>蓝色</span>
+            </div>
+            <div class="theme-preset" data-theme="green">
+              <div class="theme-preview green"></div>
+              <span>绿色</span>
+            </div>
+            <div class="theme-preset" data-theme="purple">
+              <div class="theme-preview purple"></div>
+              <span>紫色</span>
+            </div>
+            <div class="theme-preset" data-theme="warm">
+              <div class="theme-preview warm"></div>
+              <span>暖色</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="beautify-section">
+          <h3>导航栏设置 <span class="navbar-status-indicator" title="检测导航栏元素状态"></span></h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">毛玻璃效果</div>
+              <div class="setting-description">导航栏背景显示毛玻璃效果</div>
+            </div>
+            <div class="setting-control">
+              <div class="toggle-switch" id="centerContentToggle"></div>
+            </div>
+          </div>
+          
+          <div class="setting-item" id="navbarBlurSettings" style="display: none;">
+            <div class="setting-info">
+              <div class="setting-label">模糊强度 (blur)</div>
+              <div class="setting-description">调整毛玻璃的模糊程度</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="range"
+                class="range-slider"
+                id="navbarBlur"
+                min="1"
+                max="20"
+                value="4"
+              />
+              <span class="range-value" id="navbarBlurValue">4px</span>
+            </div>
+          </div>
+          
+          <div class="setting-item" id="navbarSizeSettings" style="display: none;">
+            <div class="setting-info">
+              <div class="setting-label">点阵大小 (size)</div>
+              <div class="setting-description">调整背景点阵的大小</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="range"
+                class="range-slider"
+                id="navbarSize"
+                min="2"
+                max="10"
+                value="4"
+              />
+              <span class="range-value" id="navbarSizeValue">4px</span>
+            </div>
+          </div>
+          
+          <div class="setting-item" id="navbarTransparentSettings" style="display: none;">
+            <div class="setting-info">
+              <div class="setting-label">透明区域 (transparent)</div>
+              <div class="setting-description">调整透明点的大小</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="range"
+                class="range-slider"
+                id="navbarTransparent"
+                min="0.5"
+                max="3"
+                step="0.1"
+                value="1"
+              />
+              <span class="range-value" id="navbarTransparentValue">1px</span>
+            </div>
+          </div>
+          
+          <div class="setting-item" id="navbarColorSettings" style="display: none;">
+            <div class="setting-info">
+              <div class="setting-label">背景颜色 (color)</div>
+              <div class="setting-description">调整毛玻璃的背景颜色</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="color"
+                class="color-picker"
+                id="navbarColor"
+                value="#ffffff"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- <div class="beautify-section">
+          <h3>字体设置</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">字体大小</div>
+              <div class="setting-description">调整页面文字大小</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="range"
+                class="range-slider"
+                id="fontSizeSlider"
+                min="80"
+                max="150"
+                value="100"
+              />
+              <span class="range-value" id="fontSizeValue">100%</span>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">行间距</div>
+              <div class="setting-description">调整文字行间距</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="range"
+                class="range-slider"
+                id="lineHeightSlider"
+                min="100"
+                max="200"
+                value="150"
+              />
+              <span class="range-value" id="lineHeightValue">1.5</span>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">字体族</div>
+              <div class="setting-description">选择字体类型</div>
+            </div>
+            <div class="setting-control">
+              <select class="select-field" id="fontFamilySelect">
+                <option value="default">默认字体</option>
+                <option value="serif">衬线字体</option>
+                <option value="sans-serif">无衬线字体</option>
+                <option value="monospace">等宽字体</option>
+                <option value="cursive">手写字体</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="beautify-section">
+          <h3>颜色设置</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">背景颜色</div>
+              <div class="setting-description">自定义页面背景色</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="color"
+                class="color-picker"
+                id="backgroundColorPicker"
+                value="#ffffff"
+              />
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">文字颜色</div>
+              <div class="setting-description">自定义文字颜色</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="color"
+                class="color-picker"
+                id="textColorPicker"
+                value="#333333"
+              />
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">链接颜色</div>
+              <div class="setting-description">自定义链接颜色</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="color"
+                class="color-picker"
+                id="linkColorPicker"
+                value="#0066cc"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="beautify-section">
+          <h3>布局设置</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">页面宽度</div>
+              <div class="setting-description">调整内容区域宽度</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="range"
+                class="range-slider"
+                id="pageWidthSlider"
+                min="80"
+                max="100"
+                value="100"
+              />
+              <span class="range-value" id="pageWidthValue">100%</span>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">内容居中</div>
+              <div class="setting-description">将页面内容居中显示</div>
+            </div>
+            <div class="setting-control">
+              <div class="toggle-switch" id="centerContentToggle"></div>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">圆角效果</div>
+              <div class="setting-description">为页面元素添加圆角</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="range"
+                class="range-slider"
+                id="borderRadiusSlider"
+                min="0"
+                max="20"
+                value="0"
+              />
+              <span class="range-value" id="borderRadiusValue">0px</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="beautify-section">
+          <h3>特效设置</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">阴影效果</div>
+              <div class="setting-description">为页面元素添加阴影</div>
+            </div>
+            <div class="setting-control">
+              <div class="toggle-switch" id="shadowToggle"></div>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">动画效果</div>
+              <div class="setting-description">启用页面过渡动画</div>
+            </div>
+            <div class="setting-control">
+              <div class="toggle-switch" id="animationToggle"></div>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">模糊背景</div>
+              <div class="setting-description">为背景添加模糊效果</div>
+            </div>
+            <div class="setting-control">
+              <input
+                type="range"
+                class="range-slider"
+                id="blurSlider"
+                min="0"
+                max="10"
+                value="0"
+              />
+              <span class="range-value" id="blurValue">0px</span>
+            </div>
+          </div>
+        </div> -->
+
+        <div class="beautify-section">
+          <h3>配置管理</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">导出配置</div>
+              <div class="setting-description">将当前配置保存为JSON文件</div>
+            </div>
+            <div class="setting-control">
+              <button class="btn btn-primary" id="exportConfigBtn">导出配置</button>
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">导入配置</div>
+              <div class="setting-description">从JSON文件加载配置</div>
+            </div>
+            <div class="setting-control">
+              <input type="file" id="importConfigInput" accept=".json" style="display: none;" />
+              <button class="btn btn-secondary" id="importConfigBtn">选择文件</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="version-info">页面美化 v1.0</div>
+      </div>
+    </div>
+
+    <script src="js/page-beautify.js" type="module" ></script>
+  </body>
+</html>
