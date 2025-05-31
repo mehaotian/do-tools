@@ -11,14 +11,42 @@ import { showToast } from './toast.js';
  */
 class ChromeAPIManager {
   /**
+   * 检查扩展上下文是否有效
+   * @returns {boolean} 扩展上下文是否有效
+   */
+  static isExtensionContextValid() {
+    try {
+      return !!(chrome && chrome.runtime && chrome.runtime.id);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * 获取当前活动标签页
    * @returns {Promise<chrome.tabs.Tab>} 当前活动标签页
    */
   static async getCurrentTab() {
-    return new Promise((resolve) => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        resolve(tabs[0]);
-      });
+    if (!this.isExtensionContextValid()) {
+      throw new Error('Extension context is invalid');
+    }
+    
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          if (!tabs || tabs.length === 0) {
+            reject(new Error('No active tab found'));
+            return;
+          }
+          resolve(tabs[0]);
+        });
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
@@ -28,20 +56,72 @@ class ChromeAPIManager {
    * @param {Array} args - 函数参数
    */
   static async executeScript(func, args = []) {
-    const tab = await this.getCurrentTab();
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: func,
-      args: args,
-    });
+    if (!this.isExtensionContextValid()) {
+      throw new Error('Extension context is invalid');
+    }
+    
+    if (typeof func !== 'function') {
+      throw new Error('Invalid function provided');
+    }
+    
+    try {
+      const tab = await this.getCurrentTab();
+      
+      if (!tab || !tab.id) {
+        throw new Error('Invalid tab');
+      }
+      
+      // 检查是否可以在该标签页执行脚本
+      if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://'))) {
+        throw new Error('Cannot execute script on chrome:// or extension pages');
+      }
+      
+      return new Promise((resolve, reject) => {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: func,
+          args: args,
+        }, (results) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          resolve(results);
+        });
+      });
+    } catch (error) {
+      console.error('Failed to execute script:', error);
+      throw error;
+    }
   }
 
   /**
    * 发送消息到后台脚本
    * @param {Object} message - 要发送的消息
+   * @returns {Promise<any>} 消息响应
    */
-  static sendMessage(message) {
-    chrome.runtime.sendMessage(message);
+  static async sendMessage(message) {
+    if (!this.isExtensionContextValid()) {
+      throw new Error('Extension context is invalid');
+    }
+    
+    if (!message || typeof message !== 'object') {
+      throw new Error('Invalid message object');
+    }
+    
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.runtime.sendMessage(message, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          resolve(response);
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   /**
@@ -51,8 +131,30 @@ class ChromeAPIManager {
    * @returns {Promise<chrome.bookmarks.BookmarkTreeNode>} 创建的书签
    */
   static async createBookmark(title, url) {
-    return new Promise((resolve) => {
-      chrome.bookmarks.create({ title, url }, resolve);
+    if (!this.isExtensionContextValid()) {
+      throw new Error('Extension context is invalid');
+    }
+    
+    if (!title || typeof title !== 'string') {
+      throw new Error('Invalid bookmark title');
+    }
+    
+    if (!url || typeof url !== 'string') {
+      throw new Error('Invalid bookmark URL');
+    }
+    
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.bookmarks.create({ title, url }, (bookmark) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          resolve(bookmark);
+        });
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
@@ -61,10 +163,22 @@ class ChromeAPIManager {
    * @returns {Promise<string>} 当前主题
    */
   static async getTheme() {
-    return new Promise((resolve) => {
-      chrome.storage.sync.get(["theme"], (result) => {
-        resolve(result.theme || "light");
-      });
+    if (!this.isExtensionContextValid()) {
+      throw new Error('Extension context is invalid');
+    }
+    
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.storage.sync.get(["theme"], (result) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          resolve(result.theme || "light");
+        });
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
@@ -73,8 +187,31 @@ class ChromeAPIManager {
    * @param {string} theme - 主题名称
    */
   static async setTheme(theme) {
-    return new Promise((resolve) => {
-      chrome.storage.sync.set({ theme }, resolve);
+    if (!this.isExtensionContextValid()) {
+      throw new Error('Extension context is invalid');
+    }
+    
+    if (!theme || typeof theme !== 'string') {
+      throw new Error('Invalid theme value');
+    }
+    
+    const validThemes = ['light', 'dark'];
+    if (!validThemes.includes(theme)) {
+      throw new Error(`Invalid theme: ${theme}. Must be one of: ${validThemes.join(', ')}`);
+    }
+    
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.storage.sync.set({ theme }, () => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          resolve();
+        });
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 }
@@ -128,8 +265,16 @@ function countWordsInPage() {
  */
 class ReadingTimeHandler {
   static handle() {
-    if (typeof showTimerSettings === 'function') {
-      showTimerSettings();
+    try {
+      if (typeof showTimerSettings === 'function') {
+        showTimerSettings();
+      } else {
+        console.warn('showTimerSettings function not available');
+        showToast('自律提醒功能暂时不可用', 'warning');
+      }
+    } catch (error) {
+      console.error('Failed to handle reading time:', error);
+      showToast('启动自律提醒失败', 'error');
     }
   }
 }
@@ -140,9 +285,22 @@ class ReadingTimeHandler {
 class WordCountHandler {
   static async handle() {
     try {
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
       await ChromeAPIManager.executeScript(countWordsInPage);
     } catch (error) {
-      showToast('字数统计失败', 'error');
+      console.error('Failed to count words:', error);
+      
+      let errorMessage = '字数统计失败';
+      if (error.message.includes('chrome://') || error.message.includes('extension pages')) {
+        errorMessage = '无法在此页面进行字数统计';
+      } else if (error.message.includes('Extension context is invalid')) {
+        errorMessage = '扩展已失效，请刷新页面重试';
+      }
+      
+      showToast(errorMessage, 'error');
     }
   }
 }
@@ -153,11 +311,35 @@ class WordCountHandler {
 class BookmarkHandler {
   static async handle() {
     try {
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
       const tab = await ChromeAPIManager.getCurrentTab();
-      await ChromeAPIManager.createBookmark(tab.title, tab.url);
+      
+      if (!tab || !tab.url) {
+        throw new Error('Invalid tab or URL');
+      }
+      
+      // 检查是否为有效的可收藏页面
+      if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+        throw new Error('Cannot bookmark chrome:// or extension pages');
+      }
+      
+      const title = tab.title || tab.url;
+      await ChromeAPIManager.createBookmark(title, tab.url);
       showToast("页面已收藏", "success");
     } catch (error) {
-      showToast('收藏失败', 'error');
+      console.error('Failed to create bookmark:', error);
+      
+      let errorMessage = '收藏失败';
+      if (error.message.includes('chrome://') || error.message.includes('extension pages')) {
+        errorMessage = '无法收藏此类页面';
+      } else if (error.message.includes('Extension context is invalid')) {
+        errorMessage = '扩展已失效，请刷新页面重试';
+      }
+      
+      showToast(errorMessage, 'error');
     }
   }
 }
@@ -168,6 +350,10 @@ class BookmarkHandler {
 class ThemeHandler {
   static async handle() {
     try {
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
       const currentTheme = await ChromeAPIManager.getTheme();
       const newTheme = currentTheme === "light" ? "dark" : "light";
       await ChromeAPIManager.setTheme(newTheme);
@@ -176,7 +362,14 @@ class ThemeHandler {
         'success'
       );
     } catch (error) {
-      showToast('主题切换失败', 'error');
+      console.error('Failed to switch theme:', error);
+      
+      let errorMessage = '主题切换失败';
+      if (error.message.includes('Extension context is invalid')) {
+        errorMessage = '扩展已失效，请刷新页面重试';
+      }
+      
+      showToast(errorMessage, 'error');
     }
   }
 }
@@ -187,9 +380,26 @@ class ThemeHandler {
 class SettingsHandler {
   static handle() {
     try {
-      chrome.runtime.openOptionsPage();
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
+      if (chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+      } else {
+        throw new Error('Options page not available');
+      }
     } catch (error) {
-      showToast('打开设置页面失败', 'error');
+      console.error('Failed to open settings:', error);
+      
+      let errorMessage = '打开设置页面失败';
+      if (error.message.includes('Extension context is invalid')) {
+        errorMessage = '扩展已失效，请刷新页面重试';
+      } else if (error.message.includes('not available')) {
+        errorMessage = '设置页面不可用';
+      }
+      
+      showToast(errorMessage, 'error');
     }
   }
 }
@@ -202,27 +412,62 @@ class TimerHandler {
    * 启动计时器
    * @param {number} minutes - 计时分钟数
    */
-  static handle(minutes) {
+  static async handle(minutes) {
     try {
-      ChromeAPIManager.sendMessage({
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
+      // 验证输入参数
+      if (typeof minutes !== 'number' || isNaN(minutes) || minutes <= 0) {
+        throw new Error('Invalid minutes value');
+      }
+      
+      if (minutes > 24 * 60) {
+        throw new Error('Timer duration cannot exceed 24 hours');
+      }
+      
+      await ChromeAPIManager.sendMessage({
         action: 'startTimer',
         minutes: minutes
       });
       showNotification(`自律提醒已设置：${minutes}分钟`, "success");
     } catch (error) {
-      showNotification('启动计时器失败', 'error');
+      console.error('Failed to start timer:', error);
+      
+      let errorMessage = '启动计时器失败';
+      if (error.message.includes('Invalid minutes')) {
+        errorMessage = '无效的时间设置';
+      } else if (error.message.includes('exceed 24 hours')) {
+        errorMessage = '计时时间不能超过24小时';
+      } else if (error.message.includes('Extension context is invalid')) {
+        errorMessage = '扩展已失效，请刷新页面重试';
+      }
+      
+      showNotification(errorMessage, 'error');
     }
   }
 
   /**
    * 停止计时器
    */
-  static stop() {
+  static async stop() {
     try {
-      ChromeAPIManager.sendMessage({ action: "stopTimer" });
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
+      await ChromeAPIManager.sendMessage({ action: "stopTimer" });
       showNotification('计时器已停止', 'info');
     } catch (error) {
-      showNotification('停止计时器失败', 'error');
+      console.error('Failed to stop timer:', error);
+      
+      let errorMessage = '停止计时器失败';
+      if (error.message.includes('Extension context is invalid')) {
+        errorMessage = '扩展已失效，请刷新页面重试';
+      }
+      
+      showNotification(errorMessage, 'error');
     }
   }
 
@@ -231,11 +476,17 @@ class TimerHandler {
    * @returns {Promise<Object>} 计时器状态
    */
   static async getStatus() {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: "getTimerState" }, (response) => {
-        resolve(response || { isRunning: false });
-      });
-    });
+    try {
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
+      const response = await ChromeAPIManager.sendMessage({ action: "getTimerState" });
+      return response || { isRunning: false };
+    } catch (error) {
+      console.error('Failed to get timer status:', error);
+      return { isRunning: false, error: error.message };
+    }
   }
 }
 

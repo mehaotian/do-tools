@@ -20,12 +20,48 @@ export function formatTime(seconds) {
  * @param {string} message - 通知内容
  */
 export function showNotification(title, message) {
-  if (typeof chrome !== 'undefined' && chrome.runtime) {
+  try {
+    // 参数验证
+    if (!title || typeof title !== 'string') {
+      console.warn('showNotification: Invalid title parameter');
+      return;
+    }
+    
+    if (!message || typeof message !== 'string') {
+      console.warn('showNotification: Invalid message parameter');
+      return;
+    }
+    
+    // 检查Chrome扩展环境
+    if (typeof chrome === 'undefined') {
+      console.warn('showNotification: Chrome API not available');
+      return;
+    }
+    
+    if (!chrome.runtime) {
+      console.warn('showNotification: Chrome runtime not available');
+      return;
+    }
+    
+    // 检查扩展上下文是否有效
+    if (chrome.runtime.id === undefined) {
+      console.warn('showNotification: Extension context is invalid');
+      return;
+    }
+    
     chrome.runtime.sendMessage({
       action: 'showNotification',
       title: title,
       message: message
+    }, (response) => {
+      // 检查是否有错误
+      if (chrome.runtime.lastError) {
+        console.error('showNotification: Failed to send message:', chrome.runtime.lastError.message);
+      }
     });
+    
+  } catch (error) {
+    console.error('showNotification: Failed to show notification:', error);
   }
 }
 
@@ -34,8 +70,16 @@ export function showNotification(title, message) {
  * @param {Element} element - 要移除的元素
  */
 export function safeRemoveElement(element) {
-  if (element && element.parentNode) {
-    element.parentNode.removeChild(element);
+  try {
+    if (!element) {
+      return;
+    }
+    
+    if (element.parentNode) {
+      element.parentNode.removeChild(element);
+    }
+  } catch (error) {
+    console.error('safeRemoveElement: Failed to remove element:', error);
   }
 }
 
@@ -43,13 +87,33 @@ export function safeRemoveElement(element) {
  * 创建样式元素
  * @param {string} css - CSS样式字符串
  * @param {string} id - 样式元素的ID
- * @returns {HTMLStyleElement} 创建的样式元素
+ * @returns {HTMLStyleElement|null} 创建的样式元素
  */
 export function createStyleElement(css, id) {
-  const style = document.createElement('style');
-  style.textContent = css;
-  if (id) {
-    style.id = id;
+  try {
+    // 参数验证
+    if (!css || typeof css !== 'string') {
+      console.warn('createStyleElement: Invalid CSS parameter');
+      return null;
+    }
+    
+    // 检查DOM环境
+    if (typeof document === 'undefined') {
+      console.warn('createStyleElement: Document not available');
+      return null;
+    }
+    
+    const style = document.createElement('style');
+    style.textContent = css;
+    
+    if (id && typeof id === 'string') {
+      style.id = id;
+    }
+    
+    return style;
+    
+  } catch (error) {
+    console.error('createStyleElement: Failed to create style element:', error);
+    return null;
   }
-  return style;
 }

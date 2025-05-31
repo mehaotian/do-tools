@@ -10,51 +10,93 @@
  * @param {number} duration - 显示时长(毫秒)，默认3000ms
  */
 export function showToast(message, type = 'info', duration = 3000) {
-  // 创建toast容器（如果不存在）
-  let toastContainer = document.getElementById('toast-container');
-  if (!toastContainer) {
-    toastContainer = document.createElement('div');
-    toastContainer.id = 'toast-container';
-    toastContainer.className = 'toast-container';
-    document.body.appendChild(toastContainer);
-  }
+  try {
+    // 参数验证
+    if (!message || typeof message !== 'string') {
+      console.warn('showToast: Invalid message parameter');
+      return;
+    }
+    
+    // 验证类型参数
+    const validTypes = ['success', 'error', 'warning', 'info'];
+    if (!validTypes.includes(type)) {
+      console.warn(`showToast: Invalid type '${type}', using 'info' instead`);
+      type = 'info';
+    }
+    
+    // 验证持续时间参数
+    if (typeof duration !== 'number' || duration < 0) {
+      console.warn('showToast: Invalid duration, using default 3000ms');
+      duration = 3000;
+    }
+    
+    // 检查DOM环境
+    if (typeof document === 'undefined') {
+      console.warn('showToast: Document not available');
+      return;
+    }
+    
+    // 创建toast容器（如果不存在）
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.id = 'toast-container';
+      toastContainer.className = 'toast-container';
+      
+      if (document.body) {
+        document.body.appendChild(toastContainer);
+      } else {
+        console.error('showToast: Document body not available');
+        return;
+      }
+    }
 
-  // 创建toast元素
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  
-  // 添加图标
-  const icon = document.createElement('div');
-  icon.className = 'toast-icon';
-  icon.innerHTML = getToastIcon(type);
-  
-  // 添加消息文本
-  const messageEl = document.createElement('div');
-  messageEl.className = 'toast-message';
-  messageEl.textContent = message;
-  
-  // 添加关闭按钮
-  const closeBtn = document.createElement('div');
-  closeBtn.className = 'toast-close';
-  closeBtn.innerHTML = '×';
-  closeBtn.onclick = () => removeToast(toast);
-  
-  toast.appendChild(icon);
-  toast.appendChild(messageEl);
-  toast.appendChild(closeBtn);
-  
-  // 添加到容器
-  toastContainer.appendChild(toast);
-  
-  // 触发动画
-  setTimeout(() => {
-    toast.classList.add('toast-show');
-  }, 10);
-  
-  // 自动移除
-  setTimeout(() => {
-    removeToast(toast);
-  }, duration);
+    // 创建toast元素
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    // 添加图标
+    const icon = document.createElement('div');
+    icon.className = 'toast-icon';
+    icon.innerHTML = getToastIcon(type);
+    
+    // 添加消息文本
+    const messageEl = document.createElement('div');
+    messageEl.className = 'toast-message';
+    messageEl.textContent = message;
+    
+    // 添加关闭按钮
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'toast-close';
+    closeBtn.innerHTML = '×';
+    closeBtn.onclick = () => removeToast(toast);
+    
+    toast.appendChild(icon);
+    toast.appendChild(messageEl);
+    toast.appendChild(closeBtn);
+    
+    // 添加到容器
+    toastContainer.appendChild(toast);
+    
+    // 触发动画
+    const showTimer = setTimeout(() => {
+      if (toast && toast.parentNode) {
+        toast.classList.add('toast-show');
+      }
+    }, 10);
+    
+    // 自动移除
+    const removeTimer = setTimeout(() => {
+      removeToast(toast);
+    }, duration);
+    
+    // 存储定时器引用以便清理
+    toast._showTimer = showTimer;
+    toast._removeTimer = removeTimer;
+    
+  } catch (error) {
+    console.error('showToast: Failed to show toast:', error);
+  }
 }
 
 /**
@@ -62,13 +104,39 @@ export function showToast(message, type = 'info', duration = 3000) {
  * @param {HTMLElement} toast - toast元素
  */
 function removeToast(toast) {
-  if (toast && toast.parentNode) {
-    toast.classList.add('toast-hide');
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
-      }
-    }, 300);
+  try {
+    if (!toast) {
+      return;
+    }
+    
+    // 清理定时器
+    if (toast._showTimer) {
+      clearTimeout(toast._showTimer);
+      toast._showTimer = null;
+    }
+    if (toast._removeTimer) {
+      clearTimeout(toast._removeTimer);
+      toast._removeTimer = null;
+    }
+    
+    if (toast.parentNode) {
+      toast.classList.add('toast-hide');
+      
+      const hideTimer = setTimeout(() => {
+        try {
+          if (toast && toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        } catch (error) {
+          console.error('removeToast: Failed to remove toast element:', error);
+        }
+      }, 300);
+      
+      // 存储隐藏定时器引用
+      toast._hideTimer = hideTimer;
+    }
+  } catch (error) {
+    console.error('removeToast: Failed to remove toast:', error);
   }
 }
 

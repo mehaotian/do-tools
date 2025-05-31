@@ -16,6 +16,15 @@ class GlobalTimerManager {
       remainingSeconds: 0,
       startTime: null
     };
+    this.isDestroyed = false;
+    
+    // 绑定清理方法到实例
+    this.cleanup = this.cleanup.bind(this);
+    
+    // 监听扩展卸载事件
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.onSuspend?.addListener(this.cleanup);
+    }
   }
 
   /**
@@ -23,6 +32,18 @@ class GlobalTimerManager {
    * @param {number} minutes - 定时分钟数
    */
   async startTimer(minutes) {
+    // 检查实例是否已销毁
+    if (this.isDestroyed) {
+      console.warn('Timer manager has been destroyed');
+      return;
+    }
+    
+    // 验证输入参数
+    if (!Number.isInteger(minutes) || minutes <= 0 || minutes > 1440) {
+      console.error('Invalid timer duration:', minutes);
+      return;
+    }
+    
     this.clearExistingTimer();
     
     this.timerState = {
@@ -35,8 +56,14 @@ class GlobalTimerManager {
     // 立即广播初始状态到所有标签页
     await this.broadcastTimerState();
 
-    // 启动定时器
+    // 启动定时器，使用箭头函数确保this绑定正确
     this.currentTimer = setInterval(async () => {
+      // 检查实例是否已销毁
+      if (this.isDestroyed) {
+        this.clearExistingTimer();
+        return;
+      }
+      
       this.timerState.remainingSeconds--;
       
       if (this.timerState.remainingSeconds <= 0) {
@@ -58,6 +85,15 @@ class GlobalTimerManager {
       this.currentTimer = null;
     }
   }
+  
+  /**
+   * 清理资源
+   */
+  cleanup() {
+    this.isDestroyed = true;
+    this.clearExistingTimer();
+    this.timerState.isActive = false;
+  }
 
   /**
    * 停止当前定时器
@@ -75,18 +111,26 @@ class GlobalTimerManager {
    * 定时器完成处理
    */
   async onTimerComplete() {
+    if (this.isDestroyed) {
+      return;
+    }
+    
     const totalMinutes = this.timerState.totalMinutes;
     this.clearExistingTimer();
     this.timerState.isActive = false;
     
-    await this.sendToActiveTab({
-      action: 'timerComplete',
-      totalMinutes: totalMinutes
-    });
-    
-    await this.broadcastMessage({
-      action: 'timerStopped'
-    });
+    try {
+      await this.sendToActiveTab({
+        action: 'timerComplete',
+        totalMinutes: totalMinutes
+      });
+      
+      await this.broadcastMessage({
+        action: 'timerStopped'
+      });
+    } catch (error) {
+      console.error('Error in timer completion:', error);
+    }
   }
 
   /**
@@ -112,20 +156,37 @@ class GlobalTimerManager {
   /**
    * 向当前激活的标签页发送消息
    * @param {Object} message - 要发送的消息
+   * @param {number} retries - 重试次数
    */
-  async sendToActiveTab(message) {
-    try {
-      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      if (activeTab) {
-        try {
-          await chrome.tabs.sendMessage(activeTab.id, message);
-        } catch (error) {
-          // 忽略无法发送消息的标签页
+  async sendToActiveTab(message, retries = 2) {
+    if (this.isDestroyed) {
+      return;
+    }
+    
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (activeTab && activeTab.id) {
+          try {
+            await chrome.tabs.sendMessage(activeTab.id, message);
+            return; // 成功发送，退出重试循环
+          } catch (error) {
+            if (attempt === retries) {
+              console.warn('Failed to send message to active tab after retries:', error.message);
+            }
+          }
+        }
+      } catch (error) {
+        if (attempt === retries) {
+          console.error('Failed to query active tab:', error.message);
         }
       }
-    } catch (error) {
-      // 发送失败时静默处理
+      
+      // 如果不是最后一次尝试，等待一段时间后重试
+      if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
+      }
     }
   }
 
@@ -134,18 +195,40 @@ class GlobalTimerManager {
    * @param {Object} message - 要广播的消息
    */
   async broadcastMessage(message) {
+    if (this.isDestroyed) {
+      return;
+    }
+    
     try {
       const tabs = await chrome.tabs.query({});
+      const validTabs = tabs.filter(tab => 
+        tab.id && 
+        tab.url && 
+        !tab.url.startsWith('chrome://') && 
+        !tab.url.startsWith('chrome-extension://') &&
+        !tab.url.startsWith('moz-extension://')
+      );
       
-      for (const tab of tabs) {
-        try {
-          await chrome.tabs.sendMessage(tab.id, message);
-        } catch (error) {
-          // 忽略无法发送消息的标签页（如chrome://页面）
-        }
+      // 使用Promise.allSettled来并行发送消息，避免单个失败影响其他
+      const results = await Promise.allSettled(
+        validTabs.map(tab => 
+          chrome.tabs.sendMessage(tab.id, message).catch(error => {
+            // 记录但不抛出错误
+            console.debug(`Failed to send message to tab ${tab.id}:`, error.message);
+          })
+        )
+      );
+      
+      // 统计成功和失败的数量（仅在开发模式下）
+      try {
+        const successful = results.filter(result => result.status === 'fulfilled').length;
+        const failed = results.filter(result => result.status === 'rejected').length;
+        console.debug(`Broadcast message: ${successful} successful, ${failed} failed`);
+      } catch (debugError) {
+        // 忽略调试信息错误
       }
     } catch (error) {
-      // 广播失败时静默处理
+      console.error('Failed to broadcast message:', error.message);
     }
   }
 
@@ -225,16 +308,34 @@ const messageRouter = {
  * 监听来自popup和content script的消息
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // 验证消息格式
+  if (!request || typeof request !== 'object' || !request.action) {
+    console.warn('Invalid message format received:', request);
+    return false;
+  }
+  
   const handler = messageRouter[request.action];
   
   if (handler) {
-    if (request.action === 'getTimerState') {
-      handler(sendResponse);
-      return true;
-    } else {
-      handler(request).catch(error => {
-        // 静默处理错误
-      });
+    try {
+      if (request.action === 'getTimerState') {
+        handler(sendResponse);
+        return true;
+      } else {
+        // 异步处理其他消息
+        handler(request).catch(error => {
+          console.error(`Error handling ${request.action}:`, error.message);
+          // 可以选择发送错误响应给发送方
+          if (sendResponse) {
+            sendResponse({ error: error.message });
+          }
+        });
+      }
+    } catch (error) {
+      console.error(`Synchronous error handling ${request.action}:`, error.message);
+      if (sendResponse) {
+        sendResponse({ error: error.message });
+      }
     }
   } else {
     MessageHandler.handleUnknownAction(request);

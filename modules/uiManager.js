@@ -13,29 +13,43 @@ class TimerSettingsManager {
   constructor() {
     this.isVisible = false;
     this.settingsContainer = null;
+    this.isDestroyed = false;
+    this.eventListeners = new Map();
+    this.statusCheckInterval = null;
+    this.keydownHandler = null;
   }
 
   /**
    * 显示时间设置界面
    */
   async show() {
-    if (this.isVisible) return;
+    if (this.isVisible || this.isDestroyed) return;
 
-    this.createSettingsUI();
-    this.bindEvents();
-    await this.checkTimerStatus();
-    this.isVisible = true;
+    try {
+      this.createSettingsUI();
+      this.bindEvents();
+      await this.checkTimerStatus();
+      this.isVisible = true;
+    } catch (error) {
+      console.error('Failed to show timer settings:', error);
+      this.cleanup();
+    }
   }
 
   /**
    * 隐藏时间设置界面
    */
   hide() {
-    if (!this.isVisible || !this.settingsContainer) return;
+    if (!this.isVisible || !this.settingsContainer || this.isDestroyed) return;
 
-    this.settingsContainer.remove();
-    this.settingsContainer = null;
-    this.isVisible = false;
+    try {
+      this.cleanup();
+      this.settingsContainer.remove();
+      this.settingsContainer = null;
+      this.isVisible = false;
+    } catch (error) {
+      console.error('Failed to hide timer settings:', error);
+    }
   }
 
   /**
@@ -379,115 +393,194 @@ class TimerSettingsManager {
   }
 
   /**
+   * 添加事件监听器并跟踪
+   */
+  addEventListenerTracked(element, event, handler) {
+    if (!element || this.isDestroyed) return;
+    
+    element.addEventListener(event, handler);
+    
+    if (!this.eventListeners.has(element)) {
+      this.eventListeners.set(element, []);
+    }
+    this.eventListeners.get(element).push({ event, handler });
+  }
+
+  /**
    * 绑定事件
    */
   bindEvents() {
-    if (!this.settingsContainer) return;
+    if (!this.settingsContainer || this.isDestroyed) return;
 
-    // 关闭按钮
-    const closeBtn = this.settingsContainer.querySelector(".close-btn");
-    closeBtn?.addEventListener("click", () => this.hide());
-
-    // 取消按钮
-    const cancelBtn = this.settingsContainer.querySelector(".cancel-btn");
-    cancelBtn?.addEventListener("click", () => this.hide());
-
-    // 开始计时按钮
-    const startBtn = this.settingsContainer.querySelector(".start-timer-btn");
-    startBtn?.addEventListener("click", () => this.startTimer());
-
-    // 停止计时器按钮
-    const stopBtn = this.settingsContainer.querySelector(".stop-timer-btn");
-    stopBtn?.addEventListener("click", () => this.stopTimer());
-
-    // 模式切换按钮
-    const modeBtns = this.settingsContainer.querySelectorAll(".mode-btn");
-    modeBtns.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const mode = btn.getAttribute("data-mode");
-        this.switchInputMode(mode);
-      });
-    });
-
-    // 预设时间按钮
-    const presetBtns = this.settingsContainer.querySelectorAll(".preset-btn");
-    presetBtns.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const minutes = parseInt(btn.getAttribute("data-minutes"));
-
-        // 直接启动计时器
-        TimerHandler.handle(minutes);
-        this.hide();
-      });
-    });
-
-    // 点击遮罩层关闭
-    this.settingsContainer.addEventListener("click", (e) => {
-      if (e.target === this.settingsContainer) {
-        this.hide();
+    try {
+      // 关闭按钮
+      const closeBtn = this.settingsContainer.querySelector(".close-btn");
+      if (closeBtn) {
+        this.addEventListenerTracked(closeBtn, "click", () => this.hide());
       }
-    });
 
-    // ESC键关闭
-    const handleKeydown = (e) => {
-      if (e.key === "Escape") {
-        this.hide();
-        document.removeEventListener("keydown", handleKeydown);
+      // 取消按钮
+      const cancelBtn = this.settingsContainer.querySelector(".cancel-btn");
+      if (cancelBtn) {
+        this.addEventListenerTracked(cancelBtn, "click", () => this.hide());
       }
-    };
-    document.addEventListener("keydown", handleKeydown);
 
-    // 输入框回车键
-    const minutesInput = this.settingsContainer.querySelector("#timer-minutes");
-    const hoursInput = this.settingsContainer.querySelector("#timer-hours");
+      // 开始计时按钮
+      const startBtn = this.settingsContainer.querySelector(".start-timer-btn");
+      if (startBtn) {
+        this.addEventListenerTracked(startBtn, "click", () => this.startTimer());
+      }
 
-    [minutesInput, hoursInput].forEach((input) => {
-      input?.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          this.startTimer();
+      // 停止计时器按钮
+      const stopBtn = this.settingsContainer.querySelector(".stop-timer-btn");
+      if (stopBtn) {
+        this.addEventListenerTracked(stopBtn, "click", () => this.stopTimer());
+      }
+
+      // 模式切换按钮
+      const modeBtns = this.settingsContainer.querySelectorAll(".mode-btn");
+      modeBtns.forEach((btn) => {
+        this.addEventListenerTracked(btn, "click", () => {
+          const mode = btn.getAttribute("data-mode");
+          this.switchInputMode(mode);
+        });
+      });
+
+      // 预设时间按钮
+      const presetBtns = this.settingsContainer.querySelectorAll(".preset-btn");
+      presetBtns.forEach((btn) => {
+        this.addEventListenerTracked(btn, "click", () => {
+          const minutes = parseInt(btn.getAttribute("data-minutes"));
+          if (!isNaN(minutes) && minutes > 0) {
+            try {
+              TimerHandler.handle(minutes);
+              this.hide();
+            } catch (error) {
+              console.error('Failed to start timer:', error);
+            }
+          }
+        });
+      });
+
+      // 点击遮罩层关闭
+      this.addEventListenerTracked(this.settingsContainer, "click", (e) => {
+        if (e.target === this.settingsContainer) {
+          this.hide();
         }
       });
-    });
 
-    // 输入框聚焦时选中所有文本
-    [hoursInput, minutesInput].forEach((input) => {
-      input?.addEventListener("focus", (e) => {
-        e.target.select();
+      // ESC键关闭
+      this.keydownHandler = (e) => {
+        if (e.key === "Escape" && this.isVisible) {
+          this.hide();
+        }
+      };
+      document.addEventListener("keydown", this.keydownHandler);
+
+      // 输入框事件
+      const minutesInput = this.settingsContainer.querySelector("#timer-minutes");
+      const hoursInput = this.settingsContainer.querySelector("#timer-hours");
+
+      [minutesInput, hoursInput].forEach((input) => {
+        if (input) {
+          this.addEventListenerTracked(input, "keydown", (e) => {
+            if (e.key === "Enter") {
+              this.startTimer();
+            }
+          });
+          
+          this.addEventListenerTracked(input, "focus", (e) => {
+            e.target.select();
+          });
+        }
       });
-    });
 
-    // 输入框实时验证，防止小数和无效字符输入
-    hoursInput?.addEventListener("input", function () {
-      // 移除小数点和非数字字符
-      this.value = this.value.replace(/[^0-9]/g, "");
-      // 限制最大值
-      if (parseInt(this.value) > 24) {
-        this.value = "24";
+      // 输入框实时验证
+      if (hoursInput) {
+        this.addEventListenerTracked(hoursInput, "input", function () {
+          this.value = this.value.replace(/[^0-9]/g, "");
+          if (parseInt(this.value) > 24) {
+            this.value = "24";
+          }
+        });
+      }
+
+      if (minutesInput) {
+        this.addEventListenerTracked(minutesInput, "input", function () {
+          this.value = this.value.replace(/[^0-9]/g, "");
+          if (parseInt(this.value) > 59) {
+            this.value = "59";
+          }
+        });
+        
+        // 自动聚焦输入框
+        setTimeout(() => {
+          if (!this.isDestroyed && minutesInput) {
+            minutesInput.focus();
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Failed to bind events:', error);
+    }
+  }
+
+  /**
+   * 获取定时器状态
+   */
+  async getTimerStatus() {
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.warn('Error getting timer state:', chrome.runtime.lastError.message);
+            resolve(null);
+            return;
+          }
+          
+          if (response && response.timerState) {
+            resolve({
+              isRunning: response.timerState.isActive,
+              remainingSeconds: response.timerState.remainingSeconds,
+              originalMinutes: response.timerState.originalMinutes
+            });
+          } else {
+            resolve(null);
+          }
+        });
+      } catch (error) {
+        console.error('Failed to get timer status:', error);
+        resolve(null);
       }
     });
-
-    minutesInput?.addEventListener("input", function () {
-      // 移除小数点和非数字字符
-      this.value = this.value.replace(/[^0-9]/g, "");
-      // 限制最大值
-      if (parseInt(this.value) > 59) {
-        this.value = "59";
-      }
-    });
-
-    // 自动聚焦输入框
-    setTimeout(() => minutesInput?.focus(), 100);
   }
 
   /**
    * 检查计时器状态
    */
   async checkTimerStatus() {
+    if (this.isDestroyed) return;
+    
     try {
       const status = await this.getTimerStatus();
-      this.updateStatusDisplay(status);
+      if (!this.isDestroyed) {
+        this.updateStatusDisplay(status);
+        
+        // 如果计时器正在运行，启动状态检查间隔
+        if (status && status.isRunning && !this.statusCheckInterval) {
+          this.statusCheckInterval = setInterval(() => {
+            if (!this.isDestroyed) {
+              this.checkTimerStatus();
+            } else {
+              this.clearStatusInterval();
+            }
+          }, 1000);
+        } else if (!status || !status.isRunning) {
+          this.clearStatusInterval();
+        }
+      }
     } catch (error) {
-      // 静默处理错误
+      console.error('Failed to check timer status:', error);
     }
   }
 
@@ -496,36 +589,36 @@ class TimerSettingsManager {
    * @param {Object} status - 计时器状态
    */
   updateStatusDisplay(status) {
+    if (!this.settingsContainer || this.isDestroyed || !status) {
+      return;
+    }
+
     const statusDiv = this.settingsContainer.querySelector("#timer-status");
-    const inputGroup =
-      this.settingsContainer.querySelector("#time-input-group");
-    const presetButtons =
-      this.settingsContainer.querySelector("#preset-buttons");
-    const actionButtons =
-      this.settingsContainer.querySelector("#action-buttons");
-    const remainingTimeSpan =
-      this.settingsContainer.querySelector("#remaining-time");
+    const inputGroup = this.settingsContainer.querySelector("#time-input-group");
+    const presetButtons = this.settingsContainer.querySelector("#preset-buttons");
+    const actionButtons = this.settingsContainer.querySelector("#action-buttons");
+    const remainingTimeSpan = this.settingsContainer.querySelector("#remaining-time");
 
     if (status.isRunning) {
       // 显示运行状态
-      statusDiv.style.display = "block";
-      inputGroup.style.display = "none";
-      presetButtons.style.display = "none";
-      actionButtons.style.display = "none";
+      if (statusDiv) statusDiv.style.display = "block";
+      if (inputGroup) inputGroup.style.display = "none";
+      if (presetButtons) presetButtons.style.display = "none";
+      if (actionButtons) actionButtons.style.display = "none";
 
-      if (remainingTimeSpan && status.remainingTime) {
-        const minutes = Math.floor(status.remainingTime / 60);
-        const seconds = status.remainingTime % 60;
+      if (remainingTimeSpan && status.remainingSeconds) {
+        const minutes = Math.floor(status.remainingSeconds / 60);
+        const seconds = status.remainingSeconds % 60;
         remainingTimeSpan.textContent = `${minutes}:${seconds
           .toString()
           .padStart(2, "0")}`;
       }
     } else {
       // 显示设置状态
-      statusDiv.style.display = "none";
-      inputGroup.style.display = "block";
-      presetButtons.style.display = "flex";
-      actionButtons.style.display = "flex";
+      if (statusDiv) statusDiv.style.display = "none";
+      if (inputGroup) inputGroup.style.display = "block";
+      if (presetButtons) presetButtons.style.display = "flex";
+      if (actionButtons) actionButtons.style.display = "flex";
     }
   }
 
@@ -533,11 +626,14 @@ class TimerSettingsManager {
    * 切换输入模式
    */
   switchInputMode(mode) {
+    if (!this.settingsContainer || this.isDestroyed) {
+      return;
+    }
+
     const modeBtns = this.settingsContainer.querySelectorAll(".mode-btn");
     const presetMode = this.settingsContainer.querySelector("#preset-mode");
     const customMode = this.settingsContainer.querySelector("#custom-mode");
-    const actionButtons =
-      this.settingsContainer.querySelector("#action-buttons");
+    const actionButtons = this.settingsContainer.querySelector("#action-buttons");
 
     // 更新按钮状态
     modeBtns.forEach((btn) => {
@@ -546,17 +642,16 @@ class TimerSettingsManager {
 
     // 切换显示模式
     if (mode === "preset") {
-      presetMode.style.display = "block";
-      customMode.style.display = "none";
-      actionButtons.style.display = "none"; // 隐藏开始和取消按钮
+      if (presetMode) presetMode.style.display = "block";
+      if (customMode) customMode.style.display = "none";
+      if (actionButtons) actionButtons.style.display = "none"; // 隐藏开始和取消按钮
     } else {
-      presetMode.style.display = "none";
-      customMode.style.display = "block";
-      actionButtons.style.display = "flex"; // 显示开始和取消按钮
+      if (presetMode) presetMode.style.display = "none";
+      if (customMode) customMode.style.display = "block";
+      if (actionButtons) actionButtons.style.display = "flex"; // 显示开始和取消按钮
       // 聚焦到分钟输入框
       setTimeout(() => {
-        const minutesInput =
-          this.settingsContainer.querySelector("#timer-minutes");
+        const minutesInput = this.settingsContainer?.querySelector("#timer-minutes");
         minutesInput?.focus();
       }, 100);
     }
@@ -607,79 +702,154 @@ class TimerSettingsManager {
    * 启动计时器
    */
   startTimer() {
-    const hoursInput = this.settingsContainer.querySelector("#timer-hours");
-    const minutesInput = this.settingsContainer.querySelector("#timer-minutes");
+    if (this.isDestroyed || !this.settingsContainer) return;
+    
+    try {
+      const hoursInput = this.settingsContainer.querySelector("#timer-hours");
+      const minutesInput = this.settingsContainer.querySelector("#timer-minutes");
 
-    // 获取输入值
-    const hoursValue = hoursInput.value.trim();
-    const minutesValue = minutesInput.value.trim();
+      if (!hoursInput || !minutesInput) {
+        console.error('Timer input elements not found');
+        return;
+      }
 
-    // 检查是否为空
-    if (hoursValue === "" && minutesValue === "") {
-      showToast("请输入计时时间！", "warning");
-      hoursInput.focus();
-      return;
-    }
+      // 获取输入值
+      const hoursValue = hoursInput.value.trim();
+      const minutesValue = minutesInput.value.trim();
 
-    // 验证小时数
-    if (hoursValue !== "") {
-      const hoursNum = parseFloat(hoursValue);
-      if (
-        isNaN(hoursNum) ||
-        hoursNum < 0 ||
-        hoursNum > 24 ||
-        !Number.isInteger(hoursNum)
-      ) {
-        showToast("小时数必须是0-24之间的整数！", "warning");
+      // 检查是否为空
+      if (hoursValue === "" && minutesValue === "") {
+        showToast("请输入计时时间！", "warning");
         hoursInput.focus();
-        hoursInput.select();
         return;
       }
-    }
 
-    // 验证分钟数
-    if (minutesValue !== "") {
-      const minutesNum = parseFloat(minutesValue);
-      if (
-        isNaN(minutesNum) ||
-        minutesNum < 0 ||
-        minutesNum >= 60 ||
-        !Number.isInteger(minutesNum)
-      ) {
-        showToast("分钟数必须是0-59之间的整数！", "warning");
+      // 验证小时数
+      if (hoursValue !== "") {
+        const hoursNum = parseFloat(hoursValue);
+        if (
+          isNaN(hoursNum) ||
+          hoursNum < 0 ||
+          hoursNum > 24 ||
+          !Number.isInteger(hoursNum)
+        ) {
+          showToast("小时数必须是0-24之间的整数！", "warning");
+          hoursInput.focus();
+          hoursInput.select();
+          return;
+        }
+      }
 
-        minutesInput.focus();
-        minutesInput.select();
+      // 验证分钟数
+      if (minutesValue !== "") {
+        const minutesNum = parseFloat(minutesValue);
+        if (
+          isNaN(minutesNum) ||
+          minutesNum < 0 ||
+          minutesNum >= 60 ||
+          !Number.isInteger(minutesNum)
+        ) {
+          showToast("分钟数必须是0-59之间的整数！", "warning");
+          minutesInput.focus();
+          minutesInput.select();
+          return;
+        }
+      }
+
+      // 处理空值情况
+      const hours = hoursValue === "" ? 0 : parseInt(hoursValue);
+      const minutes = minutesValue === "" ? 0 : parseInt(minutesValue);
+      const totalMinutes = hours * 60 + minutes;
+
+      if (totalMinutes < 1) {
+        showToast("请设置至少1分钟的计时时间！", "warning");
         return;
       }
+
+      if (totalMinutes > 24 * 60) {
+        showToast("计时时间不能超过24小时！", "warning");
+        return;
+      }
+
+      // 启动计时器
+      TimerHandler.handle(totalMinutes);
+      this.hide();
+    } catch (error) {
+      console.error('Failed to start timer:', error);
+      showToast("启动计时器失败，请重试！", "error");
     }
-
-    // 处理空值情况
-    const hours = hoursValue === "" ? 0 : parseInt(hoursValue);
-    const minutes = minutesValue === "" ? 0 : parseInt(minutesValue);
-    const totalMinutes = hours * 60 + minutes;
-
-    if (totalMinutes < 1) {
-      showToast("请设置至少1分钟的计时时间！", "warning");
-      return;
-    }
-
-    if (totalMinutes > 24 * 60) {
-      showToast("计时时间不能超过24小时！", "warning");
-      return;
-    }
-
-    // 启动计时器
-    TimerHandler.handle(totalMinutes);
-    this.hide();
   }
 
   /**
    * 停止计时器
    */
   stopTimer() {
-    TimerHandler.stop();
-    this.hide();
+    if (this.isDestroyed) return;
+    
+    try {
+      TimerHandler.stop();
+      this.hide();
+    } catch (error) {
+      console.error('Failed to stop timer:', error);
+      showToast("停止计时器失败，请重试！", "error");
+    }
+  }
+
+  /**
+   * 清理状态检查间隔
+   */
+  clearStatusInterval() {
+    if (this.statusCheckInterval) {
+      clearInterval(this.statusCheckInterval);
+      this.statusCheckInterval = null;
+    }
+  }
+
+  /**
+   * 清理资源
+   */
+  cleanup() {
+    if (this.isDestroyed) return;
+    
+    // 清理事件监听器
+    this.eventListeners.forEach((listeners, element) => {
+      listeners.forEach(({ event, handler }) => {
+        try {
+          element.removeEventListener(event, handler);
+        } catch (error) {
+          // 静默处理移除事件监听器的错误
+        }
+      });
+    });
+    this.eventListeners.clear();
+    
+    // 清理全局键盘事件
+    if (this.keydownHandler) {
+      document.removeEventListener("keydown", this.keydownHandler);
+      this.keydownHandler = null;
+    }
+    
+    // 清理状态检查间隔
+    this.clearStatusInterval();
+  }
+
+  /**
+   * 销毁管理器
+   */
+  destroy() {
+    this.isDestroyed = true;
+    this.cleanup();
+    
+    if (this.settingsContainer) {
+      try {
+        this.settingsContainer.remove();
+      } catch (error) {
+        // 静默处理DOM移除错误
+      }
+      this.settingsContainer = null;
+    }
+    
+    this.isVisible = false;
   }
 }
 
@@ -690,44 +860,72 @@ class PopupUIManager {
   constructor() {
     this.timerSettings = new TimerSettingsManager();
     this.isInitialized = false;
+    this.isDestroyed = false;
+    this.eventListeners = new Map();
   }
 
   /**
    * 初始化弹窗UI
    */
   init() {
-    if (this.isInitialized) return;
+    if (this.isInitialized || this.isDestroyed) return;
 
-    this.bindFeatureEvents();
-    this.isInitialized = true;
+    try {
+      this.bindFeatureEvents();
+      this.isInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize popup UI:', error);
+    }
+  }
+
+  /**
+   * 添加事件监听器并跟踪
+   */
+  addEventListenerTracked(element, event, handler) {
+    if (!element || this.isDestroyed) return;
+    
+    element.addEventListener(event, handler);
+    
+    if (!this.eventListeners.has(element)) {
+      this.eventListeners.set(element, []);
+    }
+    this.eventListeners.get(element).push({ event, handler });
   }
 
   /**
    * 绑定功能项事件
    */
   bindFeatureEvents() {
-    const featureItems = document.querySelectorAll(".feature-item");
+    if (this.isDestroyed) return;
+    
+    try {
+      const featureItems = document.querySelectorAll(".feature-item");
 
-    featureItems.forEach((item) => {
-      // 点击事件
-      item.addEventListener("click", (e) => {
-        e.preventDefault();
-        this.handleFeatureClick(item);
-      });
-
-      // 键盘事件
-      item.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
+      featureItems.forEach((item) => {
+        // 点击事件
+        const clickHandler = (e) => {
           e.preventDefault();
           this.handleFeatureClick(item);
+        };
+        this.addEventListenerTracked(item, "click", clickHandler);
+
+        // 键盘事件
+        const keydownHandler = (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            this.handleFeatureClick(item);
+          }
+        };
+        this.addEventListenerTracked(item, "keydown", keydownHandler);
+
+        // 确保可聚焦
+        if (!item.hasAttribute("tabindex")) {
+          item.setAttribute("tabindex", "0");
         }
       });
-
-      // 确保可聚焦
-      if (!item.hasAttribute("tabindex")) {
-        item.setAttribute("tabindex", "0");
-      }
-    });
+    } catch (error) {
+      console.error('Failed to bind feature events:', error);
+    }
   }
 
   /**
@@ -735,20 +933,27 @@ class PopupUIManager {
    * @param {HTMLElement} item - 被点击的功能项
    */
   handleFeatureClick(item) {
-    const featureId = item.getAttribute("data-feature");
+    if (this.isDestroyed || !item) return;
+    
+    try {
+      const featureId = item.getAttribute("data-feature");
 
-    if (!featureId) {
-      return;
+      if (!featureId) {
+        console.warn('Feature item missing data-feature attribute');
+        return;
+      }
+
+      // 特殊处理自律提醒功能
+      if (featureId === "reading-time") {
+        this.timerSettings.show();
+        return;
+      }
+
+      // 处理其他功能
+      this.executeFeature(featureId);
+    } catch (error) {
+      console.error('Failed to handle feature click:', error);
     }
-
-    // 特殊处理自律提醒功能
-    if (featureId === "reading-time") {
-      this.timerSettings.show();
-      return;
-    }
-
-    // 处理其他功能
-    this.executeFeature(featureId);
   }
 
   /**
@@ -756,6 +961,8 @@ class PopupUIManager {
    * @param {string} featureId - 功能ID
    */
   async executeFeature(featureId) {
+    if (this.isDestroyed) return;
+    
     try {
       // 动态导入功能处理器
       const { featureHandlers } = await import("./featureHandlers.js");
@@ -763,9 +970,11 @@ class PopupUIManager {
       const handler = featureHandlers[featureId];
       if (typeof handler === "function") {
         await handler();
+      } else {
+        console.warn(`No handler found for feature: ${featureId}`);
       }
     } catch (error) {
-      // 静默处理错误
+      console.error(`Failed to execute feature ${featureId}:`, error);
     }
   }
 
@@ -773,7 +982,46 @@ class PopupUIManager {
    * 显示计时器设置
    */
   showTimerSettings() {
-    this.timerSettings.show();
+    if (this.isDestroyed) return;
+    
+    try {
+      this.timerSettings.show();
+    } catch (error) {
+      console.error('Failed to show timer settings:', error);
+    }
+  }
+
+  /**
+   * 清理资源
+   */
+  cleanup() {
+    if (this.isDestroyed) return;
+    
+    // 清理事件监听器
+    this.eventListeners.forEach((listeners, element) => {
+      listeners.forEach(({ event, handler }) => {
+        try {
+          element.removeEventListener(event, handler);
+        } catch (error) {
+          // 静默处理移除事件监听器的错误
+        }
+      });
+    });
+    this.eventListeners.clear();
+    
+    // 清理计时器设置管理器
+    if (this.timerSettings) {
+      this.timerSettings.destroy();
+    }
+  }
+
+  /**
+   * 销毁管理器
+   */
+  destroy() {
+    this.isDestroyed = true;
+    this.cleanup();
+    this.isInitialized = false;
   }
 }
 
