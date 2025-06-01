@@ -42,18 +42,15 @@ export class ModalManager {
    */
   createPreventScrollHandler() {
     return (e) => {
-      // 检查事件目标是否在模态框内容区域内
-      const modalContent = e.target.closest('.modal-content');
-      const scrollableElement = e.target.closest('.property-categories, .css-properties, [data-scrollable="true"]');
-      const hasOverflowAuto = e.target.closest('[style*="overflow-y: auto"], [style*="overflow: auto"]');
-      const isInModal = e.target.closest('#addRuleModal, #propertySelectModal, .modal');
+      // 检查事件目标是否在模态框区域内
+      const isInModal = e.target.closest('.modal');
       
-      // 如果在模态框内容区域或可滚动元素内，允许滚动
-      if (modalContent || scrollableElement || hasOverflowAuto || isInModal) {
+      // 如果在模态框内（包括背景区域），允许滚动
+      if (isInModal) {
         return true;
       }
       
-      // 否则阻止滚动
+      // 只阻止模态框外部的滚动
       e.preventDefault();
       e.stopPropagation();
       return false;
@@ -68,6 +65,15 @@ export class ModalManager {
     return (e) => {
       const scrollKeys = [32, 33, 34, 35, 36, 37, 38, 39, 40];
       if (scrollKeys.includes(e.keyCode)) {
+        // 检查是否在模态框内
+        const isInModal = e.target.closest('.modal');
+        
+        // 如果在模态框内，允许键盘滚动
+        if (isInModal) {
+          return true;
+        }
+        
+        // 只阻止模态框外部的键盘滚动
         e.preventDefault();
         e.stopPropagation();
         return false;

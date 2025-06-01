@@ -992,6 +992,7 @@ body {
 
 /* 表单样式 - 现代化设计 */
 .form-group {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -1142,6 +1143,12 @@ body {
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
   background: hsl(var(--muted) / 0.02);
+  /* 大屏时限制高度并启用滚动 */
+  max-height: calc(100vh - 4rem - 300px);
+  /* overflow-y: auto;
+  overflow-x: hidden; */
+  overflow: hiden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 响应式表单布局优化 */
@@ -1378,14 +1385,18 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  /* 允许模态框内部滚动 */
-  overscroll-behavior: none;
-  overflow: auto;
+  /* 大屏时允许滚动，当内容超出时 */
+  overscroll-behavior: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   /* 确保模态框覆盖整个视口 */
   inset: 0;
   /* 添加过渡效果 */
   opacity: 0;
   transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+  /* 大屏时添加内边距 */
+  padding: 2rem 1rem;
+  box-sizing: border-box;
 }
 
 /* 显示状态的模态框 */
@@ -1432,8 +1443,9 @@ body {
   box-shadow: var(--shadow-xl), 0 0 40px rgba(0, 0, 0, 0.2);
   border: 1px solid hsl(var(--border));
   max-width: 85vw;
-  max-height: 85vh;
-  overflow: auto;
+  /* 大屏时限制最大高度，考虑modal的padding(4rem) */
+  max-height: calc(100vh - 4rem);
+  overflow: hidden;
   /* 移除默认动画，通过状态类控制 */
   transform: scale(0.9) translateY(-20px) rotateX(10deg);
   opacity: 0;
@@ -1450,44 +1462,90 @@ body {
   -webkit-overflow-scrolling: touch;
   /* 确保内容区域独立滚动 */
   overscroll-behavior: contain;
+  /* 确保内容区域有合适的最小高度 */
+  min-height: auto;
+  /* 添加上下边距，确保在滚动时有足够空间 */
+  margin: 0 auto;
 }
 
 /* 响应式弹窗设计 - 适配小屏幕和Chrome扩展侧栏 */
 @media (max-width: 768px) {
+  .modal {
+    /* 窄屏时移除内边距，实现全屏 */
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+  
   .modal-content {
     min-width: unset;
-    width: 95vw;
-    max-width: 95vw;
-    max-height: 90vh;
-    margin: 0.5rem;
-    border-radius: var(--radius);
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
     display: flex;
     flex-direction: column;
+    /* 窄屏时全屏显示 */
+    transform: none;
+    opacity: 1;
+    filter: none;
   }
   
   .modal-body {
     padding: 1rem;
     flex: 1;
     min-height: 0;
-    overflow: auto;
-    max-height: calc(90vh - 140px);
+    /* 窄屏时内容区域滚动 */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   
   .modal-header,
   .modal-footer {
     padding: 0.75rem 1rem;
     flex-shrink: 0;
+    /* 窄屏时固定头部和底部 */
+    position: relative;
+    z-index: 2;
+  }
+  
+  /* 小屏幕下关闭按钮绝对定位到右上角 */
+  .modal-header {
+    padding-right: 3rem; /* 为关闭按钮留出空间 */
+  }
+  
+  .modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
+    z-index: 3;
+  }
+  
+  .modal-header h3 {
+    margin-right: 0.5rem; /* 确保标题不会与关闭按钮重叠 */
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   
   .property-categories {
-    max-height: calc(90vh - 200px);
-    overflow-y: auto;
+    /* 窄屏时让内容自然展开，由modal-body控制滚动 */
+    overflow: visible;
+    max-height: none;
   }
   
   /* 确保addRuleModal中的表单元素不被压缩 */
   #addRuleModal .modal-body {
-    max-height: calc(90vh - 140px);
+    /* 窄屏时内容区域滚动 */
     overflow-y: auto;
+    overflow-x: hidden;
   }
   
   #addRuleModal .form-group {
@@ -1496,18 +1554,30 @@ body {
   }
   
   #addRuleModal .css-properties {
-    /* 移除滚动设置，让modal-body承担滚动功能 */
+    /* 窄屏时让modal-body控制滚动 */
+    overflow: visible;
+    max-height: none;
   }
 }
 
 /* Chrome扩展侧栏优化 - 检测极窄环境 */
 @media (max-width: 600px) {
+  .modal {
+    /* 极窄屏时完全全屏 */
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+  
   .modal-content {
     min-width: unset;
-    width: 98vw;
-    max-width: 98vw;
-    max-height: 95vh;
-    margin: 1vw;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
     display: flex;
     flex-direction: column;
   }
@@ -1516,18 +1586,26 @@ body {
     padding: 0.75rem;
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    /* 极窄屏时内容区域滚动 */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   
   .modal-header,
   .modal-footer {
     padding: 0.5rem 0.75rem;
     flex-shrink: 0;
+    /* 极窄屏时固定头部和底部 */
+    position: relative;
+    z-index: 2;
   }
   
   .property-categories {
-    max-height: calc(95vh - 180px);
-    overflow-y: auto;
+    /* 极窄屏时让内容自然展开 */
+    overflow: visible;
+    max-height: none;
     grid-template-columns: 1fr;
     gap: 0.375rem;
     padding: 0.25rem;
@@ -1536,6 +1614,12 @@ body {
 }
 
 /* Chrome扩展环境特殊适配 */
+.chrome-extension-mode .modal {
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+
 .chrome-extension-mode .modal-content {
   min-width: unset !important;
   width: 100% !important;
@@ -1552,8 +1636,12 @@ body {
 .chrome-extension-mode .modal-body {
   flex: 1 !important;
   max-height: none !important;
+  /* Chrome扩展模式下内容区域滚动 */
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   padding: 1rem !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
 }
 
 .chrome-extension-mode .modal-header,
@@ -1655,6 +1743,8 @@ body {
 @media (max-width: 480px), (max-width: 100vw) and (max-height: 100vh) and (orientation: portrait) {
   .modal {
     padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
   }
   
   .modal-content {
@@ -1672,9 +1762,11 @@ body {
   .modal-body {
     flex: 1;
     max-height: none;
-    overflow: auto;
+    /* 超小屏时内容区域滚动 */
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 1rem;
-    /* 允许内部滚动，防止滚动穿透 */
+    /* 优化触摸滚动体验 */
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -1773,6 +1865,9 @@ body {
   border-bottom: 1px solid hsl(var(--border));
   background: var(--gradient-primary);
   position: relative;
+  /* 确保头部固定 */
+  flex-shrink: 0;
+  z-index: 1;
 }
 
 .modal-header::after {
@@ -1821,13 +1916,17 @@ body {
 
 .modal-body {
   padding: 1.5rem;
-  /* 移除固定高度，让内容自适应 */
-  overflow: auto;
+  /* 大屏时内容区域滚动 */
+  overflow-y: auto;
+  overflow-x: hidden;
   background: hsl(var(--background));
   display: flex;
   flex-direction: column;
   min-height: 0;
   flex: 1;
+  /* 确保滚动体验流畅 */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .modal-body .form-group:last-child {
@@ -1843,6 +1942,9 @@ body {
   background: linear-gradient(135deg, hsl(var(--muted) / 0.05), hsl(var(--background)));
   backdrop-filter: blur(8px);
   position: relative;
+  /* 确保底部固定 */
+  flex-shrink: 0;
+  z-index: 1;
 }
 
 .modal-footer::before {
@@ -1855,48 +1957,75 @@ body {
   background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
 }
 
-/* 属性分类 - 竖向flex布局，避免横向滚动 */
+/* 属性分类 - 响应式网格布局 */
 .property-categories {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  align-items: stretch;
+  align-items: flex-start;
+  align-content: flex-start;
   flex: 1;
+  /* 大屏时限制高度并滚动，考虑modal padding和header/footer高度 */
   overflow-y: auto;
-  padding: 0.5rem;
-  margin: -0.5rem;
+  overflow-x: hidden;
+  padding: 0.75rem;
+  margin: -0.75rem;
   /* 优化滚动体验 */
   -webkit-overflow-scrolling: touch;
   min-height: 0;
-  max-height: calc(85vh - 120px);
+  max-height: calc(100vh - 4rem - 200px);
 }
 
 .property-category {
-  flex: 1 1 180px;
-  min-width: 180px;
+  /* 大屏时一行多个，自动换行 */
+  flex: 0 1 calc(33.333% - 0.5rem);
+  min-width: 280px;
+  max-width: 100%;
 }
 
-/* 响应式属性分类布局 */
+/* 超大屏幕优化 - 一行4个 */
+@media (min-width: 1400px) {
+  .property-category {
+    flex: 0 1 calc(25% - 0.5625rem);
+    min-width: 260px;
+  }
+}
+
+/* 中等屏幕优化 - 一行2个 */
+@media (max-width: 1200px) and (min-width: 769px) {
+  .property-category {
+    flex: 0 1 calc(50% - 0.375rem);
+    min-width: 240px;
+  }
+}
+
+/* 响应式属性分类布局 - 小屏竖向排版 */
 @media (max-width: 768px) {
   .property-categories {
     gap: 0.5rem;
-    max-height: calc(90vh - 200px);
-    overflow-y: auto;
+    /* 窄屏时移除滚动限制，由modal-body控制 */
+    overflow: visible;
+    max-height: none;
     flex: 1;
-    min-height: 0;
+    min-height: auto;
     flex-direction: column;
+    flex-wrap: nowrap;
+    padding: 0.5rem;
+    margin: -0.5rem;
   }
   
   .property-category {
     flex: none;
     min-width: auto;
     width: 100%;
+    max-width: 100%;
   }
   
   /* CSS属性编辑器中等屏幕优化 */
   .css-properties {
-    max-height: 300px;
-    overflow-y: auto;
+    /* 窄屏时移除滚动限制，由modal-body控制 */
+    overflow: visible;
+    max-height: none;
   }
   
   .css-property-item {
@@ -2030,10 +2159,13 @@ body {
 .property-category {
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: visible;
   background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted) / 0.1) 100%);
   box-shadow: var(--shadow-sm);
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
 }
 
 .property-category:hover {
@@ -2051,16 +2183,18 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  /* 添加顶部圆角以匹配父容器 */
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
-/* 属性分类列表 - 瀑布流完全展开 */
+/* 属性分类列表 - 内容自然展开 */
 .property-category-list,
 .property-list {
-  padding: 0.375rem;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
-  flex-shrink: 0;
+  gap: 0.25rem;
+  flex: 1;
 }
 
 /* 滚动条样式已移除，因为使用瀑布流完全展开 */
@@ -2068,7 +2202,7 @@ body {
 /* 属性选项样式 - 统一.property-item和.property-option */
 .property-item,
 .property-option {
-  padding: 0.625rem 0.875rem;
+  padding: 0.5rem 0.75rem;
   border-radius: calc(var(--radius));
   cursor: pointer;
   font-size: 0.8rem;
@@ -2079,9 +2213,9 @@ body {
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted) / 0.02) 100%);
-  margin-bottom: 0.25rem;
-  line-height: 1.5;
-  min-height: 2.75rem;
+  margin-bottom: 0.125rem;
+  line-height: 1.4;
+  min-height: 2.25rem;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
