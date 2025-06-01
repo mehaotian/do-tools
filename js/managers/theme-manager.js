@@ -1124,7 +1124,7 @@ export class ThemeManager {
     if (!theme.groups || theme.groups.length === 0) {
       container.innerHTML = `
         <div class="empty-groups">
-          <p>暂无样式组，点击下方按钮添加第一个组</p>
+          <p>暂无样式组，点击右上角按钮添加第一个组</p>
         </div>
       `;
       return;
@@ -1740,9 +1740,19 @@ export class ThemeManager {
 
     // 重置建议文本
     if (suggestions) {
-      suggestions.textContent = '';
-      suggestions.className = 'selector-suggestions';
-      suggestions.style.display = 'none';
+      // 添加隐藏动画
+      if (suggestions.classList.contains('show')) {
+        suggestions.className = 'selector-suggestions hide';
+        setTimeout(() => {
+          suggestions.textContent = '';
+          suggestions.className = 'selector-suggestions';
+          suggestions.style.display = 'none';
+        }, 200); // 等待动画完成
+      } else {
+        suggestions.textContent = '';
+        suggestions.className = 'selector-suggestions';
+        suggestions.style.display = 'none';
+      }
     }
   }
 
@@ -1928,7 +1938,7 @@ export class ThemeManager {
     this.clearSelectorHighlight();
 
     if (!selector.trim()) {
-      indicator.className = 'selector-status-indicator invalid';
+      indicator.className = 'selector-status-indicator invalid animate-in';
       suggestions.textContent = '请输入CSS选择器，例如：nav, .navbar, #header';
       suggestions.className = 'selector-suggestions error';
       suggestions.style.display = 'block';
@@ -1949,9 +1959,9 @@ export class ThemeManager {
 
       if (response && response.success) {
         if (response.isValid && response.elementCount > 0) {
-          indicator.className = 'selector-status-indicator valid';
+          indicator.className = 'selector-status-indicator valid animate-in';
           suggestions.textContent = `找到 ${response.elementCount} 个匹配元素`;
-          suggestions.className = 'selector-suggestions success';
+          suggestions.className = 'selector-suggestions success show';
           suggestions.style.display = 'block';
           
           // 高亮匹配的元素
@@ -1962,19 +1972,19 @@ export class ThemeManager {
             this.clearSelectorHighlight();
           }, 3000);
         } else {
-          indicator.className = 'selector-status-indicator invalid';
+          indicator.className = 'selector-status-indicator invalid animate-in';
           suggestions.textContent =
             response.elementCount === 0 ? '未找到匹配元素' : '选择器语法错误';
-          suggestions.className = 'selector-suggestions error';
+          suggestions.className = 'selector-suggestions error show';
           suggestions.style.display = 'block';
           
           // 验证失败时立即清除高亮
           this.clearSelectorHighlight();
         }
       } else {
-        indicator.className = 'selector-status-indicator invalid';
+        indicator.className = 'selector-status-indicator invalid animate-in';
         suggestions.textContent = '无法连接到页面，请确保页面已加载';
-        suggestions.className = 'selector-suggestions error';
+        suggestions.className = 'selector-suggestions error show';
         suggestions.style.display = 'block';
         
         // 连接失败时立即清除高亮
@@ -1982,9 +1992,9 @@ export class ThemeManager {
       }
     } catch (error) {
       console.error('验证选择器时发生错误:', error);
-      indicator.className = 'selector-status-indicator invalid';
+      indicator.className = 'selector-status-indicator invalid animate-in';
       suggestions.textContent = '验证失败，请确保页面已加载并刷新后重试';
-      suggestions.className = 'selector-suggestions error';
+      suggestions.className = 'selector-suggestions error show';
       suggestions.style.display = 'block';
       
       // 异常时立即清除高亮
@@ -2170,7 +2180,17 @@ export class ThemeManager {
           const suggestions = document.getElementById('selectorSuggestions');
           if (indicator) indicator.className = 'selector-status-indicator';
           if (suggestions) {
-            suggestions.style.display = 'none';
+            // 添加隐藏动画
+            if (suggestions.classList.contains('show')) {
+              suggestions.className = 'selector-suggestions hide';
+              setTimeout(() => {
+                suggestions.textContent = '';
+                suggestions.className = 'selector-suggestions';
+                suggestions.style.display = 'none';
+              }, 200); // 等待动画完成
+            } else {
+              suggestions.style.display = 'none';
+            }
           }
         }
       });

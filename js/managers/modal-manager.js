@@ -516,34 +516,34 @@ export class ModalManager {
       
       if (result.success) {
         if (result.isValid) {
-          if (indicator) indicator.className = 'selector-status-indicator valid';
+          if (indicator) indicator.className = 'selector-status-indicator valid animate-in';
           if (suggestions) {
             suggestions.textContent = `找到 ${result.elementCount} 个匹配元素`;
-            suggestions.className = 'selector-suggestions success';
+            suggestions.className = 'selector-suggestions success show';
             suggestions.style.display = 'block';
           }
         } else {
-          if (indicator) indicator.className = 'selector-status-indicator invalid';
+          if (indicator) indicator.className = 'selector-status-indicator invalid animate-in';
           if (suggestions) {
             suggestions.textContent = result.elementCount === 0 ? '未找到匹配元素' : '选择器语法错误';
-            suggestions.className = 'selector-suggestions error';
+            suggestions.className = 'selector-suggestions error show';
             suggestions.style.display = 'block';
           }
         }
       } else {
-        if (indicator) indicator.className = 'selector-status-indicator invalid';
+        if (indicator) indicator.className = 'selector-status-indicator invalid animate-in';
         if (suggestions) {
           suggestions.textContent = result.error || '无法连接到页面，请确保页面已加载';
-          suggestions.className = 'selector-suggestions error';
+          suggestions.className = 'selector-suggestions error show';
           suggestions.style.display = 'block';
         }
       }
     } catch (error) {
       console.error('验证选择器时发生错误:', error);
-      if (indicator) indicator.className = 'selector-status-indicator invalid';
+      if (indicator) indicator.className = 'selector-status-indicator invalid animate-in';
       if (suggestions) {
         suggestions.textContent = '验证失败，请确保页面已加载并刷新后重试';
-        suggestions.className = 'selector-suggestions error';
+        suggestions.className = 'selector-suggestions error show';
         suggestions.style.display = 'block';
       }
     }
@@ -800,9 +800,19 @@ export class ModalManager {
     
     if (indicator) indicator.className = 'selector-status-indicator';
     if (suggestions) {
-      suggestions.textContent = '';
-      suggestions.className = 'selector-suggestions';
-      suggestions.style.display = 'none';
+      // 添加隐藏动画
+      if (suggestions.classList.contains('show')) {
+        suggestions.className = 'selector-suggestions hide';
+        setTimeout(() => {
+          suggestions.textContent = '';
+          suggestions.className = 'selector-suggestions';
+          suggestions.style.display = 'none';
+        }, 200); // 等待动画完成
+      } else {
+        suggestions.textContent = '';
+        suggestions.className = 'selector-suggestions';
+        suggestions.style.display = 'none';
+      }
     }
   }
 
