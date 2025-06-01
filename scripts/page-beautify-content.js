@@ -166,15 +166,6 @@ class PageBeautifyContent {
           sendResponse({ success: true, data: result });
           break;
 
-        case "VALIDATE_SELECTOR":
-          console.log('验证选择器',request);
-          
-          const validationResult = this.validateSelector(request.data.selector);
-          console.log('验证结果',validationResult);
-          
-          sendResponse({ success: true, data: validationResult });
-          break;
-
         case "CLEAR_SELECTOR_HIGHLIGHT":
           this.clearSelectorHighlight();
           sendResponse({ success: true, data: { message: '高亮已清除' } });
@@ -192,6 +183,21 @@ class PageBeautifyContent {
 
         case "CLEAR_ALL_PREVIEW":
           this.clearAllPreview();
+          sendResponse({ success: true });
+          break;
+
+        case "VALIDATE_SELECTOR":
+          const selectorValidation = this.validateSelectorAndCount(request.data.selector);
+          sendResponse({ success: true, elementCount: selectorValidation.count, isValid: selectorValidation.isValid });
+          break;
+
+        case "HIGHLIGHT_ELEMENTS":
+          this.highlightElements(request.data.selector);
+          sendResponse({ success: true });
+          break;
+
+        case "REMOVE_HIGHLIGHT":
+          this.removeHighlight();
           sendResponse({ success: true });
           break;
 
@@ -593,6 +599,149 @@ class PageBeautifyContent {
       console.log('已清除所有预览效果');
     } catch (error) {
       console.error('清除所有预览失败:', error);
+    }
+  }
+
+  /**
+   * 验证选择器并返回匹配元素数量
+   * @param {string} selector - CSS选择器
+   * @returns {Object} 验证结果
+   */
+  validateSelectorAndCount(selector) {
+    try {
+      const elements = document.querySelectorAll(selector);
+      return {
+        isValid: true,
+        count: elements.length
+      };
+    } catch (error) {
+      console.error('选择器验证失败:', error);
+      return {
+        isValid: false,
+        count: 0
+      };
+    }
+  }
+
+  /**
+   * 高亮页面元素
+   * @param {string} selector - CSS选择器
+   */
+  highlightElements(selector) {
+    try {
+      // 先移除之前的高亮
+      this.removeHighlight();
+      
+      const elements = document.querySelectorAll(selector);
+      elements.forEach((element, index) => {
+        // 获取元素当前的定位方式
+        const computedStyle = window.getComputedStyle(element);
+        const currentPosition = computedStyle.position;
+        
+        // 记录原始定位属性
+        element.setAttribute('data-original-position', currentPosition);
+        
+        // 如果是静态定位，临时设置为相对定位
+        let needsPositionFix = false;
+        if (currentPosition === 'static') {
+          element.style.position = 'relative';
+          needsPositionFix = true;
+          element.setAttribute('data-needs-position-fix', 'true');
+        }
+        
+        // 创建绝对定位的虚框元素
+        const highlight = document.createElement('div');
+        highlight.className = 'page-beautify-highlight';
+        highlight.style.cssText = `
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border: 2px dashed #3b82f6;
+          background: rgba(59, 130, 246, 0.05);
+          pointer-events: none;
+          z-index: 2147483647;
+          box-sizing: border-box;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+        `;
+        
+        // 将虚框添加到目标元素内部
+        element.appendChild(highlight);
+        
+        // 标记元素已被高亮
+        element.classList.add('page-beautify-highlighted');
+      });
+      
+      console.log(`已高亮 ${elements.length} 个元素`);
+    } catch (error) {
+      console.error('高亮元素失败:', error);
+    }
+  }
+
+  /**
+   * 移除所有高亮效果
+   */
+  removeHighlight() {
+    try {
+      // 移除所有高亮虚框元素
+      const highlights = document.querySelectorAll('.page-beautify-highlight');
+      highlights.forEach(highlight => {
+        highlight.remove();
+      });
+      
+      // 恢复被高亮元素的原始状态
+      const highlightedElements = document.querySelectorAll('.page-beautify-highlighted');
+      highlightedElements.forEach(element => {
+        // 恢复原始定位属性
+        const originalPosition = element.getAttribute('data-original-position');
+        const needsPositionFix = element.getAttribute('data-needs-position-fix');
+        
+        if (needsPositionFix === 'true' && originalPosition) {
+          // 恢复为原始的静态定位
+          element.style.position = originalPosition;
+        }
+        
+        // 清理标记属性
+        element.removeAttribute('data-original-position');
+        element.removeAttribute('data-needs-position-fix');
+        element.classList.remove('page-beautify-highlighted');
+      });
+      
+      // 移除旧版本的高亮元素（向后兼容）
+      const oldHighlightedElements = document.querySelectorAll('[data-original-box-shadow], [data-original-outline]');
+      oldHighlightedElements.forEach(element => {
+        // 恢复原始样式
+        const originalBoxShadow = element.getAttribute('data-original-box-shadow');
+        const originalOutline = element.getAttribute('data-original-outline');
+        const originalPosition = element.getAttribute('data-original-position');
+        
+        if (originalBoxShadow !== null) {
+          element.style.boxShadow = originalBoxShadow || '';
+        }
+        if (originalOutline !== null) {
+          element.style.outline = originalOutline || '';
+        }
+        element.style.outlineOffset = '';
+        
+        // 恢复原始定位
+        if (originalPosition === 'static') {
+          element.style.position = '';
+          element.removeAttribute('data-original-position');
+        }
+        
+        // 移除数据属性
+        element.removeAttribute('data-original-box-shadow');
+        element.removeAttribute('data-original-outline');
+        element.classList.remove('page-beautify-highlighted');
+        
+        // 移除覆盖层
+        const overlays = element.querySelectorAll('.page-beautify-highlight-overlay');
+        overlays.forEach(overlay => overlay.remove());
+      });
+    } catch (error) {
+      console.error('移除高亮失败:', error);
     }
   }
 }
