@@ -1248,28 +1248,7 @@ class StyleApplier {
 // 模态框管理器
 class ModalManager {
   constructor() {
-    // 定义滚动阻止处理函数
-    this.preventScrollHandler = (e) => {
-      // 检查是否在任何打开的模态框内容区域
-      const openModals = document.querySelectorAll('.modal[style*="flex"]');
-      for (let openModal of openModals) {
-        const modalContent = openModal.querySelector('.modal-content');
-        if (modalContent && modalContent.contains(e.target)) {
-          return; // 允许模态框内容区域滚动
-        }
-      }
-      // 阻止所有其他区域的滚动
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    // 定义键盘滚动阻止处理函数
-    this.preventKeyScrollHandler = (e) => {
-      if ([32, 33, 34, 35, 36, 37, 38, 39, 40].includes(e.keyCode)) {
-        e.preventDefault();
-      }
-    };
-    this.openModalCount = 0; // 跟踪打开的模态框数量
-    this.savedScrollPosition = 0; // 保存滚动位置
+    // 移除所有滚动穿透相关代码
     this.initializeModals();
   }
 
@@ -1360,37 +1339,7 @@ class ModalManager {
   // 显示模态框
   showModal(modalId) {
     const modal = document.getElementById(modalId);
-    
     modal.style.display = "flex";
-    this.openModalCount++; // 增加打开的模态框计数
-    
-    // 只在第一个模态框打开时锁定滚动
-    if (this.openModalCount === 1) {
-      // 保存当前滚动位置
-      this.savedScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-      
-      document.body.classList.add("modal-open");
-      document.documentElement.classList.add("modal-open");
-      
-      // 设置body的top位置来保持视觉位置
-      document.body.style.top = `-${this.savedScrollPosition}px`;
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-    }
-
-    // 只在第一个模态框打开时添加全局事件监听器
-    if (this.openModalCount === 1) {
-      // 阻止鼠标滚轮
-      document.addEventListener("wheel", this.preventScrollHandler, {
-        passive: false,
-      });
-      // 阻止触摸滚动
-      document.addEventListener("touchmove", this.preventScrollHandler, {
-        passive: false,
-      });
-      // 阻止键盘滚动
-      document.addEventListener("keydown", this.preventKeyScrollHandler, { passive: false });
-    }
   }
 
   // 隐藏模态框
@@ -1398,38 +1347,6 @@ class ModalManager {
     const modal = document.getElementById(modalId);
     modal.style.display = "none";
     this.clearModalInputs(modalId);
-    this.openModalCount--; // 减少打开的模态框计数
-    
-    // 确保计数不会小于0
-    if (this.openModalCount < 0) {
-      this.openModalCount = 0;
-    }
-    
-    // 只有当所有模态框都关闭时才恢复滚动
-    if (this.openModalCount === 0) {
-      document.body.classList.remove("modal-open");
-      document.documentElement.classList.remove("modal-open");
-      
-      // 恢复body样式和滚动位置
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      
-      // 恢复滚动位置
-      window.scrollTo(0, this.savedScrollPosition);
-      
-      // 移除全局事件监听器
-      if (this.preventScrollHandler) {
-        document.removeEventListener("wheel", this.preventScrollHandler);
-        document.removeEventListener("touchmove", this.preventScrollHandler);
-        this.preventScrollHandler = null;
-      }
-      
-      if (this.preventKeyScrollHandler) {
-        document.removeEventListener("keydown", this.preventKeyScrollHandler);
-        this.preventKeyScrollHandler = null;
-      }
-    }
   }
 
   // 清空模态框输入
@@ -1460,7 +1377,8 @@ class ModalManager {
             .map(
               ([propKey, prop]) => `
             <div class="property-item" data-property="${propKey}" data-category="${categoryKey}">
-              ${prop.name} (${propKey})
+              <div class="property-name-cn">${prop.name}</div>
+              <div class="property-name-en">${propKey}</div>
             </div>
           `
             )

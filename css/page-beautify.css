@@ -1138,23 +1138,35 @@ body {
   flex-direction: column;
   gap: 0.75rem;
   min-height: 120px;
-  /* 移除所有装饰性样式，给内容更大展示空间 */
+  padding: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--muted) / 0.02);
 }
 
 /* 响应式表单布局优化 */
 @media (max-width: 768px) {
   .selector-input-group {
-    flex-direction: column;
+    display: flex;
+    flex-direction: row;
     gap: 0.5rem;
+    align-items: center;
+    flex-wrap: nowrap;
   }
   
   .selector-input-group .form-input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
   }
   
   .selector-input-group .btn {
-    width: 100%;
-    justify-content: center;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  
+  .selector-status-indicator {
+    flex-shrink: 0;
+    margin-top: 0;
   }
   
   .css-property-editor {
@@ -1169,6 +1181,34 @@ body {
 }
 
 @media (max-width: 480px) {
+  .selector-input-group {
+    display: flex;
+    flex-direction: row;
+    gap: 0.25rem;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  
+  .selector-input-group .form-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+  }
+  
+  .selector-input-group .btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0.375rem 0.5rem;
+    font-size: 12px;
+  }
+  
+  .selector-status-indicator {
+    flex-shrink: 0;
+    margin-top: 0;
+    width: 6px;
+    height: 6px;
+  }
+  
   .modal-footer {
     flex-direction: column;
     gap: 0.5rem;
@@ -1239,6 +1279,8 @@ body {
   position: relative;
   overflow: hidden;
   flex-wrap: wrap;
+  min-height: 60px;
+  flex-shrink: 0;
 }
 
 .css-property-item:hover {
@@ -1261,7 +1303,32 @@ body {
   min-width: 0;
   border: 1px solid hsl(var(--border));
   background: hsl(var(--background));
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  color: hsl(var(--foreground));
+  padding: 0.375rem 0.5rem;
+  height: 32px;
+  line-height: 1.4;
+}
+
+.css-property-item .form-input:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.css-property-item select.form-input {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  padding-right: 1.5rem;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 0.75rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 .css-property-item .property-name {
@@ -1311,48 +1378,31 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: modalBackdropFadeIn 0.3s ease;
-  /* 完全阻止滚动穿透 */
+  /* 允许模态框内部滚动 */
   overscroll-behavior: none;
-  overflow: hidden;
-  touch-action: none;
-  -webkit-overflow-scrolling: touch;
+  overflow: auto;
   /* 确保模态框覆盖整个视口 */
   inset: 0;
+  /* 添加过渡效果 */
+  opacity: 0;
+  transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
 }
 
-/* 阻止背景滚动 - 增强版本 */
-body.modal-open {
-  overflow: hidden !important;
-  /* 防止iOS Safari滚动穿透 */
-  touch-action: none;
-  -webkit-overflow-scrolling: touch;
-  /* 隐藏滚动条 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 和 Edge */
-  /* 防止页面跳动 */
-  padding-right: 0;
+/* 显示状态的模态框 */
+.modal.show {
+  display: flex;
+  opacity: 1;
+  animation: modalBackdropFadeIn 0.3s ease;
 }
 
-/* 隐藏 WebKit 浏览器的滚动条 */
-body.modal-open::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+/* 隐藏动画 */
+.modal.hiding {
+  opacity: 0;
+  backdrop-filter: blur(0px);
+  animation: modalBackdropFadeOut 0.3s ease;
 }
 
-/* 确保 html 元素也不会滚动 */
-html.modal-open {
-  overflow: hidden !important;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-html.modal-open::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
+/* 移除所有modal-open相关样式 */
 
 @keyframes modalBackdropFadeIn {
   from {
@@ -1365,6 +1415,17 @@ html.modal-open::-webkit-scrollbar {
   }
 }
 
+@keyframes modalBackdropFadeOut {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+}
+
 .modal-content {
   background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
   border-radius: calc(var(--radius) * 2);
@@ -1372,12 +1433,18 @@ html.modal-open::-webkit-scrollbar {
   border: 1px solid hsl(var(--border));
   max-width: 85vw;
   max-height: 85vh;
-  overflow: hidden;
-  animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: auto;
+  /* 移除默认动画，通过状态类控制 */
+  transform: scale(0.9) translateY(-20px) rotateX(10deg);
+  opacity: 0;
+  filter: blur(4px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 700px;
   backdrop-filter: blur(20px);
   position: relative;
   width: auto;
+  display: flex;
+  flex-direction: column;
   /* 阻止事件冒泡到背景 */
   touch-action: auto;
   -webkit-overflow-scrolling: touch;
@@ -1391,18 +1458,45 @@ html.modal-open::-webkit-scrollbar {
     min-width: unset;
     width: 95vw;
     max-width: 95vw;
+    max-height: 90vh;
     margin: 0.5rem;
     border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
   }
   
   .modal-body {
     padding: 1rem;
-    max-height: 60vh;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    max-height: calc(90vh - 140px);
   }
   
   .modal-header,
   .modal-footer {
     padding: 0.75rem 1rem;
+    flex-shrink: 0;
+  }
+  
+  .property-categories {
+    max-height: calc(90vh - 200px);
+    overflow-y: auto;
+  }
+  
+  /* 确保addRuleModal中的表单元素不被压缩 */
+  #addRuleModal .modal-body {
+    max-height: calc(90vh - 140px);
+    overflow-y: auto;
+  }
+  
+  #addRuleModal .form-group {
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+  }
+  
+  #addRuleModal .css-properties {
+    /* 移除滚动设置，让modal-body承担滚动功能 */
   }
 }
 
@@ -1412,7 +1506,32 @@ html.modal-open::-webkit-scrollbar {
     min-width: unset;
     width: 98vw;
     max-width: 98vw;
+    max-height: 95vh;
     margin: 1vw;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .modal-body {
+    padding: 0.75rem;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+  
+  .modal-header,
+  .modal-footer {
+    padding: 0.5rem 0.75rem;
+    flex-shrink: 0;
+  }
+  
+  .property-categories {
+    max-height: calc(95vh - 180px);
+    overflow-y: auto;
+    grid-template-columns: 1fr;
+    gap: 0.375rem;
+    padding: 0.25rem;
+    margin: -0.25rem;
   }
 }
 
@@ -1553,12 +1672,15 @@ html.modal-open::-webkit-scrollbar {
   .modal-body {
     flex: 1;
     max-height: none;
-    overflow-y: auto;
+    overflow: auto;
     padding: 1rem;
     /* 允许内部滚动，防止滚动穿透 */
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   
   .modal-header {
@@ -1596,6 +1718,22 @@ html.modal-open::-webkit-scrollbar {
   opacity: 0.6;
 }
 
+/* 模态框内容显示状态 */
+.modal.show .modal-content {
+  opacity: 1;
+  transform: scale(1) translateY(0) rotateX(0deg);
+  filter: blur(0px);
+  animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 模态框内容隐藏状态 */
+.modal.hiding .modal-content {
+  opacity: 0;
+  transform: scale(0.9) translateY(-20px) rotateX(10deg);
+  filter: blur(4px);
+  animation: modalSlideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;
@@ -1611,6 +1749,19 @@ html.modal-open::-webkit-scrollbar {
     opacity: 1;
     transform: scale(1) translateY(0) rotateX(0deg);
     filter: blur(0px);
+  }
+}
+
+@keyframes modalSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotateX(0deg);
+    filter: blur(0px);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px) rotateX(10deg);
+    filter: blur(4px);
   }
 }
 
@@ -1670,10 +1821,13 @@ html.modal-open::-webkit-scrollbar {
 
 .modal-body {
   padding: 1.5rem;
-  max-height: 70vh;
-  overflow-y: auto;
+  /* 移除固定高度，让内容自适应 */
+  overflow: auto;
   background: hsl(var(--background));
-  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
 }
 
 .modal-body .form-group:last-child {
@@ -1701,25 +1855,48 @@ html.modal-open::-webkit-scrollbar {
   background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
 }
 
-/* 属性分类 - 瀑布流布局 */
+/* 属性分类 - 竖向flex布局，避免横向滚动 */
 .property-categories {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  margin: -0.5rem;
+  /* 优化滚动体验 */
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  max-height: calc(85vh - 120px);
+}
+
+.property-category {
+  flex: 1 1 180px;
+  min-width: 180px;
 }
 
 /* 响应式属性分类布局 */
 @media (max-width: 768px) {
   .property-categories {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 0.5rem;
-    align-items: start;
+    max-height: calc(90vh - 200px);
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+  }
+  
+  .property-category {
+    flex: none;
+    min-width: auto;
+    width: 100%;
   }
   
   /* CSS属性编辑器中等屏幕优化 */
   .css-properties {
-    /* 保持简化样式，最大化内容空间 */
+    max-height: 300px;
+    overflow-y: auto;
   }
   
   .css-property-item {
@@ -1749,12 +1926,36 @@ html.modal-open::-webkit-scrollbar {
 
 @media (max-width: 480px) {
   .property-categories {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.375rem;
+    max-height: calc(95vh - 180px);
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding: 0.375rem;
+    margin: -0.375rem;
   }
   
   .property-category {
+    flex: none;
+    min-width: auto;
+    width: 100%;
     min-height: auto;
+    margin-bottom: 0.5rem;
+    break-inside: avoid;
+  }
+  
+  .property-category-list,
+  .property-list {
+    padding: 0.25rem;
+    gap: 0.125rem;
+  }
+  
+  .property-item,
+  .property-option {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.125rem;
   }
   
   .property-category-header {
@@ -1774,7 +1975,7 @@ html.modal-open::-webkit-scrollbar {
   /* CSS属性编辑器小屏幕优化 - 简化样式 */
   .css-properties {
     min-height: 120px;
-    /* 保持简化样式，最大化内容空间 */
+    padding: 0.375rem;
   }
   
   .css-property-item {
@@ -1782,7 +1983,7 @@ html.modal-open::-webkit-scrollbar {
     align-items: stretch;
     gap: 0.5rem;
     padding: 0.5rem 2.5rem 0.5rem 0.5rem; /* 右侧留出关闭按钮空间 */
-    margin-bottom: 0.5rem;
+    /* margin-bottom: 0.5rem; */
     border: 1px solid hsl(var(--border));
     border-radius: calc(var(--radius) / 2);
     background: hsl(var(--card));
@@ -1810,7 +2011,7 @@ html.modal-open::-webkit-scrollbar {
   .css-property-item .property-value {
     min-width: unset;
     width: 100%;
-    font-size: 16px; /* 防止iOS缩放 */
+    font-size: 12px; /* 防止iOS缩放 */
     padding: 0.5rem;
   }
   
@@ -1863,46 +2064,67 @@ html.modal-open::-webkit-scrollbar {
 }
 
 /* 滚动条样式已移除，因为使用瀑布流完全展开 */
-}
 
 /* 属性选项样式 - 统一.property-item和.property-option */
 .property-item,
 .property-option {
-  padding: 0.5rem 0.75rem;
-  border-radius: calc(var(--radius) - 2px);
+  padding: 0.625rem 0.875rem;
+  border-radius: calc(var(--radius));
   cursor: pointer;
-  font-size: 0.75rem;
-  color: hsl(var(--foreground));
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid transparent;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid hsl(var(--border) / 0.5);
   font-weight: 500;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted) / 0.05) 100%);
-  margin-bottom: 0.125rem;
-  line-height: 1.4;
-  min-height: 2.5rem;
+  background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted) / 0.02) 100%);
+  margin-bottom: 0.25rem;
+  line-height: 1.5;
+  min-height: 2.75rem;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.property-name-cn {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  font-size: 0.8rem;
+  line-height: 1.2;
+  margin-bottom: 0.125rem;
+}
+
+.property-name-en {
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.7rem;
+  line-height: 1.2;
+  opacity: 0.8;
 }
 
 .property-item:hover,
 .property-option:hover {
-  background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--primary) / 0.1) 100%);
-  color: hsl(var(--accent-foreground));
-  border-color: hsl(var(--primary) / 0.3);
+  background: linear-gradient(135deg, hsl(var(--accent) / 0.1) 0%, hsl(var(--primary) / 0.05) 100%);
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--primary) / 0.4);
   font-weight: 600;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .property-item.selected,
 .property-option.selected {
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%);
   color: hsl(var(--primary-foreground));
   border-color: hsl(var(--primary));
-  font-weight: 700;
-  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  box-shadow: 0 4px 16px hsl(var(--primary) / 0.3), 0 0 0 1px hsl(var(--primary) / 0.5);
+  transform: translateY(-1px);
 }
 
 .property-item.selected::after,

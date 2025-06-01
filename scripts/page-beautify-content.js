@@ -93,20 +93,26 @@ class PageBeautifyContent {
    */
   async loadAndApplyStoredTheme() {
     try {
-      // 从chrome.storage.sync获取应用的主题ID
+      console.log('[Content Script] 开始加载存储的主题');
+      
+      // 从chrome.storage.sync获取应用的主题ID（与页面应用保持一致）
       const result = await chrome.storage.sync.get(['appliedThemeId', 'customThemes']);
+      console.log('[Content Script] 使用存储类型: chrome.storage.sync');
+      console.log('[Content Script] 从存储中获取的完整结果:', result);
+      
       const appliedThemeId = result.appliedThemeId;
+      console.log('[Content Script] 解析出的主题ID:', appliedThemeId, '类型:', typeof appliedThemeId);
       
       if (!appliedThemeId) {
-        console.log('没有找到已应用的主题');
+        console.log('[Content Script] 没有找到已应用的主题，主题ID为空或undefined');
         return;
       }
 
-      console.log('找到已应用的主题ID:', appliedThemeId);
+      console.log('[Content Script] 找到已应用的主题ID:', appliedThemeId);
 
       // 如果是无主题，不需要应用任何样式
       if (appliedThemeId === 'none' || appliedThemeId === 'default') {
-        console.log('应用无主题（无样式）');
+        console.log('[Content Script] 应用无主题（无样式）');
         return;
       }
 
@@ -115,27 +121,34 @@ class PageBeautifyContent {
       
       // 首先检查自定义主题
       const customThemes = result.customThemes;
+      console.log('[Content Script] 自定义主题数据:', customThemes);
+      
       if (customThemes && Array.isArray(customThemes)) {
         themeData = customThemes.find(theme => theme.id === appliedThemeId);
+        console.log('[Content Script] 在自定义主题中查找结果:', themeData ? '找到' : '未找到');
       }
 
       // 如果没有找到自定义主题，检查预制主题
       if (!themeData) {
+        console.log('[Content Script] 在预制主题中查找，预制主题数量:', PRESET_THEMES.length);
         themeData = PRESET_THEMES.find(theme => theme.id === appliedThemeId);
+        console.log('[Content Script] 在预制主题中查找结果:', themeData ? '找到' : '未找到');
       }
 
       // 如果仍然没有找到主题数据
       if (!themeData) {
-        console.log('未找到对应的主题数据，主题ID:', appliedThemeId);
+        console.log('[Content Script] 未找到对应的主题数据，主题ID:', appliedThemeId);
+        console.log('[Content Script] 可用的预制主题ID:', PRESET_THEMES.map(t => t.id));
         return;
       }
 
       // 应用找到的主题
-      console.log('自动应用主题:', themeData.name);
+      console.log('[Content Script] 自动应用主题:', themeData.name);
       this.applyTheme(themeData);
       
     } catch (error) {
-      console.error('加载存储主题失败:', error);
+      console.error('[Content Script] 加载存储主题失败:', error);
+      console.error('[Content Script] 错误详情:', error.message, error.stack);
     }
   }
 
@@ -157,6 +170,7 @@ class PageBeautifyContent {
           break;
 
         case "RESET_STYLES":
+        case "CLEAR_STYLES":
           this.resetAllStyles();
           sendResponse({ success: true });
           break;
