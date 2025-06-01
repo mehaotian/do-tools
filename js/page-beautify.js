@@ -305,9 +305,9 @@ class ThemeManager {
     console.log('恢复主题:', appliedThemeId);
 
     // 查找并选中对应的主题（恢复UI状态和显示内容，但不重新应用主题）
-    if (appliedThemeId === 'default') {
-      // 恢复默认主题选中状态
-      this.selectDefaultTheme(false);
+    if (appliedThemeId === 'none' || appliedThemeId === 'default') {
+      // 恢复无主题选中状态（兼容旧的default值）
+      this.selectNoneTheme(false);
     } else {
       // 查找预制主题
       const presetTheme = this.appState.presetThemes.find(theme => theme.id === appliedThemeId);
@@ -386,9 +386,23 @@ class ThemeManager {
   // 渲染预制主题
   renderPresetThemes() {
     const container = document.getElementById('presetThemes');
+    // 保留无主题，清空其他内容
+    const noneTheme = container.querySelector('[data-theme-id="none"]');
     container.innerHTML = '';
+    
+    // 重新添加无主题
+    if (noneTheme) {
+      container.appendChild(noneTheme);
+      // 添加无主题点击事件
+      noneTheme.addEventListener('click', () => {
+        this.selectNoneTheme();
+      });
+    }
 
     this.appState.presetThemes.forEach(theme => {
+      // 跳过无主题，因为已经在HTML中定义
+      if (theme.id === 'none') return;
+      
       const card = document.createElement('div');
       card.className = 'preset-theme-card';
       card.setAttribute('data-theme-id', theme.id);
@@ -408,18 +422,7 @@ class ThemeManager {
   // 渲染自定义主题
   renderCustomThemes() {
     const container = document.getElementById('customThemesList');
-    // 保留默认主题，清空其他内容
-    const defaultTheme = container.querySelector('[data-theme-id="default"]');
     container.innerHTML = '';
-    
-    // 重新添加默认主题
-    if (defaultTheme) {
-      container.appendChild(defaultTheme);
-      // 添加默认主题点击事件
-      defaultTheme.addEventListener('click', () => {
-        this.selectDefaultTheme();
-      });
-    }
 
     this.appState.customThemes.forEach(theme => {
       const item = document.createElement('div');
@@ -530,8 +533,8 @@ class ThemeManager {
     }
   }
   
-  // 选择默认主题
-  selectDefaultTheme(applyTheme = true) {
+  // 选择无主题
+  selectNoneTheme(applyTheme = true) {
     // 清除其他选中状态
     document.querySelectorAll('.preset-theme-card.active').forEach(card => {
       card.classList.remove('active');
@@ -540,11 +543,11 @@ class ThemeManager {
       item.classList.remove('active');
     });
     
-    // 设置默认主题为选中
-    document.querySelector('[data-theme-id="default"]').classList.add('active');
+    // 设置无主题为选中
+    document.querySelector('[data-theme-id="none"]').classList.add('active');
     
     if (applyTheme) {
-      // 应用默认主题（清除所有样式）
+      // 应用无主题（清除所有样式）
       chrome.runtime.sendMessage({
         action: 'pageBeautify',
         type: 'RESET_STYLES',
@@ -553,9 +556,9 @@ class ThemeManager {
         if (chrome.runtime.lastError) {
           Utils.showToast('重置样式失败: ' + chrome.runtime.lastError.message, 'error');
         } else {
-          // 保存默认主题状态
-          this.appState.setAppliedTheme('default');
-          Utils.showToast('已应用默认主题', 'success');
+          // 保存无主题状态
+          this.appState.setAppliedTheme('none');
+          Utils.showToast('已应用无主题', 'success');
         }
       });
       

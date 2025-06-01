@@ -104,9 +104,9 @@ class PageBeautifyContent {
 
       console.log('找到已应用的主题ID:', appliedThemeId);
 
-      // 如果是默认主题，不需要应用任何样式
-      if (appliedThemeId === 'default') {
-        console.log('应用默认主题（无样式）');
+      // 如果是无主题，不需要应用任何样式
+      if (appliedThemeId === 'none' || appliedThemeId === 'default') {
+        console.log('应用无主题（无样式）');
         return;
       }
 
