@@ -38,7 +38,13 @@ export class ThemeManager {
     
     // URL校验节流处理
     this.throttledValidateUrl = Utils.throttle(
-      this.validateUrlPattern.bind(this),
+      async (inputElement, value) => {
+        try {
+          await this.validateUrlPattern(inputElement, value);
+        } catch (error) {
+          console.error('URL验证失败:', error);
+        }
+      },
       500
     );
     
@@ -2522,6 +2528,12 @@ export class ThemeManager {
               data-index="${index}" title="删除此模式">×</button>
     `;
 
+    // 立即验证URL模式并应用样式
+    const inputElement = item.querySelector('.url-pattern-input');
+    if (inputElement && urlPattern.pattern) {
+      this.validateUrlPattern(inputElement, urlPattern.pattern).catch(console.error);
+    }
+
     return item;
   }
 
@@ -2834,49 +2846,70 @@ export class ThemeManager {
   }
   
   /**
-   * 校验URL模式格式
+   * 校验URL模式是否匹配当前页面
    * @param {HTMLElement} inputElement - 输入框元素
    * @param {string} value - URL模式值
    */
-  validateUrlPattern(inputElement, value) {
+  async validateUrlPattern(inputElement, value) {
     // 移除之前的校验状态
     inputElement.classList.remove('url-pattern-valid', 'url-pattern-invalid');
     
     if (!value.trim()) {
-      // 空值不显示错误状态
+      // 空值不显示状态
       return;
     }
     
-    let isValid = false;
-    let errorMessage = '';
-    
     try {
-      // 基本格式校验
-      if (value.includes('*')) {
-        // 通配符模式校验
-        isValid = this.validateWildcardPattern(value);
-        errorMessage = isValid ? '' : '通配符格式错误，如：*.example.com 或 https://*.example.com/*';
-      } else if (value.startsWith('http://') || value.startsWith('https://')) {
-        // URL格式校验
-        isValid = this.validateUrlFormat(value);
-        errorMessage = isValid ? '' : 'URL格式错误，请输入完整的网址';
-      } else {
-        // 域名格式校验
-        isValid = this.validateDomainFormat(value);
-        errorMessage = isValid ? '' : '域名格式错误，如：example.com';
+      // 获取当前页面URL
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const currentUrl = tabs[0]?.url;
+      
+      if (!currentUrl) {
+        // 无法获取当前URL时，不显示状态
+        inputElement.title = '无法获取当前页面URL';
+        return;
       }
+      
+      // 基本格式检查，确保模式不会导致错误
+      let isValidFormat = true;
+      try {
+        // 简单检查是否会导致正则表达式错误
+        if (value.includes('**')) {
+          isValidFormat = false;
+        } else {
+          // 测试能否转换为正则表达式
+          const regexPattern = value
+            .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+            .replace(/\*/g, '.*')
+            .replace(/\?/g, '.');
+          new RegExp(`^${regexPattern}$`, 'i');
+        }
+      } catch (error) {
+        isValidFormat = false;
+      }
+      
+      if (!isValidFormat) {
+        inputElement.classList.add('url-pattern-invalid');
+        inputElement.title = '模式格式错误';
+        return;
+      }
+      
+      // 进行实际匹配测试
+      const { URL_MATCHER } = await import('../core/constants.js');
+      const isMatch = URL_MATCHER.isMatch(currentUrl, value, 'wildcard');
+      
+      // 根据匹配结果设置状态
+      if (isMatch) {
+        inputElement.classList.add('url-pattern-valid');
+        inputElement.title = `✓ 匹配当前页面: ${currentUrl}`;
+      } else {
+        inputElement.classList.add('url-pattern-invalid');
+        inputElement.title = `✗ 不匹配当前页面: ${currentUrl}`;
+      }
+      
     } catch (error) {
-      isValid = false;
-      errorMessage = '格式校验失败';
-    }
-    
-    // 应用校验结果样式
-    if (isValid) {
-      inputElement.classList.add('url-pattern-valid');
-      inputElement.title = '格式正确';
-    } else {
-      inputElement.classList.add('url-pattern-invalid');
-      inputElement.title = errorMessage;
+      console.error('URL匹配验证失败:', error);
+      inputElement.title = '验证失败';
     }
   }
   
@@ -2890,20 +2923,65 @@ export class ThemeManager {
     // 1. 可以包含 * 通配符
     // 2. 不能连续出现多个 *
     // 3. 域名部分不能为空
+    // 4. 验证通配符模式的合理性
     
     if (pattern.includes('**')) {
       return false; // 不允许连续通配符
     }
     
-    // 移除协议部分进行域名检查
-    let domainPart = pattern.replace(/^https?:\/\//, '');
-    domainPart = domainPart.split('/')[0]; // 只取域名部分
-    
-    if (!domainPart || domainPart === '*') {
-      return false; // 域名不能为空或只有通配符
+    // 特殊情况：单独的 * 表示匹配所有URL
+    if (pattern === '*') {
+      return true;
     }
     
-    return true;
+    // 检查基本格式
+    try {
+      // 将通配符模式转换为正则表达式进行测试
+      const regexPattern = pattern
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&') // 转义特殊字符
+        .replace(/\*/g, '.*') // * 转换为 .*
+        .replace(/\?/g, '.'); // ? 转换为 .
+      
+      const regex = new RegExp(`^${regexPattern}$`, 'i');
+      
+      // 验证正则表达式是否有效
+      if (!regex) {
+        return false;
+      }
+      
+      // 检查模式的合理性：
+      // 1. 如果包含协议部分，应该是完整的协议格式
+      if (pattern.includes('://')) {
+        const protocolPart = pattern.split('://')[0];
+        const domainPart = pattern.split('://')[1];
+        
+        // 协议部分检查
+        if (protocolPart !== '*' && protocolPart !== 'http' && protocolPart !== 'https') {
+          return false;
+        }
+        
+        // 域名部分不能为空
+        if (!domainPart || domainPart.trim() === '') {
+          return false;
+        }
+        
+        // 域名部分应该包含有效字符（不能只是通配符和特殊字符）
+        const cleanDomain = domainPart.replace(/[*?]/g, '').replace(/\//g, '');
+        if (cleanDomain.length === 0) {
+          return false;
+        }
+      } else {
+        // 如果没有协议部分，检查是否为有效的域名模式
+        const cleanPattern = pattern.replace(/[*?]/g, '').replace(/\//g, '');
+        if (cleanPattern.length === 0) {
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
   
   /**

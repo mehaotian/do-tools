@@ -142,37 +142,41 @@
 .url-pattern-input.url-pattern-valid {
   border-color: hsl(142 76% 36%);
   box-shadow: 0 0 0 1px hsl(142 76% 36% / 0.2);
+  background-color: hsl(142 76% 96%); /* 淡绿色背景 */
 }
 
 .url-pattern-input.url-pattern-invalid {
   border-color: hsl(0 84% 60%);
   box-shadow: 0 0 0 1px hsl(0 84% 60% / 0.2);
+  background-color: hsl(0 84% 96%); /* 淡红色背景 */
 }
 
 .url-pattern-input.url-pattern-valid:focus {
   border-color: hsl(142 76% 36%);
   box-shadow: 0 0 0 2px hsl(142 76% 36% / 0.2);
+  background-color: hsl(142 76% 94%); /* 聚焦时稍深的淡绿色背景 */
 }
 
 .url-pattern-input.url-pattern-invalid:focus {
   border-color: hsl(0 84% 60%);
   box-shadow: 0 0 0 2px hsl(0 84% 60% / 0.2);
+  background-color: hsl(0 84% 94%); /* 聚焦时稍深的淡红色背景 */
 }
 
 /* 校验状态图标 */
 .url-pattern-input.url-pattern-valid {
-  background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="%23059669"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1rem;
+  background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="%23059669"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>'), linear-gradient(to right, hsl(142 76% 96%), hsl(142 76% 96%));
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 0.75rem center, 0 0;
+  background-size: 1rem, 100% 100%;
   padding-right: 2.5rem;
 }
 
 .url-pattern-input.url-pattern-invalid {
-  background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="%23DC2626"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1rem;
+  background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="%23DC2626"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>'), linear-gradient(to right, hsl(0 84% 96%), hsl(0 84% 96%));
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 0.75rem center, 0 0;
+  background-size: 1rem, 100% 100%;
   padding-right: 2.5rem;
 }
 
