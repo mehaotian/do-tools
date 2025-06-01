@@ -3,346 +3,183 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>页面美化</title>
+    <title>页面美化 - 可视化CSS编辑器</title>
     <link rel="stylesheet" href="css/page-beautify.css" />
   </head>
   <body>
+    <!-- 顶部工具栏 -->
     <div class="beautify-header">
-      <h1>页面美化</h1>
-      <div class="header-actions">
-        <button class="btn btn-secondary" id="resetStyles">重置样式</button>
-        <button class="btn btn-primary" id="applyStyles">应用样式</button>
-      </div>
+      <h1>页面美化 - 可视化CSS编辑器</h1>
     </div>
 
     <div class="beautify-container">
-      <div class="beautify-content">
-        <div class="beautify-section">
-          <h3>快速主题</h3>
-          <div class="theme-presets">
-            <div class="theme-preset" data-theme="default">
-              <div class="theme-preview default"></div>
-              <span>默认</span>
+      <!-- 左侧面板 -->
+      <div class="left-panel">
+        <!-- 预制主题区域 -->
+        <div class="preset-themes-section">
+          <h3>预制主题</h3>
+          <div class="preset-themes" id="presetThemes">
+            <!-- 预制主题将通过JavaScript动态生成 -->
+          </div>
+        </div>
+
+        <!-- 自定义主题列表 -->
+        <div class="custom-themes-section">
+          <h3>自定义主题</h3>
+          <div class="custom-themes-list" id="customThemesList">
+            <!-- 默认主题（无样式） -->
+            <div class="custom-theme-item" data-theme-id="default">
+              <div class="custom-theme-info">
+                <h5>默认主题</h5>
+                <p>无任何样式修改</p>
+              </div>
             </div>
-            <div class="theme-preset" data-theme="dark">
-              <div class="theme-preview dark"></div>
-              <span>深色</span>
+            <!-- 自定义主题列表将通过JavaScript动态生成 -->
+          </div>
+          <div class="theme-management-actions">
+            <button class="btn btn-outline btn-full" id="newThemeBtn">
+              <span class="icon">+</span>
+              新建主题
+            </button>
+            <button class="btn btn-secondary btn-full" id="importThemeBtn">
+              <span class="icon">📁</span>
+              导入主题
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中间编辑区 -->
+      <div class="middle-panel">
+        <!-- 主题信息编辑 -->
+        <div class="theme-info-section" id="themeInfoSection" style="display: none;">
+          <div class="section-header">
+            <h3>主题信息</h3>
+            <div class="theme-actions">
+              <button class="btn btn-sm btn-primary" id="applyThemeBtn">应用主题</button>
+              <button class="btn btn-sm btn-secondary" id="exportThemeBtn">导出主题</button>
+              <button class="btn btn-sm btn-outline" id="saveThemeBtn">保存主题</button>
+              <button class="btn btn-sm btn-outline" id="saveAsThemeBtn" style="display: none;">另存为</button>
             </div>
-            <div class="theme-preset" data-theme="blue">
-              <div class="theme-preview blue"></div>
-              <span>蓝色</span>
+          </div>
+          <div class="theme-info-form">
+            <div class="form-group">
+              <label for="themeName">主题名称</label>
+              <input type="text" id="themeName" class="form-input" placeholder="输入主题名称">
             </div>
-            <div class="theme-preset" data-theme="green">
-              <div class="theme-preview green"></div>
-              <span>绿色</span>
-            </div>
-            <div class="theme-preset" data-theme="purple">
-              <div class="theme-preview purple"></div>
-              <span>紫色</span>
-            </div>
-            <div class="theme-preset" data-theme="warm">
-              <div class="theme-preview warm"></div>
-              <span>暖色</span>
+            <div class="form-group">
+              <label for="themeDescription">主题描述</label>
+              <textarea id="themeDescription" class="form-textarea" placeholder="输入主题描述"></textarea>
             </div>
           </div>
         </div>
 
-        <div class="beautify-section">
-          <h3>导航栏设置 <span class="navbar-status-indicator" title="检测导航栏元素状态"></span></h3>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">毛玻璃效果</div>
-              <div class="setting-description">导航栏背景显示毛玻璃效果</div>
-            </div>
-            <div class="setting-control">
-              <div class="toggle-switch" id="centerContentToggle"></div>
-            </div>
+        <!-- 修改组列表 -->
+        <div class="groups-section" id="groupsSection">
+          <div class="section-header">
+            <h3>样式修改组</h3>
+            <button class="btn btn-sm btn-primary" id="addGroupBtn">
+              <span class="icon">+</span>
+              添加组
+            </button>
           </div>
-          
-          <div class="setting-item" id="navbarBlurSettings" style="display: none;">
-            <div class="setting-info">
-              <div class="setting-label">模糊强度 (blur)</div>
-              <div class="setting-description">调整毛玻璃的模糊程度</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="range"
-                class="range-slider"
-                id="navbarBlur"
-                min="1"
-                max="20"
-                value="4"
-              />
-              <span class="range-value" id="navbarBlurValue">4px</span>
-            </div>
-          </div>
-          
-          <div class="setting-item" id="navbarSizeSettings" style="display: none;">
-            <div class="setting-info">
-              <div class="setting-label">点阵大小 (size)</div>
-              <div class="setting-description">调整背景点阵的大小</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="range"
-                class="range-slider"
-                id="navbarSize"
-                min="2"
-                max="10"
-                value="4"
-              />
-              <span class="range-value" id="navbarSizeValue">4px</span>
-            </div>
-          </div>
-          
-          <div class="setting-item" id="navbarTransparentSettings" style="display: none;">
-            <div class="setting-info">
-              <div class="setting-label">透明区域 (transparent)</div>
-              <div class="setting-description">调整透明点的大小</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="range"
-                class="range-slider"
-                id="navbarTransparent"
-                min="0.5"
-                max="3"
-                step="0.1"
-                value="1"
-              />
-              <span class="range-value" id="navbarTransparentValue">1px</span>
-            </div>
-          </div>
-          
-          <div class="setting-item" id="navbarColorSettings" style="display: none;">
-            <div class="setting-info">
-              <div class="setting-label">背景颜色 (color)</div>
-              <div class="setting-description">调整毛玻璃的背景颜色</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="color"
-                class="color-picker"
-                id="navbarColor"
-                value="#ffffff"
-              />
-            </div>
+          <div class="groups-list" id="groupsList">
+            <!-- 修改组将通过JavaScript动态生成 -->
           </div>
         </div>
 
-        <!-- <div class="beautify-section">
-          <h3>字体设置</h3>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">字体大小</div>
-              <div class="setting-description">调整页面文字大小</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="range"
-                class="range-slider"
-                id="fontSizeSlider"
-                min="80"
-                max="150"
-                value="100"
-              />
-              <span class="range-value" id="fontSizeValue">100%</span>
-            </div>
+        <!-- 空状态提示 -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">🎨</div>
+          <h3>开始创建你的主题</h3>
+          <p>选择一个预制主题作为起点，或者创建一个全新的主题</p>
+          <button class="btn btn-primary" id="createFirstTheme">创建第一个主题</button>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- 添加组模态框 -->
+    <div class="modal" id="addGroupModal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>添加修改组</h3>
+          <button class="modal-close" id="closeAddGroupModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="groupName">组名称</label>
+            <input type="text" id="groupName" class="form-input" placeholder="例如：导航栏修改">
           </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">行间距</div>
-              <div class="setting-description">调整文字行间距</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="range"
-                class="range-slider"
-                id="lineHeightSlider"
-                min="100"
-                max="200"
-                value="150"
-              />
-              <span class="range-value" id="lineHeightValue">1.5</span>
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">字体族</div>
-              <div class="setting-description">选择字体类型</div>
-            </div>
-            <div class="setting-control">
-              <select class="select-field" id="fontFamilySelect">
-                <option value="default">默认字体</option>
-                <option value="serif">衬线字体</option>
-                <option value="sans-serif">无衬线字体</option>
-                <option value="monospace">等宽字体</option>
-                <option value="cursive">手写字体</option>
-              </select>
-            </div>
+          <div class="form-group">
+            <label for="groupDescription">组描述</label>
+            <textarea id="groupDescription" class="form-textarea" placeholder="描述这个组的作用"></textarea>
           </div>
         </div>
-
-        <div class="beautify-section">
-          <h3>颜色设置</h3>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">背景颜色</div>
-              <div class="setting-description">自定义页面背景色</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="color"
-                class="color-picker"
-                id="backgroundColorPicker"
-                value="#ffffff"
-              />
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">文字颜色</div>
-              <div class="setting-description">自定义文字颜色</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="color"
-                class="color-picker"
-                id="textColorPicker"
-                value="#333333"
-              />
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">链接颜色</div>
-              <div class="setting-description">自定义链接颜色</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="color"
-                class="color-picker"
-                id="linkColorPicker"
-                value="#0066cc"
-              />
-            </div>
-          </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="cancelAddGroup">取消</button>
+          <button class="btn btn-primary" id="confirmAddGroup">添加</button>
         </div>
-
-        <div class="beautify-section">
-          <h3>布局设置</h3>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">页面宽度</div>
-              <div class="setting-description">调整内容区域宽度</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="range"
-                class="range-slider"
-                id="pageWidthSlider"
-                min="80"
-                max="100"
-                value="100"
-              />
-              <span class="range-value" id="pageWidthValue">100%</span>
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">内容居中</div>
-              <div class="setting-description">将页面内容居中显示</div>
-            </div>
-            <div class="setting-control">
-              <div class="toggle-switch" id="centerContentToggle"></div>
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">圆角效果</div>
-              <div class="setting-description">为页面元素添加圆角</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="range"
-                class="range-slider"
-                id="borderRadiusSlider"
-                min="0"
-                max="20"
-                value="0"
-              />
-              <span class="range-value" id="borderRadiusValue">0px</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="beautify-section">
-          <h3>特效设置</h3>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">阴影效果</div>
-              <div class="setting-description">为页面元素添加阴影</div>
-            </div>
-            <div class="setting-control">
-              <div class="toggle-switch" id="shadowToggle"></div>
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">动画效果</div>
-              <div class="setting-description">启用页面过渡动画</div>
-            </div>
-            <div class="setting-control">
-              <div class="toggle-switch" id="animationToggle"></div>
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">模糊背景</div>
-              <div class="setting-description">为背景添加模糊效果</div>
-            </div>
-            <div class="setting-control">
-              <input
-                type="range"
-                class="range-slider"
-                id="blurSlider"
-                min="0"
-                max="10"
-                value="0"
-              />
-              <span class="range-value" id="blurValue">0px</span>
-            </div>
-          </div>
-        </div> -->
-
-        <div class="beautify-section">
-          <h3>配置管理</h3>
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">导出配置</div>
-              <div class="setting-description">将当前配置保存为JSON文件</div>
-            </div>
-            <div class="setting-control">
-              <button class="btn btn-primary" id="exportConfigBtn">导出配置</button>
-            </div>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">导入配置</div>
-              <div class="setting-description">从JSON文件加载配置</div>
-            </div>
-            <div class="setting-control">
-              <input type="file" id="importConfigInput" accept=".json" style="display: none;" />
-              <button class="btn btn-secondary" id="importConfigBtn">选择文件</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="version-info">页面美化 v1.0</div>
       </div>
     </div>
 
-    <script src="js/page-beautify.js" type="module" ></script>
+    <!-- 添加CSS规则模态框 -->
+    <div class="modal" id="addRuleModal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>添加CSS规则</h3>
+          <button class="modal-close" id="closeAddRuleModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="cssSelector">CSS选择器</label>
+            <div class="selector-input-group">
+              <input type="text" id="cssSelector" class="form-input" placeholder="例如：nav, .navbar, #header">
+              <button class="btn btn-sm btn-outline" id="validateSelector">验证</button>
+              <div class="selector-status-indicator" id="selectorStatusIndicator"></div>
+            </div>
+            <div class="selector-suggestions" id="selectorSuggestions"></div>
+          </div>
+          <div class="form-group">
+            <label>CSS属性</label>
+            <div class="css-properties" id="cssProperties">
+              <!-- CSS属性编辑器将动态生成 -->
+            </div>
+            <button class="btn btn-sm btn-outline" id="addPropertyBtn">
+              <span class="icon">+</span>
+              添加属性
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="cancelAddRule">取消</button>
+          <button class="btn btn-primary" id="confirmAddRule">添加规则</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 属性选择模态框 -->
+    <div class="modal" id="propertySelectModal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>选择CSS属性</h3>
+          <button class="modal-close" id="closePropertySelectModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="property-categories" id="propertyCategories">
+            <!-- 属性分类将动态生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 文件输入（隐藏） -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <script type="module" src="js/page-beautify.js"></script>
   </body>
 </html>

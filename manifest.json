@@ -48,7 +48,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["index.html", "css/*", "js/*", "images/*", "settings.html", "settings.js", "page-beautify.html"],
+      "resources": ["index.html", "css/*", "js/*", "modules/*", "images/*", "settings.html", "settings.js", "page-beautify.html"],
       "matches": ["<all_urls>"]
     }
   ],

@@ -1,133 +1,296 @@
 /**
  * 页面美化内容脚本
- * 负责在目标网页中应用美化效果
+ * 在目标网页中注入并应用美化效果
  */
 
 class PageBeautifyContent {
   constructor() {
-    this.isDestroyed = false; // 标记是否已销毁
-    this.settings = {
-      navbar: {
-        enabled: false,
-        blur: 4,
-        size: 20,
-        transparent: 10,
-        color: "rgba(255, 255, 255, 0.1)",
-      },
-    };
-
-    this.targetSelectors = {
-      navbar: ".d-header-wrap .d-header",
-    };
-    console.log("contentjs 页面美化内容脚本已初始化");
+    this.appliedStyles = new Map();
     this.init();
   }
 
-  /**
-   * 初始化
-   */
-  init() {}
+  async init() {
+    console.log("页面美化内容脚本初始化完成");
+  }
 
   /**
-   * 应用导航栏毛玻璃效果
+   * 处理页面美化相关消息
+   * @param {Object} request - 请求对象
+   * @param {Function} sendResponse - 响应函数
    */
-  applyNavbarGlassEffect() {
+  async handlePageBeautifyMessage(request, sendResponse) {
     try {
-      const navbarElements = document.querySelectorAll(
-        this.targetSelectors.navbar
-      );
-      console.log("导航栏元素:", navbarElements, this.settings.navbar.enabled);
-      if (this.settings.navbar.enabled) {
-        const { blur, size, transparent, color } = this.settings.navbar;
+      console.log("收到页面美化消息:", request);
 
-        const styles = {
-          "background-image": `radial-gradient(transparent ${transparent}px, ${color} ${transparent}px)`,
-          "background-size": `${size}px ${size}px`,
-          "backdrop-filter": `saturate(50%) blur(${blur}px)`,
-          'background-color': 'transparent',
-          transition: "all 0.3s ease",
-          position: "relative",
-          "z-index": "1000",
-        };
+      switch (request.type) {
+        case "APPLY_THEME":
+          this.applyTheme(request.theme || request.data);
+          sendResponse({ success: true });
+          break;
 
-        navbarElements.forEach((element) => {
-          Object.assign(element.style, styles);
-          element.classList.add("page-beautify-navbar");
-        });
+        case "RESET_STYLES":
+          this.resetAllStyles();
+          sendResponse({ success: true });
+          break;
 
-        console.log("已应用导航栏毛玻璃效果");
-      } else {
-        // 移除毛玻璃效果
-        navbarElements.forEach((element) => {
-          element.style.removeProperty("background-image");
-          element.style.removeProperty("background-size");
-          element.style.removeProperty("backdrop-filter");
-          element.style.removeProperty("transition");
-          element.classList.remove("page-beautify-navbar");
-        });
+        case "CHECK_NAVBAR_ELEMENTS":
+          const result = this.checkNavbarElements();
+          sendResponse({ success: true, data: result });
+          break;
 
-        console.log("已移除导航栏毛玻璃效果");
+        case "VALIDATE_SELECTOR":
+          const validationResult = this.validateSelector(request.selector);
+          console.log('验证结果',validationResult);
+          
+          sendResponse({ success: true, data: validationResult });
+          break;
+
+        default:
+          console.warn("未知的消息类型:", request.type);
+          sendResponse({ success: false, error: "未知的消息类型" });
       }
     } catch (error) {
-      console.warn("应用导航栏效果时出错:", error);
+      console.error("处理消息时发生错误:", error);
+      sendResponse({ success: false, error: error.message });
     }
   }
 
   /**
-   * 检查导航栏元素是否存在
+   * 应用主题样式
+   * @param {Object} themeData - 主题数据
    */
-  checkNavbarElements() {
-    const navbarElements = document.querySelectorAll(
-      this.targetSelectors.navbar
-    );
-    console.log("导航栏元素:", navbarElements);
-    console.log("导航栏元素选择器:", this.targetSelectors.navbar);
-    return navbarElements.length > 0;
+  applyTheme(themeData) {
+    if (!themeData || !themeData.groups) {
+      console.warn("无效的主题数据");
+      return;
+    }
+
+    // 先清除现有样式
+    this.resetAllStyles();
+
+    // 应用新主题的样式组
+    themeData.groups.forEach((group) => {
+      if (group.rules && Array.isArray(group.rules)) {
+        group.rules.forEach((rule) => {
+          this.applyRule(rule, group.id);
+        });
+      }
+    });
+
+    console.log("主题样式已应用:", themeData.name || "未命名主题");
   }
 
   /**
-   * 处理消息
+   * 应用单个CSS规则
+   * @param {Object} rule - CSS规则
+   * @param {string} groupId - 组ID
    */
-  handleMessage(message, sender, sendResponse) {
-    console.log("收到消息:", message);
+  applyRule(rule, groupId) {
+    if (!rule.selector || !rule.properties) {
+      console.warn("无效的CSS规则:", rule);
+      return;
+    }
+
+    try {
+      const elements = document.querySelectorAll(rule.selector);
+
+      elements.forEach((element) => {
+        // 保存原始样式
+        if (!this.appliedStyles.has(element)) {
+          this.appliedStyles.set(element, new Map());
+        }
+
+        const elementStyles = this.appliedStyles.get(element);
+
+        Object.entries(rule.properties).forEach(([property, value]) => {
+          // 保存原始值
+          if (!elementStyles.has(property)) {
+            const originalValue =
+              element.style.getPropertyValue(property) ||
+              getComputedStyle(element).getPropertyValue(property);
+            elementStyles.set(property, originalValue);
+          }
+
+          // 应用新样式
+          element.style.setProperty(property, value);
+        });
+      });
+
+      console.log(`已应用规则 [${groupId}]: ${rule.selector}`);
+    } catch (error) {
+      console.error("应用CSS规则失败:", error, rule);
+    }
+  }
+
+  /**
+   * 重置所有应用的样式
+   */
+  resetAllStyles() {
+    this.appliedStyles.forEach((elementStyles, element) => {
+      elementStyles.forEach((originalValue, property) => {
+        if (originalValue) {
+          element.style.setProperty(property, originalValue);
+        } else {
+          element.style.removeProperty(property);
+        }
+      });
+    });
+
+    this.appliedStyles.clear();
+    console.log("所有样式已重置");
+  }
+
+  /**
+   * 检查导航栏元素
+   * @returns {Object} 检查结果
+   */
+  checkNavbarElements() {
+    const navbarSelectors = [
+      "nav",
+      ".navbar",
+      ".header",
+      ".site-header",
+      ".d-header-wrap .d-header",
+      '[role="navigation"]',
+    ];
+
+    const foundElements = [];
+
+    navbarSelectors.forEach((selector) => {
+      try {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) {
+          foundElements.push({
+            selector,
+            count: elements.length,
+            elements: Array.from(elements).map((el) => ({
+              tagName: el.tagName,
+              className: el.className,
+              id: el.id,
+            })),
+          });
+        }
+      } catch (error) {
+        console.warn(`检查选择器失败: ${selector}`, error);
+      }
+    });
+
+    return {
+      hasNavbar: foundElements.length > 0,
+      elements: foundElements,
+    };
+  }
+
+  /**
+   * 获取元素的计算样式
+   * @param {string} selector - CSS选择器
+   * @param {Array} properties - 要获取的属性列表
+   * @returns {Object} 样式信息
+   */
+  getElementStyles(selector, properties = []) {
+    try {
+      const elements = document.querySelectorAll(selector);
+      const results = [];
+
+      elements.forEach((element, index) => {
+        const computedStyle = getComputedStyle(element);
+        const styles = {};
+
+        if (properties.length > 0) {
+          properties.forEach((prop) => {
+            styles[prop] = computedStyle.getPropertyValue(prop);
+          });
+        } else {
+          // 如果没有指定属性，返回一些常用属性
+          const commonProps = [
+            "background-color",
+            "color",
+            "font-size",
+            "padding",
+            "margin",
+            "border",
+            "border-radius",
+            "box-shadow",
+            "opacity",
+          ];
+          commonProps.forEach((prop) => {
+            styles[prop] = computedStyle.getPropertyValue(prop);
+          });
+        }
+
+        results.push({
+          index,
+          element: {
+            tagName: element.tagName,
+            className: element.className,
+            id: element.id,
+          },
+          styles,
+        });
+      });
+
+      return {
+        selector,
+        count: elements.length,
+        elements: results,
+      };
+    } catch (error) {
+      console.error("获取元素样式失败:", error);
+      return {
+        selector,
+        count: 0,
+        elements: [],
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * 验证CSS选择器
+   * @param {string} selector - CSS选择器
+   * @returns {Object} 验证结果
+   */
+  validateSelector(selector) {
+    try {
+      if (!selector || !selector.trim()) {
+        return {
+          isValid: false,
+          elementCount: 0,
+          message: "请输入CSS选择器",
+        };
+      }
+      
+      const elements = document.querySelectorAll(selector);
+      
+      return {
+        isValid: elements.length > 0,
+        elementCount: elements.length,
+        message: `找到 ${elements.length} 个匹配的元素`,
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        elementCount: 0,
+        message: "无效的CSS选择器",
+      };
+    }
   }
 }
+const pageBeautifyContent = new PageBeautifyContent();
 
-// 创建全局时间实例
-let globalPageDisplay = null;
-
-// 初始化函数
 function initializeTimerDisplay() {
-  if (!globalPageDisplay) {
-    globalPageDisplay = new PageBeautifyContent();
-
-    // 监听来自background的消息
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (!globalPageDisplay) {
-        return;
-      }
-
-      switch (request.type) {
-        case "CHECK_NAVBAR_ELEMENTS":
-          const hasNavbar = globalPageDisplay.checkNavbarElements();
-          sendResponse({ hasNavbar });
-          break;
-        case "TOGGLE_NAVBAR_EFFECT":
-          globalPageDisplay.settings.navbar.enabled = request.enabled;
-          globalPageDisplay.applyNavbarGlassEffect();
-          sendResponse({ success: true });
-          break;
-        case "APPLY_NAVBAR_EFFECT":
-            globalPageDisplay.settings.navbar = { ...globalPageDisplay.settings.navbar, ...request.settings };
-            globalPageDisplay.applyNavbarGlassEffect();
-            sendResponse({ success: true });
-            break;
-        default:
-          break;
-      }
-      console.log("收到消息:", request, sender, sendResponse);
-    });
-  }
+  // 创建全局实例
+  console.log('初始化全局实例 ok');
+  
+  // 监听来自background script的消息
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log('收到来自background script的消息',request);
+    
+    if (request.action === "pageBeautify") {
+      pageBeautifyContent.handlePageBeautifyMessage(request, sendResponse);
+      return true; // 保持消息通道开放
+    }
+  });
 }
 
 // 页面加载完成后初始化
@@ -137,14 +300,4 @@ if (document.readyState === "loading") {
   initializeTimerDisplay();
 }
 
-/**
- * 检查扩展上下文是否有效
- * @returns {boolean} 扩展上下文是否有效
- */
-function isExtensionContextValid() {
-  try {
-    return !!(chrome && chrome.runtime && chrome.runtime.id);
-  } catch (error) {
-    return false;
-  }
-}
+console.log("页面美化内容脚本已加载");
