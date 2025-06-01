@@ -358,6 +358,11 @@ class PageBeautifyHandler {
       await chrome.sidePanel.open({ windowId: (await chrome.windows.getCurrent()).id });
       showToast('页面美化工具已打开', 'success');
       
+      // 关闭弹窗
+      if (window && window.close) {
+        window.close();
+      }
+      
     } catch (error) {
       console.error('Failed to open page beautify:', error);
       
