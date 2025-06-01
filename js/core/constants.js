@@ -175,12 +175,20 @@ export const PRESET_THEMES = [
     id: "none",
     name: "无主题",
     description: "清除所有样式修改",
-    groups: []
+    groups: [],
+    urlPatterns: []
   },
   {
     id: "modern-light",
     name: "现代浅色",
     description: "简洁现代的浅色主题",
+    urlPatterns: [
+      {
+        pattern: "*://linux.do/*",
+        type: "wildcard",
+        enabled: true
+      }
+    ],
     groups: [
       {
         id: "body-style",
@@ -204,6 +212,13 @@ export const PRESET_THEMES = [
     id: "modern-dark",
     name: "现代深色",
     description: "优雅的深色主题",
+    urlPatterns: [
+      {
+        pattern: "*://linux.do/*",
+        type: "wildcard",
+        enabled: true
+      }
+    ],
     groups: [
       {
         id: "body-style",
@@ -229,6 +244,9 @@ export const PRESET_THEMES = [
  * 应用配置常量
  */
 export const APP_CONFIG = {
+  // 应用版本
+  VERSION: '1.0.0',
+  
   // 存储键名
   STORAGE_KEYS: {
     CUSTOM_THEMES: 'customThemes',
@@ -246,12 +264,118 @@ export const APP_CONFIG = {
   VALIDATION: {
     MAX_THEME_NAME_LENGTH: 50,
     MAX_DESCRIPTION_LENGTH: 200,
-    MAX_SELECTOR_LENGTH: 500
+    MAX_SELECTOR_LENGTH: 500,
+    MAX_URL_PATTERN_LENGTH: 200
   },
   
   // 重试配置
   RETRY: {
     MAX_RETRIES: 3,
     RETRY_DELAY: 1000
+  }
+};
+
+/**
+ * URL匹配模式类型
+ */
+export const URL_PATTERN_TYPES = {
+  WILDCARD: 'wildcard',
+  REGEX: 'regex',
+  EXACT: 'exact'
+};
+
+/**
+ * URL匹配工具函数
+ */
+export const URL_MATCHER = {
+  /**
+   * 检查URL是否匹配指定模式
+   * @param {string} url - 要检查的URL
+   * @param {string} pattern - 匹配模式
+   * @param {string} type - 模式类型
+   * @returns {boolean} 是否匹配
+   */
+  isMatch(url, pattern, type = URL_PATTERN_TYPES.WILDCARD) {
+    if (!url || !pattern) return false;
+    
+    try {
+      switch (type) {
+        case URL_PATTERN_TYPES.EXACT:
+          return url === pattern;
+          
+        case URL_PATTERN_TYPES.REGEX:
+          const regex = new RegExp(pattern);
+          return regex.test(url);
+          
+        case URL_PATTERN_TYPES.WILDCARD:
+        default:
+          return this.wildcardMatch(url, pattern);
+      }
+    } catch (error) {
+      console.warn('URL匹配失败:', error);
+      return false;
+    }
+  },
+  
+  /**
+   * 通配符匹配
+   * @param {string} url - 要检查的URL
+   * @param {string} pattern - 通配符模式
+   * @returns {boolean} 是否匹配
+   */
+  wildcardMatch(url, pattern) {
+    if (pattern === '*') return true;
+    
+    // 将通配符模式转换为正则表达式
+    const regexPattern = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&') // 转义特殊字符
+      .replace(/\*/g, '.*') // * 转换为 .*
+      .replace(/\?/g, '.'); // ? 转换为 .
+    
+    const regex = new RegExp(`^${regexPattern}$`, 'i');
+    return regex.test(url);
+  },
+  
+  /**
+   * 从URL中提取域名
+   * @param {string} url - 完整URL
+   * @returns {string} 域名
+   */
+  extractDomain(url) {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    } catch (error) {
+      console.warn('URL解析失败:', error);
+      return '';
+    }
+  },
+  
+  /**
+   * 验证URL模式的有效性
+   * @param {string} pattern - URL模式
+   * @param {string} type - 模式类型
+   * @returns {boolean} 是否有效
+   */
+  validatePattern(pattern, type = URL_PATTERN_TYPES.WILDCARD) {
+    if (!pattern || typeof pattern !== 'string') return false;
+    
+    try {
+      switch (type) {
+        case URL_PATTERN_TYPES.REGEX:
+          new RegExp(pattern);
+          return true;
+          
+        case URL_PATTERN_TYPES.EXACT:
+          return pattern.length > 0;
+          
+        case URL_PATTERN_TYPES.WILDCARD:
+        default:
+          // 基本的通配符模式验证
+          return pattern.length > 0 && pattern.length <= 200;
+      }
+    } catch (error) {
+      return false;
+    }
   }
 };

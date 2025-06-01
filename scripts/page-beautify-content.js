@@ -95,6 +95,10 @@ class PageBeautifyContent {
     try {
       console.log('[Content Script] 开始加载存储的主题');
       
+      // 获取当前页面URL
+      const currentUrl = window.location.href;
+      console.log('[Content Script] 当前页面URL:', currentUrl);
+      
       // 从chrome.storage.sync获取应用的主题ID（与页面应用保持一致）
       const result = await chrome.storage.sync.get(['appliedThemeId', 'customThemes']);
       console.log('[Content Script] 使用存储类型: chrome.storage.sync');
@@ -142,14 +146,106 @@ class PageBeautifyContent {
         return;
       }
 
+      // 检查主题是否匹配当前URL
+      const isUrlMatch = this.isThemeMatchUrl(themeData, currentUrl);
+      console.log('[Content Script] URL匹配检查结果:', isUrlMatch);
+      
+      if (!isUrlMatch) {
+        console.log('[Content Script] 主题不匹配当前URL，不应用主题');
+        return;
+      }
+
       // 应用找到的主题
-      console.log('[Content Script] 自动应用主题:', themeData.name);
+      console.log('[Content Script] URL匹配成功，自动应用主题:', themeData.name);
       this.applyTheme(themeData);
       
     } catch (error) {
       console.error('[Content Script] 加载存储主题失败:', error);
       console.error('[Content Script] 错误详情:', error.message, error.stack);
     }
+  }
+
+  /**
+   * 检查主题是否匹配当前URL
+   * @param {Object} theme - 主题数据
+   * @param {string} currentUrl - 当前页面URL
+   * @returns {boolean} 是否匹配
+   */
+  isThemeMatchUrl(theme, currentUrl) {
+    if (!theme || !currentUrl) {
+      return false;
+    }
+
+    // 如果没有urlPatterns或为空数组，则不匹配任何URL（新的行为）
+    if (!theme.urlPatterns || !Array.isArray(theme.urlPatterns) || theme.urlPatterns.length === 0) {
+      console.log('[Content Script] 主题没有配置URL模式，不匹配');
+      return false;
+    }
+
+    // 检查是否有任何启用的模式匹配当前URL
+    const matchResult = theme.urlPatterns.some(urlPattern => {
+      if (!urlPattern.enabled) {
+        return false;
+      }
+
+      const isMatch = this.matchUrlPattern(currentUrl, urlPattern.pattern, urlPattern.type || 'wildcard');
+      console.log(`[Content Script] 检查模式 "${urlPattern.pattern}" (${urlPattern.type || 'wildcard'}):`, isMatch);
+      return isMatch;
+    });
+    
+    return matchResult;
+  }
+
+  /**
+   * 检查URL是否匹配指定模式
+   * @param {string} url - 要检查的URL
+   * @param {string} pattern - 匹配模式
+   * @param {string} type - 模式类型
+   * @returns {boolean} 是否匹配
+   */
+  matchUrlPattern(url, pattern, type = 'wildcard') {
+    if (!url || !pattern) {
+      return false;
+    }
+
+    try {
+      switch (type) {
+        case 'exact':
+          return url === pattern;
+          
+        case 'regex':
+          const regex = new RegExp(pattern);
+          return regex.test(url);
+          
+        case 'wildcard':
+        default:
+          return this.wildcardMatch(url, pattern);
+      }
+    } catch (error) {
+      console.warn('[Content Script] URL匹配失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 通配符匹配
+   * @param {string} url - 要检查的URL
+   * @param {string} pattern - 通配符模式
+   * @returns {boolean} 是否匹配
+   */
+  wildcardMatch(url, pattern) {
+    if (pattern === '*') {
+      return true;
+    }
+    
+    // 将通配符模式转换为正则表达式
+    const regexPattern = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&') // 转义特殊字符
+      .replace(/\*/g, '.*') // * 转换为 .*
+      .replace(/\?/g, '.'); // ? 转换为 .
+    
+    const regex = new RegExp(`^${regexPattern}$`, 'i');
+    return regex.test(url);
   }
 
   /**

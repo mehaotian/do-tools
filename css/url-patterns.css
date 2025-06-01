@@ -1,0 +1,183 @@
+/* URL模式配置样式 */
+.url-patterns-container {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 1rem;
+  border: 1px solid hsl(var(--border));
+}
+
+.url-patterns-list {
+  margin-bottom: 1rem;
+}
+
+.url-pattern-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 4px);
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.url-pattern-item:hover {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: var(--shadow-sm);
+}
+
+.url-pattern-item.disabled {
+  opacity: 0.6;
+  background: hsl(var(--muted) / 0.5);
+}
+
+.url-pattern-toggle {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid hsl(var(--border));
+  border-radius: 3px;
+  background: hsl(var(--background));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.url-pattern-toggle.enabled {
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+}
+
+.url-pattern-toggle.enabled::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: hsl(var(--primary-foreground));
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.url-pattern-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 6px);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.8rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.url-pattern-input:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+}
+
+.url-pattern-type {
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 6px);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.75rem;
+  min-width: 80px;
+}
+
+.url-pattern-type:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+}
+
+.url-pattern-remove {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
+  border-radius: calc(var(--radius) - 6px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.url-pattern-remove:hover {
+  background: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
+}
+
+.url-pattern-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.url-pattern-help {
+  margin-top: 0.5rem;
+}
+
+.url-pattern-help .help-text {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.url-pattern-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+}
+
+/* URL校验状态样式 */
+.url-pattern-input.url-pattern-valid {
+  border-color: hsl(142 76% 36%);
+  box-shadow: 0 0 0 1px hsl(142 76% 36% / 0.2);
+}
+
+.url-pattern-input.url-pattern-invalid {
+  border-color: hsl(0 84% 60%);
+  box-shadow: 0 0 0 1px hsl(0 84% 60% / 0.2);
+}
+
+.url-pattern-input.url-pattern-valid:focus {
+  border-color: hsl(142 76% 36%);
+  box-shadow: 0 0 0 2px hsl(142 76% 36% / 0.2);
+}
+
+.url-pattern-input.url-pattern-invalid:focus {
+  border-color: hsl(0 84% 60%);
+  box-shadow: 0 0 0 2px hsl(0 84% 60% / 0.2);
+}
+
+/* 校验状态图标 */
+.url-pattern-input.url-pattern-valid {
+  background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="%23059669"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
+.url-pattern-input.url-pattern-invalid {
+  background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="%23DC2626"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
+.url-pattern-empty .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}

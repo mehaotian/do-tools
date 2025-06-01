@@ -5,7 +5,7 @@
 
 import { Utils } from '../core/utils.js';
 import { chromeApi } from '../services/chrome-api.js';
-import { CSS_PROPERTIES } from '../core/constants.js';
+import { CSS_PROPERTIES, APP_CONFIG } from '../core/constants.js';
 
 /**
  * 主题管理器类
@@ -29,6 +29,18 @@ export class ThemeManager {
     this.validateSelectorTimer = null;
     this.clearHighlightTimer = null;
     this.autoValidateTimer = null;
+    
+    // URL输入防抖处理
+    this.debouncedUpdateUrlPattern = Utils.debounce(
+      this.updateUrlPatternValue.bind(this),
+      APP_CONFIG.UI.DEBOUNCE_DELAY
+    );
+    
+    // URL校验节流处理
+    this.throttledValidateUrl = Utils.throttle(
+      this.validateUrlPattern.bind(this),
+      500
+    );
     
     // 预绑定事件处理器，避免重复绑定问题
     this.boundHandleThemeChange = this.handleThemeChange.bind(this);
@@ -85,6 +97,9 @@ export class ThemeManager {
       this.initializeModals();
       this.renderThemes();
       await this.restoreAppliedTheme();
+      
+      // 初始化URL模式事件绑定（一次性绑定）
+      this.bindUrlPatternEvents();
       
       // 初始化最后保存的应用主题ID
       this.lastSavedAppliedThemeId = this.appState.getAppliedThemeId();
@@ -455,6 +470,45 @@ export class ThemeManager {
     const currentTheme = this.appState.getCurrentTheme();
     if (currentTheme) {
       console.log('准备应用主题:', currentTheme.name, '主题ID:', currentTheme.id, '原始ID:', currentTheme.originalId);
+      
+
+      // 检查主题是否配置了URL规则
+      if (!currentTheme.urlPatterns || currentTheme.urlPatterns.length === 0) {
+        // 没有配置URL规则时清除当前样式
+        const clearSuccess = await chromeApi.clearStyles();
+        if (clearSuccess) {
+          Utils.showToast(`主题 "${currentTheme.name}" 没有配置适用网站，已清除样式`, 'warning');
+        } else {
+          Utils.showToast(`主题 "${currentTheme.name}" 没有配置适用网站，无法应用`, 'warning');
+        }
+        return;
+      }
+      
+      // 获取当前活动标签页的URL进行匹配检查
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const currentUrl = tabs[0]?.url;
+        
+        if (currentUrl) {
+          const isUrlMatch = Utils.isThemeMatchUrl(currentTheme, currentUrl);
+          console.log('URL匹配检查结果:', isUrlMatch, '当前URL:', currentUrl);
+          
+          if (!isUrlMatch) {
+            // URL不匹配时清除当前样式
+            const clearSuccess = await chromeApi.clearStyles();
+            if (clearSuccess) {
+              Utils.showToast(`主题 "${currentTheme.name}" 不适用于当前网站，已清除样式`, 'warning');
+            } else {
+              Utils.showToast(`主题 "${currentTheme.name}" 不适用于当前网站`, 'warning');
+            }
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn('获取当前标签页URL失败:', error);
+        // 如果无法获取URL，继续应用主题（向后兼容）
+      }
+      
       // 应用主题样式
       const success = await chromeApi.applyTheme(currentTheme);
       if (success) {
@@ -700,6 +754,11 @@ export class ThemeManager {
       this.updatePageTitle();
       
       Utils.showToast(`主题 "${currentTheme.name}" 已保存`, 'success');
+      
+      // 保存后立即校验URL匹配并应用主题
+      setTimeout(() => {
+        this.applyCurrentTheme();
+      }, 100);
     } catch (error) {
       console.error('保存主题失败:', error);
       Utils.showToast('保存主题失败: ' + error.message, 'error');
@@ -777,6 +836,11 @@ export class ThemeManager {
       this.updatePageTitle();
       
       Utils.showToast(`主题 "${newTheme.name}" 已保存`, 'success');
+      
+      // 保存后立即校验URL匹配并应用主题
+      setTimeout(() => {
+        this.applyCurrentTheme();
+      }, 100);
     } catch (error) {
       console.error('另存为失败:', error);
       Utils.showToast('另存为失败: ' + error.message, 'error');
@@ -933,6 +997,9 @@ export class ThemeManager {
       themeDescription.addEventListener('input', this.boundHandleThemeChange);
     }
 
+    // 渲染URL配置
+    this.renderUrlPatterns(targetTheme);
+
     // 根据主题类型显示不同的按钮
     this.updateThemeActions(targetTheme);
 
@@ -989,6 +1056,28 @@ export class ThemeManager {
       name: themeName ? themeName.value : currentTheme.name,
       description: themeDescription ? themeDescription.value : currentTheme.description
     };
+
+    // 收集URL模式数据
+    const urlPatterns = [];
+    const urlPatternItems = document.querySelectorAll('.url-pattern-item');
+    urlPatternItems.forEach(item => {
+      const input = item.querySelector('.url-pattern-input');
+      const select = item.querySelector('.url-pattern-type');
+      const toggle = item.querySelector('.url-pattern-toggle');
+      
+      if (input && select && toggle) {
+        const pattern = input.value.trim();
+        if (pattern) {
+          urlPatterns.push({
+            pattern: pattern,
+            type: select.value,
+            enabled: toggle.classList.contains('enabled')
+          });
+        }
+      }
+    });
+    
+    editorTheme.urlPatterns = urlPatterns;
 
     // 收集所有属性编辑器的值
     const propertyInputs = document.querySelectorAll('.property-value');
@@ -2369,4 +2458,476 @@ export class ThemeManager {
     });
   }
 
+  /**
+   * 渲染URL配置
+   * @param {Object} theme - 主题数据
+   */
+  renderUrlPatterns(theme) {
+    const container = document.getElementById('urlPatternsList');
+    if (!container) {
+      console.warn('URL模式列表容器不存在');
+      return;
+    }
+
+    // 清空现有内容
+    container.innerHTML = '';
+
+    // 获取URL模式列表
+    const urlPatterns = theme.urlPatterns || [];
+
+    if (urlPatterns.length === 0) {
+      // 显示空状态
+      container.innerHTML = `
+        <div class="url-pattern-empty">
+          <div class="empty-icon">🌐</div>
+          <p>暂无配置网站</p>
+          <small>点击下方按钮添加适用的网站</small>
+        </div>
+      `;
+    } else {
+      // 渲染URL模式列表
+      urlPatterns.forEach((urlPattern, index) => {
+        const patternItem = this.createUrlPatternItem(urlPattern, index);
+        container.appendChild(patternItem);
+      });
+    }
+
+    // 注意：事件绑定已在初始化时完成，这里不再重复绑定
+  }
+
+  /**
+   * 创建URL模式项
+   * @param {Object} urlPattern - URL模式数据
+   * @param {number} index - 索引
+   * @returns {HTMLElement} URL模式项元素
+   */
+  createUrlPatternItem(urlPattern, index) {
+    const item = document.createElement('div');
+    item.className = `url-pattern-item ${urlPattern.enabled ? '' : 'disabled'}`;
+    item.dataset.index = index;
+
+    item.innerHTML = `
+      <div class="url-pattern-toggle ${urlPattern.enabled ? 'enabled' : ''}" 
+           data-index="${index}" title="${urlPattern.enabled ? '禁用' : '启用'}此模式"></div>
+      <input type="text" class="url-pattern-input" 
+             value="${Utils.escapeHtml(urlPattern.pattern || '')}" 
+             placeholder="输入网站地址或模式" 
+             data-index="${index}">
+      <select class="url-pattern-type" data-index="${index}">
+        <option value="wildcard" ${urlPattern.type === 'wildcard' ? 'selected' : ''}>通配符</option>
+        <option value="exact" ${urlPattern.type === 'exact' ? 'selected' : ''}>精确匹配</option>
+        <option value="regex" ${urlPattern.type === 'regex' ? 'selected' : ''}>正则表达式</option>
+      </select>
+      <button type="button" class="url-pattern-remove" 
+              data-index="${index}" title="删除此模式">×</button>
+    `;
+
+    return item;
+  }
+
+  /**
+   * 绑定URL配置事件
+   */
+  bindUrlPatternEvents() {
+    // 绑定添加URL模式按钮
+    const addBtn = document.getElementById('addUrlPatternBtn');
+    if (addBtn) {
+      addBtn.removeEventListener('click', this.handleAddUrlPattern);
+      addBtn.addEventListener('click', this.handleAddUrlPattern.bind(this));
+    }
+
+    // 绑定添加当前网站按钮
+    const addCurrentBtn = document.getElementById('addCurrentUrlBtn');
+    if (addCurrentBtn) {
+      addCurrentBtn.removeEventListener('click', this.handleAddCurrentUrl);
+      addCurrentBtn.addEventListener('click', this.handleAddCurrentUrl.bind(this));
+    }
+
+    // 绑定URL模式项事件（重新绑定容器事件）
+    const container = document.getElementById('urlPatternsList');
+    if (container) {
+      // 使用事件委托处理所有URL模式项的事件
+      container.removeEventListener('click', this.handleUrlPatternClick);
+      container.addEventListener('click', this.handleUrlPatternClick.bind(this));
+      
+      container.removeEventListener('input', this.handleUrlPatternInput);
+      container.addEventListener('input', this.handleUrlPatternInput.bind(this));
+      
+      container.removeEventListener('change', this.handleUrlPatternChange);
+      container.addEventListener('change', this.handleUrlPatternChange.bind(this));
+    }
+  }
+
+  /**
+   * 处理添加URL模式
+   */
+  handleAddUrlPattern() {
+    const currentTheme = this.appState.getCurrentTheme();
+    if (!currentTheme) return;
+
+    // 确保urlPatterns数组存在
+    if (!currentTheme.urlPatterns) {
+      currentTheme.urlPatterns = [];
+    }
+
+    // 添加新的URL模式
+    const newPattern = {
+      pattern: '',
+      type: 'wildcard',
+      enabled: true
+    };
+
+    currentTheme.urlPatterns.push(newPattern);
+
+    // 重新渲染
+    this.renderUrlPatterns(currentTheme);
+    
+    // 标记为有更改
+    this.handleThemeChange();
+
+    // 聚焦到新添加的输入框
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('.url-pattern-input');
+      const lastInput = inputs[inputs.length - 1];
+      if (lastInput) {
+        lastInput.focus();
+      }
+    }, 100);
+  }
+
+  /**
+   * 处理添加当前网站
+   */
+  async handleAddCurrentUrl() {
+    try {
+      // 获取当前活动标签页的URL
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const currentUrl = tabs[0]?.url;
+      
+      if (!currentUrl) {
+        Utils.showToast('无法获取当前网站地址', 'error');
+        return;
+      }
+
+      // 提取域名
+      const domain = Utils.extractDomain(currentUrl);
+      if (!domain) {
+        Utils.showToast('无法解析当前网站域名', 'error');
+        return;
+      }
+
+      const currentTheme = this.appState.getCurrentTheme();
+      if (!currentTheme) return;
+
+      // 确保urlPatterns数组存在
+      if (!currentTheme.urlPatterns) {
+        currentTheme.urlPatterns = [];
+      }
+
+      // 生成带www和不带www的两个模式
+      const patterns = [];
+      
+      if (domain.startsWith('www.')) {
+        // 如果当前域名带www，添加带www和不带www的模式
+        const domainWithoutWww = domain.substring(4);
+        patterns.push(`*://${domain}/*`);        // 带www
+        patterns.push(`*://${domainWithoutWww}/*`); // 不带www
+      } else {
+        // 如果当前域名不带www，添加不带www和带www的模式
+        patterns.push(`*://${domain}/*`);        // 不带www
+        patterns.push(`*://www.${domain}/*`);    // 带www
+      }
+      
+      // 检查是否已存在相同的模式
+      const existingPatterns = currentTheme.urlPatterns.map(p => p.pattern);
+      const newPatterns = patterns.filter(pattern => !existingPatterns.includes(pattern));
+      
+      if (newPatterns.length === 0) {
+        Utils.showToast('当前网站的所有变体已在配置列表中', 'warning');
+        return;
+      }
+
+      // 添加新的URL模式
+      newPatterns.forEach(pattern => {
+        currentTheme.urlPatterns.push({
+          pattern: pattern,
+          type: 'wildcard',
+          enabled: true
+        });
+      });
+
+      // 重新渲染
+      this.renderUrlPatterns(currentTheme);
+      
+      // 标记为有更改，进入临时编辑模式
+      this.handleThemeChange();
+
+      // 立即应用主题（临时应用）
+      try {
+        // 获取当前活动标签页的URL
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const currentUrl = tabs[0]?.url;
+        
+        if (currentUrl) {
+          const isUrlMatch = Utils.isThemeMatchUrl(currentTheme, currentUrl);
+          if (isUrlMatch) {
+            // URL匹配，立即应用主题
+            const success = await chromeApi.applyTheme(currentTheme);
+            if (success) {
+              console.log('添加URL模式后立即应用主题成功');
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('立即应用主题失败:', error);
+      }
+
+      const addedCount = newPatterns.length;
+      const domainName = domain.startsWith('www.') ? domain.substring(4) : domain;
+      Utils.showToast(`已添加网站：${domainName}（${addedCount}个模式）`, 'success');
+      
+    } catch (error) {
+      console.error('添加当前网站失败:', error);
+      Utils.showToast('添加当前网站失败', 'error');
+    }
+  }
+
+  /**
+   * 处理URL模式点击事件
+   * @param {Event} event - 点击事件
+   */
+  handleUrlPatternClick(event) {
+    const target = event.target;
+    
+    if (target.classList.contains('url-pattern-toggle')) {
+      // 切换启用/禁用状态
+      const index = parseInt(target.dataset.index);
+      this.toggleUrlPattern(index);
+    } else if (target.classList.contains('url-pattern-remove')) {
+      // 删除URL模式
+      const index = parseInt(target.dataset.index);
+      this.removeUrlPattern(index);
+    }
+  }
+
+  /**
+   * 处理URL模式输入事件
+   * @param {Event} event - 输入事件
+   */
+  handleUrlPatternInput(event) {
+    const target = event.target;
+    
+    if (target.classList.contains('url-pattern-input')) {
+      const index = parseInt(target.dataset.index);
+      const value = target.value;
+      
+      // 实时校验URL格式
+      this.throttledValidateUrl(target, value);
+      
+      // 防抖更新URL模式值
+      this.debouncedUpdateUrlPattern(index, 'pattern', value);
+    }
+  }
+
+  /**
+   * 处理URL模式变化事件
+   * @param {Event} event - 变化事件
+   */
+  handleUrlPatternChange(event) {
+    const target = event.target;
+    
+    if (target.classList.contains('url-pattern-type')) {
+      const index = parseInt(target.dataset.index);
+      const value = target.value;
+      this.updateUrlPatternValue(index, 'type', value);
+    }
+  }
+
+  /**
+   * 切换URL模式启用状态
+   * @param {number} index - 模式索引
+   */
+  toggleUrlPattern(index) {
+    const currentTheme = this.appState.getCurrentTheme();
+    if (!currentTheme || !currentTheme.urlPatterns || !currentTheme.urlPatterns[index]) {
+      return;
+    }
+
+    // 切换状态
+    currentTheme.urlPatterns[index].enabled = !currentTheme.urlPatterns[index].enabled;
+    const newEnabled = currentTheme.urlPatterns[index].enabled;
+    
+    // 直接更新DOM元素，避免重新渲染整个列表
+    const container = document.getElementById('urlPatternsList');
+    if (container) {
+      const item = container.querySelector(`[data-index="${index}"]`);
+      if (item) {
+        const toggle = item.querySelector('.url-pattern-toggle');
+        if (toggle) {
+          // 更新切换按钮状态
+          if (newEnabled) {
+            toggle.classList.add('enabled');
+            toggle.title = '禁用此模式';
+          } else {
+            toggle.classList.remove('enabled');
+            toggle.title = '启用此模式';
+          }
+        }
+        
+        // 更新项目容器状态
+        if (newEnabled) {
+          item.classList.remove('disabled');
+        } else {
+          item.classList.add('disabled');
+        }
+      }
+    }
+    
+    // 标记为有更改
+    this.handleThemeChange();
+    
+    // 立即重新应用主题以更新页面样式
+    this.applyCurrentTheme();
+  }
+
+  /**
+   * 删除URL模式
+   * @param {number} index - 模式索引
+   */
+  removeUrlPattern(index) {
+    const currentTheme = this.appState.getCurrentTheme();
+    if (!currentTheme || !currentTheme.urlPatterns || !currentTheme.urlPatterns[index]) {
+      return;
+    }
+
+    currentTheme.urlPatterns.splice(index, 1);
+    
+    // 重新渲染
+    this.renderUrlPatterns(currentTheme);
+    
+    // 标记为有更改
+    this.handleThemeChange();
+    
+    // 立即重新应用主题以更新页面样式
+    this.applyCurrentTheme();
+  }
+
+  /**
+   * 更新URL模式值
+   * @param {number} index - 模式索引
+   * @param {string} field - 字段名
+   * @param {any} value - 新值
+   */
+  updateUrlPatternValue(index, field, value) {
+    const currentTheme = this.appState.getCurrentTheme();
+    if (!currentTheme || !currentTheme.urlPatterns || !currentTheme.urlPatterns[index]) {
+      return;
+    }
+
+    currentTheme.urlPatterns[index][field] = value;
+    
+    // 标记为有更改
+    this.handleThemeChange();
+    
+    // 立即重新应用主题以更新页面样式
+    this.applyCurrentTheme();
+  }
+  
+  /**
+   * 校验URL模式格式
+   * @param {HTMLElement} inputElement - 输入框元素
+   * @param {string} value - URL模式值
+   */
+  validateUrlPattern(inputElement, value) {
+    // 移除之前的校验状态
+    inputElement.classList.remove('url-pattern-valid', 'url-pattern-invalid');
+    
+    if (!value.trim()) {
+      // 空值不显示错误状态
+      return;
+    }
+    
+    let isValid = false;
+    let errorMessage = '';
+    
+    try {
+      // 基本格式校验
+      if (value.includes('*')) {
+        // 通配符模式校验
+        isValid = this.validateWildcardPattern(value);
+        errorMessage = isValid ? '' : '通配符格式错误，如：*.example.com 或 https://*.example.com/*';
+      } else if (value.startsWith('http://') || value.startsWith('https://')) {
+        // URL格式校验
+        isValid = this.validateUrlFormat(value);
+        errorMessage = isValid ? '' : 'URL格式错误，请输入完整的网址';
+      } else {
+        // 域名格式校验
+        isValid = this.validateDomainFormat(value);
+        errorMessage = isValid ? '' : '域名格式错误，如：example.com';
+      }
+    } catch (error) {
+      isValid = false;
+      errorMessage = '格式校验失败';
+    }
+    
+    // 应用校验结果样式
+    if (isValid) {
+      inputElement.classList.add('url-pattern-valid');
+      inputElement.title = '格式正确';
+    } else {
+      inputElement.classList.add('url-pattern-invalid');
+      inputElement.title = errorMessage;
+    }
+  }
+  
+  /**
+   * 校验通配符模式
+   * @param {string} pattern - 通配符模式
+   * @returns {boolean} 是否有效
+   */
+  validateWildcardPattern(pattern) {
+    // 基本通配符规则：
+    // 1. 可以包含 * 通配符
+    // 2. 不能连续出现多个 *
+    // 3. 域名部分不能为空
+    
+    if (pattern.includes('**')) {
+      return false; // 不允许连续通配符
+    }
+    
+    // 移除协议部分进行域名检查
+    let domainPart = pattern.replace(/^https?:\/\//, '');
+    domainPart = domainPart.split('/')[0]; // 只取域名部分
+    
+    if (!domainPart || domainPart === '*') {
+      return false; // 域名不能为空或只有通配符
+    }
+    
+    return true;
+  }
+  
+  /**
+   * 校验URL格式
+   * @param {string} url - URL字符串
+   * @returns {boolean} 是否有效
+   */
+  validateUrlFormat(url) {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  
+  /**
+   * 校验域名格式
+   * @param {string} domain - 域名字符串
+   * @returns {boolean} 是否有效
+   */
+  validateDomainFormat(domain) {
+    // 基本域名格式校验
+    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*$/;
+    return domainRegex.test(domain) && domain.length <= 253;
+  }
 }

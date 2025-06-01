@@ -324,7 +324,146 @@ export class Utils {
       }
     }
 
+    // 检查urlPatterns格式（可选字段）
+    if (theme.urlPatterns !== undefined) {
+      if (!Array.isArray(theme.urlPatterns)) {
+        return false;
+      }
+      
+      for (const urlPattern of theme.urlPatterns) {
+        if (!this.validateUrlPattern(urlPattern)) {
+          return false;
+        }
+      }
+    }
+
     return true;
+  }
+
+  /**
+   * 验证URL模式数据格式
+   * @param {any} urlPattern - URL模式数据
+   * @returns {boolean} 是否有效
+   */
+  static validateUrlPattern(urlPattern) {
+    if (!urlPattern || typeof urlPattern !== 'object') {
+      return false;
+    }
+
+    // 检查必需字段
+    if (!urlPattern.pattern || typeof urlPattern.pattern !== 'string') {
+      return false;
+    }
+
+    // 检查模式类型
+    const validTypes = ['wildcard', 'regex', 'exact'];
+    if (urlPattern.type && !validTypes.includes(urlPattern.type)) {
+      return false;
+    }
+
+    // 检查enabled字段
+    if (urlPattern.enabled !== undefined && typeof urlPattern.enabled !== 'boolean') {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * 检查主题是否匹配当前URL
+   * @param {Object} theme - 主题数据
+   * @param {string} currentUrl - 当前页面URL
+   * @returns {boolean} 是否匹配
+   */
+  static isThemeMatchUrl(theme, currentUrl) {
+    if (!theme || !currentUrl) {
+      return false;
+    }
+
+    // 如果没有urlPatterns或为空数组，则不匹配任何URL
+    if (!theme.urlPatterns || !Array.isArray(theme.urlPatterns) || theme.urlPatterns.length === 0) {
+      return false;
+    }
+
+    // 检查是否有任何启用的模式匹配当前URL
+    return theme.urlPatterns.some(urlPattern => {
+      if (!urlPattern.enabled) {
+        return false;
+      }
+
+      return this.matchUrlPattern(currentUrl, urlPattern.pattern, urlPattern.type || 'wildcard');
+    });
+  }
+
+  /**
+   * 检查URL是否匹配指定模式
+   * @param {string} url - 要检查的URL
+   * @param {string} pattern - 匹配模式
+   * @param {string} type - 模式类型
+   * @returns {boolean} 是否匹配
+   */
+  static matchUrlPattern(url, pattern, type = 'wildcard') {
+    if (!url || !pattern) {
+      return false;
+    }
+
+    try {
+      switch (type) {
+        case 'exact':
+          return url === pattern;
+          
+        case 'regex':
+          const regex = new RegExp(pattern);
+          return regex.test(url);
+          
+        case 'wildcard':
+        default:
+          return this.wildcardMatch(url, pattern);
+      }
+    } catch (error) {
+      console.warn('URL匹配失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 通配符匹配
+   * @param {string} url - 要检查的URL
+   * @param {string} pattern - 通配符模式
+   * @returns {boolean} 是否匹配
+   */
+  static wildcardMatch(url, pattern) {
+    if (pattern === '*') {
+      return true;
+    }
+    
+    // 将通配符模式转换为正则表达式
+    const regexPattern = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&') // 转义特殊字符
+      .replace(/\*/g, '.*') // * 转换为 .*
+      .replace(/\?/g, '.'); // ? 转换为 .
+    
+    const regex = new RegExp(`^${regexPattern}$`, 'i');
+    return regex.test(url);
+  }
+
+  /**
+   * 从URL中提取域名
+   * @param {string} url - 完整的URL
+   * @returns {string|null} 域名，如果解析失败返回null
+   */
+  static extractDomain(url) {
+    if (!url || typeof url !== 'string') {
+      return null;
+    }
+
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    } catch (error) {
+      console.warn('URL解析失败:', error);
+      return null;
+    }
   }
 
   /**
