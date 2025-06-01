@@ -1050,13 +1050,14 @@ body {
 
 .form-input,
 .form-textarea {
-  padding: 0.5rem 0.75rem;
+  padding: 0.375rem 0.5rem;
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
   font-size: 0.75rem;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   transition: all 0.2s ease;
+  height: 32px;
 }
 
 .form-input:focus,
@@ -1074,6 +1075,7 @@ body {
 .form-textarea {
   resize: vertical;
   min-height: 60px;
+  height: auto; /* 覆盖form-input的固定高度 */
 }
 
 /* 选择器输入组 */
@@ -1130,21 +1132,62 @@ body {
   border-color: #16a34a30;
 }
 
-/* CSS属性编辑器 */
+/* CSS属性编辑器 - 简化样式，最大化内容空间 */
 .css-properties {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-bottom: 1rem;
   min-height: 120px;
-  max-height: 300px;
-  padding: 1rem;
-  border: 2px dashed hsl(var(--border));
-  border-radius: var(--radius);
-  background: hsl(var(--muted) / 0.3);
-  transition: all 0.2s ease;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  /* 移除所有装饰性样式，给内容更大展示空间 */
+}
+
+/* 响应式表单布局优化 */
+@media (max-width: 768px) {
+  .selector-input-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .selector-input-group .form-input {
+    width: 100%;
+  }
+  
+  .selector-input-group .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .css-property-editor {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .css-property-editor .form-input,
+  .css-property-editor .form-select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .form-input,
+  .form-textarea,
+  .form-select {
+    font-size: 16px; /* 防止iOS缩放 */
+  }
 }
 
 .css-properties:empty::before {
@@ -1159,10 +1202,10 @@ body {
   font-style: italic;
 }
 
-.css-properties:not(:empty) {
+/* .css-properties:not(:empty) {
   border-style: solid;
   background: hsl(var(--background));
-}
+} */
 
 /* CSS属性编辑器滚动条样式 */
 .css-properties::-webkit-scrollbar {
@@ -1190,18 +1233,16 @@ body {
   gap: 0.75rem;
   align-items: center;
   padding: 1rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
   background: hsl(var(--card));
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .css-property-item:hover {
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  border-color: hsl(var(--primary) / 0.3);
 }
 
 .css-property-item::before {
@@ -1225,12 +1266,16 @@ body {
 
 .css-property-item .property-name {
   min-width: 120px;
+  max-width: 200px;
   font-weight: 500;
   color: hsl(var(--primary));
+  flex: 0 1 auto;
 }
 
 .css-property-item .property-value {
   min-width: 140px;
+  flex: 1 1 auto;
+  max-width: 100%;
 }
 
 .css-property-item .property-remove {
@@ -1267,16 +1312,46 @@ body {
   justify-content: center;
   z-index: 1000;
   animation: modalBackdropFadeIn 0.3s ease;
-  overscroll-behavior: contain;
+  /* 完全阻止滚动穿透 */
+  overscroll-behavior: none;
   overflow: hidden;
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+  /* 确保模态框覆盖整个视口 */
+  inset: 0;
 }
 
-/* 阻止背景滚动 */
+/* 阻止背景滚动 - 增强版本 */
 body.modal-open {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  height: 100%;
+  overflow: hidden !important;
+  /* 防止iOS Safari滚动穿透 */
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 和 Edge */
+  /* 防止页面跳动 */
+  padding-right: 0;
+}
+
+/* 隐藏 WebKit 浏览器的滚动条 */
+body.modal-open::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 确保 html 元素也不会滚动 */
+html.modal-open {
+  overflow: hidden !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html.modal-open::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 @keyframes modalBackdropFadeIn {
@@ -1302,6 +1377,212 @@ body.modal-open {
   min-width: 700px;
   backdrop-filter: blur(20px);
   position: relative;
+  width: auto;
+  /* 阻止事件冒泡到背景 */
+  touch-action: auto;
+  -webkit-overflow-scrolling: touch;
+  /* 确保内容区域独立滚动 */
+  overscroll-behavior: contain;
+}
+
+/* 响应式弹窗设计 - 适配小屏幕和Chrome扩展侧栏 */
+@media (max-width: 768px) {
+  .modal-content {
+    min-width: unset;
+    width: 95vw;
+    max-width: 95vw;
+    margin: 0.5rem;
+    border-radius: var(--radius);
+  }
+  
+  .modal-body {
+    padding: 1rem;
+    max-height: 60vh;
+  }
+  
+  .modal-header,
+  .modal-footer {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Chrome扩展侧栏优化 - 检测极窄环境 */
+@media (max-width: 600px) {
+  .modal-content {
+    min-width: unset;
+    width: 98vw;
+    max-width: 98vw;
+    margin: 1vw;
+  }
+}
+
+/* Chrome扩展环境特殊适配 */
+.chrome-extension-mode .modal-content {
+  min-width: unset !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.chrome-extension-mode .modal-body {
+  flex: 1 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  padding: 1rem !important;
+}
+
+.chrome-extension-mode .modal-header,
+.chrome-extension-mode .modal-footer {
+  flex-shrink: 0 !important;
+  padding: 1rem !important;
+}
+
+.chrome-extension-mode .modal-footer {
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+
+.chrome-extension-mode .modal-footer .btn {
+  width: 100% !important;
+  justify-content: center !important;
+}
+
+.chrome-extension-mode .property-categories {
+  grid-template-columns: 1fr !important;
+  gap: 0.5rem !important;
+}
+
+.chrome-extension-mode .selector-input-group {
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+
+.chrome-extension-mode .selector-input-group .form-input,
+.chrome-extension-mode .selector-input-group .btn {
+  width: 100% !important;
+}
+
+.chrome-extension-mode .css-property-editor {
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+
+.chrome-extension-mode .css-property-editor .form-input,
+.chrome-extension-mode .css-property-editor .form-select {
+  width: 100% !important;
+}
+
+/* Chrome扩展模式下的CSS属性编辑器优化 */
+.chrome-extension-mode .css-properties {
+  min-height: 120px !important;
+  /* 保持简化样式，最大化内容空间 */
+}
+
+.chrome-extension-mode .css-property-item {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0.375rem !important;
+  padding: 0.375rem 2rem 0.375rem 0.375rem !important; /* 右侧留出关闭按钮空间 */
+  margin-bottom: 0.375rem !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 4px !important;
+  background: hsl(var(--card)) !important;
+  box-shadow: none !important;
+  position: relative !important; /* 为绝对定位的关闭按钮提供定位上下文 */
+}
+
+.chrome-extension-mode .css-property-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+.chrome-extension-mode .css-property-item .property-name {
+  min-width: unset !important;
+  max-width: unset !important;
+  width: 100% !important;
+  text-align: left !important;
+  padding: 0.25rem 0.375rem !important;
+  background: hsl(var(--muted) / 0.3) !important;
+  border-radius: 3px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+.chrome-extension-mode .css-property-item .property-value {
+  min-width: unset !important;
+  width: 100% !important;
+  font-size: 14px !important;
+  padding: 0.375rem !important;
+}
+
+.chrome-extension-mode .css-property-item .property-remove {
+  position: absolute !important;
+  top: 0.375rem !important;
+  right: 0.375rem !important;
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 0.75rem !important;
+  margin: 0 !important;
+  z-index: 1 !important;
+}
+
+/* 超小屏幕全屏显示 - 适用于Chrome扩展侧栏等极窄环境 */
+@media (max-width: 480px), (max-width: 100vw) and (max-height: 100vh) and (orientation: portrait) {
+  .modal {
+    padding: 0;
+  }
+  
+  .modal-content {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .modal-body {
+    flex: 1;
+    max-height: none;
+    overflow-y: auto;
+    padding: 1rem;
+    /* 允许内部滚动，防止滚动穿透 */
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  .modal-header {
+    flex-shrink: 0;
+    padding: 1rem;
+  }
+  
+  .modal-footer {
+    flex-shrink: 0;
+    padding: 1rem;
+    border-top: 1px solid hsl(var(--border));
+  }
+  
+  /* 全屏模式下的动画调整 */
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 .modal-content::before {
@@ -1420,11 +1701,129 @@ body.modal-open {
   background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
 }
 
-/* 属性分类 - 紧凑布局 */
+/* 属性分类 - 瀑布流布局 */
 .property-categories {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.75rem;
+  align-items: start;
+}
+
+/* 响应式属性分类布局 */
+@media (max-width: 768px) {
+  .property-categories {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    align-items: start;
+  }
+  
+  /* CSS属性编辑器中等屏幕优化 */
+  .css-properties {
+    /* 保持简化样式，最大化内容空间 */
+  }
+  
+  .css-property-item {
+    gap: 0.5rem;
+    padding: 0.875rem;
+    border-width: 1px;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+  
+  .css-property-item .property-name {
+    min-width: 100px;
+    max-width: 150px;
+    font-size: 0.875rem;
+  }
+  
+  .css-property-item .property-value {
+    min-width: 120px;
+    font-size: 0.875rem;
+  }
+  
+  .css-property-item .property-remove {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .property-categories {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .property-category {
+    min-height: auto;
+  }
+  
+  .property-category-header {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .property-list {
+    padding: 0.5rem;
+  }
+  
+  .property-item {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  /* CSS属性编辑器小屏幕优化 - 简化样式 */
+  .css-properties {
+    min-height: 120px;
+    /* 保持简化样式，最大化内容空间 */
+  }
+  
+  .css-property-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.5rem 2.5rem 0.5rem 0.5rem; /* 右侧留出关闭按钮空间 */
+    margin-bottom: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) / 2);
+    background: hsl(var(--card));
+    box-shadow: none;
+    position: relative; /* 为绝对定位的关闭按钮提供定位上下文 */
+  }
+  
+  .css-property-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .css-property-item .property-name {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    text-align: left;
+    padding: 0.375rem 0.5rem;
+    background: hsl(var(--muted) / 0.3);
+    border-radius: calc(var(--radius) / 2);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+  }
+  
+  .css-property-item .property-value {
+    min-width: unset;
+    width: 100%;
+    font-size: 16px; /* 防止iOS缩放 */
+    padding: 0.5rem;
+  }
+  
+  .css-property-item .property-remove {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 24px;
+    height: 24px;
+    font-size: 0.875rem;
+    margin: 0;
+    z-index: 1;
+  }
 }
 
 .property-category {
@@ -1453,34 +1852,17 @@ body.modal-open {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* 属性分类列表 - 修复样式问题 */
+/* 属性分类列表 - 瀑布流完全展开 */
 .property-category-list,
 .property-list {
   padding: 0.375rem;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
-  min-height: 120px;
-  max-height: 240px;
-  overflow-y: auto;
   flex-shrink: 0;
-  overscroll-behavior: contain;
 }
 
-.property-category-list::-webkit-scrollbar,
-.property-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.property-category-list::-webkit-scrollbar-track,
-.property-list::-webkit-scrollbar-track {
-  background: hsl(var(--muted) / 0.3);
-}
-
-.property-category-list::-webkit-scrollbar-thumb,
-.property-list::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 2px;
+/* 滚动条样式已移除，因为使用瀑布流完全展开 */
 }
 
 /* 属性选项样式 - 统一.property-item和.property-option */
@@ -1505,31 +1887,12 @@ body.modal-open {
   align-items: center;
 }
 
-.property-item::before,
-.property-option::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.15), transparent);
-  transition: left 0.5s ease;
-}
-
 .property-item:hover,
 .property-option:hover {
   background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--primary) / 0.1) 100%);
   color: hsl(var(--accent-foreground));
-  transform: translateX(3px) translateY(-1px);
-  box-shadow: var(--shadow-md);
   border-color: hsl(var(--primary) / 0.3);
   font-weight: 600;
-}
-
-.property-item:hover::before,
-.property-option:hover::before {
-  left: 100%;
 }
 
 .property-item.selected,
@@ -1538,8 +1901,7 @@ body.modal-open {
   color: hsl(var(--primary-foreground));
   border-color: hsl(var(--primary));
   font-weight: 700;
-  box-shadow: var(--shadow-lg), 0 0 0 2px hsl(var(--primary) / 0.3);
-  transform: translateX(3px) translateY(-1px);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
