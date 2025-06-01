@@ -1429,6 +1429,9 @@ export class ThemeManager {
     this.appState.setCurrentTheme(currentTheme);
     this.renderGroups(currentTheme);
     
+    // 检测修改并更新按钮状态
+    this.handleThemeChange();
+    
     // 重新应用主题以清除被删除规则的样式
     const success = await chromeApi.applyTheme(currentTheme);
     if (!success) {
@@ -1570,6 +1573,9 @@ export class ThemeManager {
 
     // 重新渲染主题编辑器内容
     this.showThemeEditor(theme);
+
+    // 检测修改并更新按钮状态
+    this.handleThemeChange();
 
     // 重新应用主题
     if (this.appState.getAppliedThemeId() === theme.id) {
@@ -1777,6 +1783,8 @@ export class ThemeManager {
       editor.remove();
       // 删除属性时也要清除预览效果
       this.clearPreviewForProperty(property);
+      // 检测修改并更新按钮状态
+      this.handleThemeChange();
     });
 
     // 添加实时预览事件
@@ -2029,6 +2037,10 @@ export class ThemeManager {
     }, 100);
 
     this.renderGroups(theme);
+    
+    // 触发主题修改状态检测
+    this.handleThemeChange();
+    
     this.hideModal('addRuleModal');
   }
 
@@ -2158,6 +2170,8 @@ export class ThemeManager {
             property,
             CSS_PROPERTIES[category].properties[property]
           );
+          // 检测修改并更新按钮状态
+          this.handleThemeChange();
           // 立即关闭模态框，避免动画延迟导致的卡顿
           this.hideModal('propertySelectModal', true);
         }

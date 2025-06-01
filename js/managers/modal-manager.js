@@ -363,6 +363,8 @@ export class ModalManager {
             property,
             CSS_PROPERTIES[category].properties[property]
           );
+          // 检测修改并更新按钮状态
+          window.themeManager?.handleThemeChange();
           // 立即关闭模态框，避免动画延迟导致的卡顿
           this.hideModal('propertySelectModal', true);
         }
@@ -419,18 +421,24 @@ export class ModalManager {
     editor.querySelector('.property-remove').addEventListener('click', () => {
       editor.remove();
       this.clearPreviewForProperty(property);
+      // 检测修改并更新按钮状态
+      window.themeManager?.handleThemeChange();
     });
 
     // 添加实时预览事件
     const propertyInput = editor.querySelector('.property-value');
     propertyInput.addEventListener('input', (e) => {
       this.previewStyle(property, e.target.value);
+      // 检测修改并更新按钮状态
+      window.themeManager?.handleThemeChange();
     });
 
     // 对于select类型，也要监听change事件
     if (config.type === 'select') {
       propertyInput.addEventListener('change', (e) => {
         this.previewStyle(property, e.target.value);
+        // 检测修改并更新按钮状态
+        window.themeManager?.handleThemeChange();
       });
     }
 
@@ -587,6 +595,9 @@ export class ModalManager {
     window.appState.setCurrentTheme(currentTheme);
     window.themeManager?.renderGroups(currentTheme);
     
+    // 触发主题修改状态检测
+    window.themeManager?.handleThemeChange();
+    
     // 清空输入框
     nameInput.value = '';
     descInput.value = '';
@@ -660,6 +671,10 @@ export class ModalManager {
 
     window.appState.setCurrentTheme(currentTheme);
     window.themeManager?.renderGroups(currentTheme);
+    
+    // 触发主题修改状态检测
+    window.themeManager?.handleThemeChange();
+    
     this.hideModal('addRuleModal');
   }
 
