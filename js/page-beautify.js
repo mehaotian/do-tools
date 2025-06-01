@@ -621,6 +621,11 @@ class ThemeManager {
     
     // 渲染修改组
     this.renderGroups(theme);
+    
+    // 验证主题中所有选择器的有效性
+    setTimeout(() => {
+      this.validateThemeSelectors(theme);
+    }, 100);
   }
   
   // 更新主题操作按钮
@@ -688,9 +693,12 @@ class ThemeManager {
 
   // 渲染CSS规则
   renderCSSRules(rules) {
-    return rules.map(rule => `
-      <div class="css-rule-item">
-        <div class="css-rule-selector">${rule.selector}</div>
+    return rules.map((rule, index) => `
+      <div class="css-rule-item" data-rule-selector="${rule.selector}" data-rule-index="${index}">
+        <div class="css-rule-selector">
+          <span class="selector-text">${rule.selector}</span>
+          <span class="selector-status" data-status="unknown">●</span>
+        </div>
         <div class="css-rule-properties">
           ${Object.entries(rule.properties).map(([prop, value]) => `
             <div class="css-property">
@@ -735,6 +743,106 @@ class ThemeManager {
         window.modalManager.showAddRuleModal(groupId);
       } else if (action === 'delete-group') {
         this.deleteGroup(groupId);
+      }
+    });
+    
+    // 为规则块添加悬浮事件
+    this.attachRuleHoverEvents(card);
+  }
+
+  // 为规则块添加悬浮事件
+  attachRuleHoverEvents(card) {
+    const ruleItems = card.querySelectorAll('.css-rule-item');
+    
+    ruleItems.forEach(ruleItem => {
+      const selector = ruleItem.dataset.ruleSelector;
+      const statusDot = ruleItem.querySelector('.selector-status');
+      
+      // 鼠标进入规则块
+      ruleItem.addEventListener('mouseenter', () => {
+        this.validateAndHighlightSelector(selector, statusDot);
+      });
+      
+      // 鼠标离开规则块
+      ruleItem.addEventListener('mouseleave', () => {
+        this.removeElementHighlight();
+      });
+    });
+  }
+
+  // 验证选择器并高亮元素
+  validateAndHighlightSelector(selector, statusDot) {
+    // 向内容脚本发送消息验证选择器
+    chrome.runtime.sendMessage({
+      action: 'pageBeautify',
+      type: 'VALIDATE_SELECTOR',
+      data: { selector }
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        // 验证失败
+        statusDot.setAttribute('data-status', 'invalid');
+        return;
+      }
+      
+      if (response && response.success && response.elementCount > 0) {
+        // 验证成功，高亮元素
+        statusDot.setAttribute('data-status', 'valid');
+        this.highlightElements(selector);
+      } else {
+        // 选择器无效或没有匹配元素
+        statusDot.setAttribute('data-status', 'invalid');
+      }
+    });
+  }
+
+  // 高亮页面元素
+  highlightElements(selector) {
+    chrome.runtime.sendMessage({
+      action: 'pageBeautify',
+      type: 'HIGHLIGHT_ELEMENTS',
+      data: { selector }
+    });
+  }
+
+  // 移除元素高亮
+  removeElementHighlight() {
+    chrome.runtime.sendMessage({
+      action: 'pageBeautify',
+      type: 'REMOVE_HIGHLIGHT'
+    });
+  }
+
+  // 验证主题中所有选择器
+  validateThemeSelectors(theme) {
+    if (!theme || !theme.groups) return;
+    
+    theme.groups.forEach(group => {
+      group.rules.forEach((rule, ruleIndex) => {
+        const ruleItem = document.querySelector(`[data-rule-selector="${rule.selector}"][data-rule-index="${ruleIndex}"]`);
+        if (ruleItem) {
+          const statusDot = ruleItem.querySelector('.selector-status');
+          this.validateSelector(rule.selector, statusDot);
+        }
+      });
+    });
+  }
+
+  // 验证单个选择器（不高亮）
+  validateSelector(selector, statusDot) {
+    chrome.runtime.sendMessage({
+      action: 'pageBeautify',
+      type: 'VALIDATE_SELECTOR',
+      data: { selector }
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        statusDot.setAttribute('data-status', 'invalid');
+        return;
+      }
+      
+      if (response && response.success && response.elementCount > 0) {
+        statusDot.setAttribute('data-status', 'valid');
+      } else {
+        statusDot.setAttribute('data-status', 'invalid');
       }
     });
   }
@@ -1256,15 +1364,14 @@ class ModalManager {
       
 
       if (response && response.success) {
-        const result = response.data;
-        if (result.isValid) {
+        if (response.isValid) {
           indicator.className = 'selector-status-indicator valid';
-          suggestions.textContent = result.message;
+          suggestions.textContent = `找到 ${response.elementCount} 个匹配元素`;
           suggestions.className = 'selector-suggestions success';
           suggestions.style.display = 'block';
         } else {
           indicator.className = 'selector-status-indicator invalid';
-          suggestions.textContent = result.message;
+          suggestions.textContent = response.elementCount === 0 ? '未找到匹配元素' : '选择器语法错误';
           suggestions.className = 'selector-suggestions error';
           suggestions.style.display = 'block';
         }
