@@ -576,6 +576,15 @@ body {
   transform: translateY(-1px);
 }
 
+/* CSS规则头部样式 */
+.css-rule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 /* CSS规则选择器样式 */
 .css-rule-selector {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -585,18 +594,72 @@ body {
   background: hsl(var(--primary) / 0.1);
   padding: 0.5rem 0.75rem;
   border-radius: calc(var(--radius) - 2px);
-  margin-bottom: 0.75rem;
   border: 1px solid hsl(var(--primary) / 0.2);
   word-break: break-all;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .selector-text {
   flex: 1;
   min-width: 0;
+}
+
+/* CSS规则操作按钮样式 */
+.css-rule-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.css-rule-item:hover .css-rule-actions {
+  opacity: 1;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  background: hsl(var(--background));
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0;
+}
+
+.btn-icon:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+.edit-rule-btn:hover {
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+.delete-rule-btn:hover {
+  background: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
+  border-color: hsl(var(--destructive) / 0.3);
+}
+
+.btn-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }
 
 /* 选择器状态圆点样式 */

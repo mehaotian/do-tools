@@ -680,7 +680,7 @@ class ThemeManager {
       </div>
       <div class="group-content" id="group-content-${group.id}">
         <div class="css-rules-list" id="rules-list-${group.id}">
-          ${this.renderCSSRules(group.rules)}
+          ${this.renderCSSRules(group.rules, group.id)}
         </div>
       </div>
     `;
@@ -692,12 +692,30 @@ class ThemeManager {
   }
 
   // 渲染CSS规则
-  renderCSSRules(rules) {
+  renderCSSRules(rules, groupId) {
     return rules.map((rule, index) => `
-      <div class="css-rule-item" data-rule-selector="${rule.selector}" data-rule-index="${index}">
-        <div class="css-rule-selector">
-          <span class="selector-text">${rule.selector}</span>
-          <span class="selector-status" data-status="unknown">●</span>
+      <div class="css-rule-item" data-rule-selector="${rule.selector}" data-rule-index="${index}" data-group-id="${groupId}">
+        <div class="css-rule-header">
+          <div class="css-rule-selector">
+            <span class="selector-text">${rule.selector}</span>
+            <span class="selector-status" data-status="unknown">●</span>
+          </div>
+          <div class="css-rule-actions">
+            <button class="btn-icon edit-rule-btn" title="修改规则" data-rule-index="${index}" data-group-id="${groupId}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="btn-icon delete-rule-btn" title="删除规则" data-rule-index="${index}" data-group-id="${groupId}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3,6 5,6 21,6"></polyline>
+                <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="css-rule-properties">
           ${Object.entries(rule.properties).map(([prop, value]) => `
@@ -743,6 +761,21 @@ class ThemeManager {
         window.modalManager.showAddRuleModal(groupId);
       } else if (action === 'delete-group') {
         this.deleteGroup(groupId);
+      }
+    });
+    
+    // 处理规则编辑和删除按钮
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.edit-rule-btn')) {
+        const btn = e.target.closest('.edit-rule-btn');
+        const ruleIndex = parseInt(btn.dataset.ruleIndex);
+        const groupId = btn.dataset.groupId;
+        this.editRule(groupId, ruleIndex);
+      } else if (e.target.closest('.delete-rule-btn')) {
+        const btn = e.target.closest('.delete-rule-btn');
+        const ruleIndex = parseInt(btn.dataset.ruleIndex);
+        const groupId = btn.dataset.groupId;
+        this.deleteRule(groupId, ruleIndex);
       }
     });
     
@@ -999,6 +1032,48 @@ class ThemeManager {
     this.renderGroups(theme);
     
     Utils.showToast('修改组已删除', 'success');
+  }
+  
+  // 编辑规则
+  editRule(groupId, ruleIndex) {
+    const theme = this.appState.currentTheme;
+    if (!theme) return;
+    
+    const group = theme.groups.find(g => g.id === groupId);
+    if (!group || !group.rules[ruleIndex]) {
+      Utils.showToast('无法找到要编辑的规则', 'error');
+      return;
+    }
+    
+    const rule = group.rules[ruleIndex];
+    
+    // 设置编辑模式并填充数据
+    window.modalManager.showEditRuleModal(groupId, ruleIndex, rule);
+  }
+  
+  // 删除规则
+  deleteRule(groupId, ruleIndex) {
+    if (!confirm('确定要删除这个CSS规则吗？')) return;
+    
+    const theme = this.appState.currentTheme;
+    if (!theme) return;
+    
+    const group = theme.groups.find(g => g.id === groupId);
+    if (!group || !group.rules[ruleIndex]) {
+      Utils.showToast('无法找到要删除的规则', 'error');
+      return;
+    }
+    
+    // 从组中移除规则
+    group.rules.splice(ruleIndex, 1);
+    
+    // 重新渲染组
+    this.renderGroups(theme);
+    
+    // 重新应用主题
+    this.applyCurrentTheme();
+    
+    Utils.showToast('CSS规则已删除', 'success');
   }
 }
 
@@ -1427,7 +1502,7 @@ class ModalManager {
 
 
 
-  // 添加CSS规则
+  // 添加或更新CSS规则
   addCSSRule() {
     const selector = document.getElementById('cssSelector').value;
     const properties = {};
@@ -1452,35 +1527,105 @@ class ModalManager {
       return;
     }
     
-    // 添加规则到当前组
     const groupId = this.currentGroupId;
     const theme = window.appState.currentTheme;
     const group = theme.groups.find(g => g.id === groupId);
     
-    if (group) {
-      group.rules.push({ selector, properties });
-      
-      // 清除该选择器的预览效果（因为规则已保存）
-      this.clearAllPreview();
-      
-      // 重新应用当前主题以显示已保存的样式
-      setTimeout(() => {
-        window.themeManager.applyCurrentTheme();
-      }, 100);
-      
-      window.themeManager.renderGroups(theme);
-      this.hideModal('addRuleModal');
-      Utils.showToast('CSS规则已添加并应用', 'success');
-    } else {
+    if (!group) {
       Utils.showToast('无法找到目标组，请重试', 'error');
+      return;
     }
+    
+    // 判断是编辑模式还是添加模式
+    if (this.currentRuleIndex !== null && this.currentRuleIndex >= 0) {
+      // 编辑模式：更新现有规则
+      if (group.rules[this.currentRuleIndex]) {
+        group.rules[this.currentRuleIndex] = { selector, properties };
+        Utils.showToast('CSS规则已更新并应用', 'success');
+      } else {
+        Utils.showToast('无法找到要编辑的规则', 'error');
+        return;
+      }
+    } else {
+      // 添加模式：新增规则
+      group.rules.push({ selector, properties });
+      Utils.showToast('CSS规则已添加并应用', 'success');
+    }
+    
+    // 清除该选择器的预览效果（因为规则已保存）
+    this.clearAllPreview();
+    
+    // 重新应用当前主题以显示已保存的样式
+    setTimeout(() => {
+      window.themeManager.applyCurrentTheme();
+    }, 100);
+    
+    window.themeManager.renderGroups(theme);
+    this.hideModal('addRuleModal');
   }
 
   // 显示添加规则模态框
   showAddRuleModal(groupId) {
     this.currentGroupId = groupId;
+    this.currentRuleIndex = null; // 清除编辑模式
     // 重置模态框状态
     this.resetAddRuleModalState();
+    this.showModal('addRuleModal');
+  }
+  
+  // 显示编辑规则模态框
+  showEditRuleModal(groupId, ruleIndex, rule) {
+    this.currentGroupId = groupId;
+    this.currentRuleIndex = ruleIndex;
+    
+    // 重置模态框状态
+    this.resetAddRuleModalState();
+    
+    // 填充现有数据
+    const selectorInput = document.getElementById('cssSelector');
+    const propertiesContainer = document.getElementById('cssProperties');
+    const modalTitle = document.querySelector('#addRuleModal .modal-title');
+    const confirmBtn = document.getElementById('confirmAddRule');
+    
+    if (modalTitle) {
+      modalTitle.textContent = '编辑CSS规则';
+    }
+    
+    if (confirmBtn) {
+      confirmBtn.textContent = '保存修改';
+    }
+    
+    if (selectorInput) {
+      selectorInput.value = rule.selector;
+    }
+    
+    // 填充CSS属性
+    if (propertiesContainer && rule.properties) {
+      Object.entries(rule.properties).forEach(([prop, value]) => {
+        // 查找属性配置
+        let propertyConfig = null;
+        for (const category in CSS_PROPERTIES) {
+          if (CSS_PROPERTIES[category].properties[prop]) {
+            propertyConfig = CSS_PROPERTIES[category].properties[prop];
+            break;
+          }
+        }
+        
+        // 如果找到配置则添加属性编辑器，否则使用默认配置
+        if (propertyConfig) {
+          this.addPropertyEditor(prop, propertyConfig);
+        } else {
+          this.addPropertyEditor(prop, { type: 'text', name: prop });
+        }
+        
+        // 设置属性值
+        const propertyInput = propertiesContainer.querySelector(`[data-property="${prop}"]`);
+        if (propertyInput) {
+          propertyInput.value = value;
+        }
+      });
+    }
+    
     this.showModal('addRuleModal');
   }
 
@@ -1491,6 +1636,8 @@ class ModalManager {
     const propertiesContainer = document.getElementById('cssProperties');
     const indicator = document.getElementById('selectorStatusIndicator');
     const suggestions = document.getElementById('selectorSuggestions');
+    const modalTitle = document.querySelector('#addRuleModal .modal-title');
+    const confirmBtn = document.getElementById('confirmAddRule');
     
     if (selectorInput) {
       selectorInput.value = '';
@@ -1498,6 +1645,15 @@ class ModalManager {
     
     if (propertiesContainer) {
       propertiesContainer.innerHTML = '';
+    }
+    
+    // 重置模态框标题和按钮文本
+    if (modalTitle) {
+      modalTitle.textContent = '添加CSS规则';
+    }
+    
+    if (confirmBtn) {
+      confirmBtn.textContent = '添加规则';
     }
     
     // 重置选择器状态指示器
@@ -1583,14 +1739,31 @@ class PageBeautifyApp {
       this.themeManager.saveAsNewTheme();
     });
     
-    // 重置预览按钮 - 清除所有实时预览效果并重新应用主题
+    // 重置预览按钮 - 清除所有实时预览效果并重新应用当前编辑的主题
     document.getElementById('resetPreviewBtn').addEventListener('click', () => {
-      this.clearAllPreview();
-      // 重新应用当前主题以显示已保存的样式
+      this.modalManager.clearAllPreview();
+      // 重新应用当前编辑的主题（而不是存储的主题）
       setTimeout(() => {
-        this.themeManager.applyCurrentTheme();
+        const currentTheme = this.appState.currentTheme;
+        if (currentTheme) {
+          // 直接应用当前编辑的主题，确保页面显示与编辑器一致
+          chrome.runtime.sendMessage({
+            action: 'pageBeautify',
+            type: 'APPLY_THEME',
+            data: currentTheme
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              Utils.showToast('重置预览失败: ' + chrome.runtime.lastError.message, 'error');
+            } else if (response && response.success) {
+              Utils.showToast('预览已重置，当前编辑主题已应用', 'success');
+            } else {
+              Utils.showToast('重置预览失败', 'error');
+            }
+          });
+        } else {
+          Utils.showToast('没有当前编辑的主题', 'warning');
+        }
       }, 100);
-      Utils.showToast('预览已重置，主题已重新应用', 'success');
     });
     
     // 导出主题按钮
@@ -1613,12 +1786,19 @@ class PageBeautifyApp {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           this.modalManager.hideModal(modal.id);
-          // 关闭模态框时清除预览效果并重新应用主题
+          // 关闭模态框时清除预览效果并重新应用当前编辑的主题
           if (modal.id === 'addRuleModal') {
-            this.clearAllPreview();
-            // 重新应用当前主题以显示已保存的样式
+            this.modalManager.clearAllPreview();
+            // 重新应用当前编辑的主题（而不是存储的主题）
             setTimeout(() => {
-              this.themeManager.applyCurrentTheme();
+              const currentTheme = this.appState.currentTheme;
+              if (currentTheme) {
+                chrome.runtime.sendMessage({
+                  action: 'pageBeautify',
+                  type: 'APPLY_THEME',
+                  data: currentTheme
+                });
+              }
             }, 100);
           }
         }
