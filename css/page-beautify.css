@@ -1,6 +1,6 @@
 /* Shadcn UI 风格的页面美化工具样式 */
 
-/* CSS变量定义 */
+/* CSS变量定义 - 现代化配色方案 */
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
@@ -8,20 +8,28 @@
   --card-foreground: 222.2 84% 4.9%;
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
+  --primary: 262.1 83.3% 57.8%;
   --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222.2 84% 4.9%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222.2 84% 4.9%;
+  --secondary: 220 14.3% 95.9%;
+  --secondary-foreground: 220.9 39.3% 11%;
+  --muted: 220 14.3% 95.9%;
+  --muted-foreground: 220 8.9% 46.1%;
+  --accent: 220 14.3% 95.9%;
+  --accent-foreground: 220.9 39.3% 11%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 262.1 83.3% 57.8%;
+  --radius: 0.75rem;
+  
+  /* 新增渐变和阴影变量 */
+  --gradient-primary: linear-gradient(135deg, hsl(262.1 83.3% 57.8%) 0%, hsl(252.1 83.3% 67.8%) 100%);
+  --gradient-secondary: linear-gradient(135deg, hsl(220 14.3% 95.9%) 0%, hsl(210 14.3% 89.9%) 100%);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
 /* 基础重置 */
@@ -40,45 +48,84 @@ body {
   overflow-x: hidden;
 }
 
-/* 顶部工具栏 - 简洁的标题设计 */
+/* 顶部工具栏 - 现代化设计 */
 .beautify-header {
-  background: hsl(var(--card));
-  border-bottom: 1px solid hsl(var(--border));
-  padding: 1rem;
+  background: var(--gradient-primary);
+  border-bottom: 1px solid hsl(var(--primary) / 0.2);
+  padding: 1.5rem 2rem;
   display: flex;
   justify-content: center;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(20px);
+  background-attachment: fixed;
 }
 
 .beautify-header h1 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: hsl(var(--foreground));
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: hsl(var(--primary-foreground));
   text-align: center;
   margin: 0;
   letter-spacing: -0.025em;
   line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* 主容器 */
+/* 主容器 - 现代化布局 */
 .beautify-container {
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - 70px);
-  background: hsl(var(--muted) / 0.3);
-  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: calc(100vh - 90px);
+  background: linear-gradient(135deg, hsl(var(--muted) / 0.3) 0%, hsl(var(--muted) / 0.1) 100%);
+  gap: 1rem;
+  padding: 1rem;
+  overflow: hidden;
 }
 
-/* 左侧面板 - 更紧凑的间距 */
+@media (max-width: 1024px) {
+  .beautify-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+}
+
+/* 左侧面板 - 现代化卡片设计 */
 .left-panel {
-  width: 100%;
   background: hsl(var(--card));
-  border-bottom: 1px solid hsl(var(--border));
-  flex-shrink: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  height: fit-content;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.95) 100%);
+}
+
+.left-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.left-panel::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.left-panel::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+.left-panel::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
 }
 
 .preset-themes-section,
@@ -102,48 +149,76 @@ body {
   letter-spacing: 0.025em;
 }
 
-/* 预制主题卡片 - Shadcn UI 风格 */
+/* 预制主题卡片 - 增强视觉效果 */
 .preset-themes {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
 }
 
 .preset-theme-card {
-  flex: 1;
-  min-width: 100px;
-  max-width: 120px;
-  padding: 0.75rem 0.5rem;
+  padding: 1rem;
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: hsl(var(--card));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--gradient-secondary);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+}
+
+.preset-theme-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.preset-theme-card:hover::before {
+  left: 100%;
 }
 
 .preset-theme-card:hover {
-  border-color: hsl(var(--ring));
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  transform: translateY(-1px);
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--primary) / 0.05) 100%);
 }
 
 .preset-theme-card.active {
   border-color: hsl(var(--primary));
-  background: hsl(var(--primary) / 0.05);
-  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.2);
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-xl), 0 0 0 2px hsl(var(--primary) / 0.2);
+  transform: translateY(-1px);
 }
 
-.preset-theme-card.active::before {
-  content: '';
+.preset-theme-card.active h4,
+.preset-theme-card.active p {
+  color: hsl(var(--primary-foreground));
+}
+
+.preset-theme-card.active::after {
+  content: '✓';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: hsl(var(--primary));
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: hsl(var(--primary-foreground));
+  color: hsl(var(--primary));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  box-shadow: var(--shadow-sm);
 }
 
 .preset-theme-card h4 {
@@ -270,15 +345,27 @@ body {
   color: hsl(var(--destructive));
 }
 
-/* 中间编辑面板 */
+/* 中间编辑面板 - 现代化设计 */
 .middle-panel {
-  flex: 1;
   background: hsl(var(--card));
-  position: relative;
-  margin: 0.5rem;
-  border-radius: var(--radius);
   border: 1px solid hsl(var(--border));
-  overflow: hidden;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: visible;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.95) 100%);
+  display: flex;
+  flex-direction: column;
+  height: auto;
+}
+
+.middle-panel > * {
+  flex-shrink: 0;
+}
+
+.groups-section {
+  flex: none;
+  overflow: visible;
 }
 
 /* 主题信息编辑 */
@@ -306,9 +393,10 @@ body {
   gap: 1rem;
 }
 
-/* 修改组区域 */
+/* 修改组区域 - 移除内部滚动 */
 .groups-section {
   padding: 1rem;
+  overflow: visible;
 }
 
 .groups-list {
@@ -452,25 +540,41 @@ body {
   max-width: 300px;
 }
 
-/* 按钮样式 - Shadcn UI 风格 */
+/* 按钮样式 - 现代化增强 */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
+  padding: 0.75rem 1.5rem;
   border: 1px solid transparent;
   border-radius: var(--radius);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   background: none;
   white-space: nowrap;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.025em;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+  left: 100%;
 }
 
 .btn:disabled {
@@ -485,16 +589,22 @@ body {
 }
 
 .btn-primary {
-  background: hsl(var(--primary));
+  background: var(--gradient-primary);
   color: hsl(var(--primary-foreground));
   border-color: hsl(var(--primary));
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: var(--shadow-md);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: hsl(var(--primary) / 0.9);
-  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.1);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg), 0 0 20px hsl(var(--primary) / 0.3);
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.1);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary {
@@ -523,24 +633,46 @@ body {
 
 #addPropertyBtn {
   margin-top: 0.75rem;
-  border: 2px dashed hsl(var(--primary) / 0.3);
-  background: hsl(var(--primary) / 0.05);
+  border: 2px dashed hsl(var(--primary) / 0.4);
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, hsl(var(--primary) / 0.1) 100%);
   color: hsl(var(--primary));
-  font-weight: 600;
-  padding: 0.875rem 1.5rem;
-  transition: all 0.2s ease;
+  font-weight: 700;
+  padding: 1rem 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+#addPropertyBtn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%);
+  transition: all 0.3s ease;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
 }
 
 #addPropertyBtn:hover {
   border-style: solid;
-  background: hsl(var(--primary) / 0.1);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px 0 rgb(0 0 0 / 0.1);
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--primary) / 0.2) 100%);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-lg), 0 0 20px hsl(var(--primary) / 0.2);
+}
+
+#addPropertyBtn:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 #addPropertyBtn .icon {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: bold;
+  position: relative;
+  z-index: 1;
 }
 
 .btn-destructive {
@@ -581,23 +713,50 @@ body {
   line-height: 1;
 }
 
-/* 表单样式 */
+/* 表单样式 - 现代化设计 */
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
-  padding: 1rem;
+  padding: 1.5rem;
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
-  background: hsl(var(--card));
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted) / 0.3) 100%);
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.form-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.form-group:focus-within {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: var(--shadow-lg), 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+.form-group:focus-within::before {
+  transform: scaleX(1);
 }
 
 .form-group label {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   color: hsl(var(--foreground));
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -701,11 +860,14 @@ body {
   gap: 0.75rem;
   margin-bottom: 1rem;
   min-height: 120px;
+  max-height: 300px;
   padding: 1rem;
   border: 2px dashed hsl(var(--border));
   border-radius: var(--radius);
   background: hsl(var(--muted) / 0.3);
   transition: all 0.2s ease;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .css-properties:empty::before {
@@ -723,6 +885,27 @@ body {
 .css-properties:not(:empty) {
   border-style: solid;
   background: hsl(var(--background));
+}
+
+/* CSS属性编辑器滚动条样式 */
+.css-properties::-webkit-scrollbar {
+  width: 8px;
+}
+
+.css-properties::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 4px;
+}
+
+.css-properties::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.8));
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.css-properties::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.8), hsl(var(--primary)));
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.3);
 }
 
 .css-property-item {
@@ -792,41 +975,83 @@ body {
   transform: scale(1.1);
 }
 
-/* 模态框样式 */
+/* 模态框样式 - 现代化设计 */
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%);
+  backdrop-filter: blur(12px);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: modalBackdropFadeIn 0.3s ease;
+  overscroll-behavior: contain;
+  overflow: hidden;
+}
+
+/* 阻止背景滚动 */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes modalBackdropFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
 }
 
 .modal-content {
-  background: hsl(var(--background));
+  background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
   border-radius: calc(var(--radius) * 2);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-xl), 0 0 40px rgba(0, 0, 0, 0.2);
   border: 1px solid hsl(var(--border));
-  max-width: 90vw;
-  max-height: 90vh;
+  max-width: 85vw;
+  max-height: 85vh;
   overflow: hidden;
-  animation: modalSlideIn 0.3s ease;
-  min-width: 600px;
+  animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 700px;
+  backdrop-filter: blur(20px);
+  position: relative;
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--gradient-primary);
+  opacity: 0.6;
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(-10px);
+    transform: scale(0.9) translateY(-20px) rotateX(10deg);
+    filter: blur(4px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02) translateY(-5px) rotateX(2deg);
+    filter: blur(1px);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1) translateY(0) rotateX(0deg);
+    filter: blur(0px);
   }
 }
 
@@ -834,45 +1059,62 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 2rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid hsl(var(--border));
-  background: linear-gradient(135deg, hsl(var(--muted) / 0.1), hsl(var(--primary) / 0.05));
+  background: var(--gradient-primary);
+  position: relative;
+}
+
+.modal-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.5), transparent);
 }
 
 .modal-header h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: hsl(var(--foreground));
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: hsl(var(--primary-foreground));
   margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.025em;
 }
 
 .modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 1.2rem;
   cursor: pointer;
-  color: hsl(var(--muted-foreground));
-  padding: 0.5rem;
+  color: hsl(var(--primary-foreground));
+  padding: 0.375rem;
   border-radius: var(--radius);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  backdrop-filter: blur(10px);
 }
 
 .modal-close:hover {
-  background: hsl(var(--destructive) / 0.1);
-  color: hsl(var(--destructive));
-  transform: scale(1.1);
+  background: rgba(239, 68, 68, 0.9);
+  border-color: rgba(239, 68, 68, 1);
+  color: white;
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: var(--shadow-md);
 }
 
 .modal-body {
-  padding: 2rem;
-  max-height: 60vh;
+  padding: 1.5rem;
+  max-height: 70vh;
   overflow-y: auto;
   background: hsl(var(--background));
+  overscroll-behavior: contain;
 }
 
 .modal-body .form-group:last-child {
@@ -882,63 +1124,157 @@ body {
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  padding: 1.5rem 2rem;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid hsl(var(--border));
   background: linear-gradient(135deg, hsl(var(--muted) / 0.05), hsl(var(--background)));
   backdrop-filter: blur(8px);
+  position: relative;
 }
 
-/* 属性分类 */
+.modal-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+}
+
+/* 属性分类 - 紧凑布局 */
 .property-categories {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
 }
 
 .property-category {
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
   overflow: hidden;
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted) / 0.1) 100%);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.property-category:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .property-category-header {
-  padding: 0.75rem 1rem;
-  background: hsl(var(--muted) / 0.5);
-  border-bottom: 1px solid hsl(var(--border));
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: hsl(var(--foreground));
+  padding: 0.5rem 0.75rem;
+  background: var(--gradient-primary);
+  border-bottom: 1px solid hsl(var(--primary) / 0.2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: hsl(var(--primary-foreground));
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+/* 属性分类列表 - 修复样式问题 */
+.property-category-list,
 .property-list {
-  padding: 0.5rem;
+  padding: 0.375rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.125rem;
+  min-height: 120px;
+  max-height: 240px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  overscroll-behavior: contain;
 }
 
+.property-category-list::-webkit-scrollbar,
+.property-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.property-category-list::-webkit-scrollbar-track,
+.property-list::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+}
+
+.property-category-list::-webkit-scrollbar-thumb,
+.property-list::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 2px;
+}
+
+/* 属性选项样式 - 统一.property-item和.property-option */
+.property-item,
 .property-option {
   padding: 0.5rem 0.75rem;
   border-radius: calc(var(--radius) - 2px);
   cursor: pointer;
   font-size: 0.75rem;
   color: hsl(var(--foreground));
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted) / 0.05) 100%);
+  margin-bottom: 0.125rem;
+  line-height: 1.4;
+  min-height: 2.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
+.property-item::before,
+.property-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.15), transparent);
+  transition: left 0.5s ease;
+}
+
+.property-item:hover,
 .property-option:hover {
-  background: hsl(var(--accent));
+  background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--primary) / 0.1) 100%);
   color: hsl(var(--accent-foreground));
+  transform: translateX(3px) translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: hsl(var(--primary) / 0.3);
+  font-weight: 600;
 }
 
+.property-item:hover::before,
+.property-option:hover::before {
+  left: 100%;
+}
+
+.property-item.selected,
 .property-option.selected {
-  background: hsl(var(--primary) / 0.1);
-  color: hsl(var(--primary));
-  border-color: hsl(var(--primary) / 0.2);
+  background: var(--gradient-primary);
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
+  font-weight: 700;
+  box-shadow: var(--shadow-lg), 0 0 0 2px hsl(var(--primary) / 0.3);
+  transform: translateX(3px) translateY(-1px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.property-item.selected::after,
+.property-option.selected::after {
+  content: '✓';
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Toast 通知 */

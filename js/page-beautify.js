@@ -865,12 +865,16 @@ class ModalManager {
   // 显示模态框
   showModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
+    // 阻止背景滚动
+    document.body.classList.add('modal-open');
   }
 
   // 隐藏模态框
   hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     this.clearModalInputs(modalId);
+    // 恢复背景滚动
+    document.body.classList.remove('modal-open');
   }
 
   // 清空模态框输入
