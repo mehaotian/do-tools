@@ -328,7 +328,9 @@ class MessageHandler {
           .sendMessage(tab.id, {
             action: "pageBeautify",
             type: request.type,
-            ...request.data,
+            data: request.data,
+            // 为了兼容可能存在的旧格式，保留直接属性
+            ...(request.theme && { theme: request.theme })
           })
           .catch((error) => {
             console.error("Failed to send message to content script:", error);

@@ -6,10 +6,11 @@
 // 全局状态管理
 class AppState {
   constructor() {
-    this.currentTheme = null;
-    this.customThemes = [];
-    this.presetThemes = [];
-    this.activeGroup = null;
+    this.currentTheme = null; // 当前主题
+    this.customThemes = []; // 自定义主题
+    this.presetThemes = []; // 预制主题
+    this.activeGroup = null; // 当前激活的分组
+    this.appliedThemeId = null; // 当前应用的主题ID
 
   }
 
@@ -17,6 +18,37 @@ class AppState {
   setCurrentTheme(theme) {
     this.currentTheme = theme;
     this.notifyStateChange('themeChanged', theme);
+  }
+
+  // 设置应用的主题ID并保存到chrome.storage.sync
+  setAppliedTheme(themeId) {
+    this.appliedThemeId = themeId;
+    this.saveAppliedTheme();
+  }
+
+  // 保存应用的主题ID到chrome.storage.sync
+  saveAppliedTheme() {
+    chrome.storage.sync.set({
+      appliedThemeId: this.appliedThemeId || ''
+    }).catch(error => {
+      console.error('保存应用主题ID失败:', error);
+    });
+  }
+
+  // 从chrome.storage.sync加载应用的主题ID
+  async loadAppliedTheme() {
+    try {
+      const result = await chrome.storage.sync.get(['appliedThemeId']);
+      const saved = result.appliedThemeId;
+      if (saved) {
+        this.appliedThemeId = saved;
+        return saved;
+      }
+      return null;
+    } catch (error) {
+      console.error('加载应用主题ID失败:', error);
+      return null;
+    }
   }
 
   // 添加自定义主题
@@ -248,32 +280,107 @@ class Utils {
 class ThemeManager {
   constructor(appState) {
     this.appState = appState;
+    // 延迟初始化，等待DOM加载完成
+    setTimeout(() => {
+      this.init();
+    }, 100);
+  }
+
+  // 初始化主题管理器
+  async init() {
     this.loadPresetThemes();
-    this.loadCustomThemes();
+    await this.loadCustomThemes();
+    this.renderPresetThemes();
+    this.renderCustomThemes();
+    
+    // 恢复上次应用的主题状态
+    await this.restoreAppliedTheme();
+  }
+
+  // 恢复上次应用的主题状态
+  async restoreAppliedTheme() {
+    const appliedThemeId = await this.appState.loadAppliedTheme();
+    if (!appliedThemeId) return;
+
+    console.log('恢复主题:', appliedThemeId);
+
+    // 查找并选中对应的主题（恢复UI状态和显示内容，但不重新应用主题）
+    if (appliedThemeId === 'default') {
+      // 恢复默认主题选中状态
+      this.selectDefaultTheme(false);
+    } else {
+      // 查找预制主题
+      const presetTheme = this.appState.presetThemes.find(theme => theme.id === appliedThemeId);
+      if (presetTheme) {
+        // 手动设置UI状态和显示内容，但不应用主题
+        this.restoreThemeUIState(presetTheme, 'preset');
+        return;
+      }
+      
+      // 查找自定义主题
+      const customTheme = this.appState.customThemes.find(theme => theme.id === appliedThemeId);
+      if (customTheme) {
+        // 手动设置UI状态和显示内容，但不应用主题
+        this.restoreThemeUIState(customTheme, 'custom');
+        return;
+      }
+    }
+  }
+
+  // 恢复主题UI状态（仅用于页面初始化时恢复状态）
+  restoreThemeUIState(theme, type) {
+    // 清除其他选中状态
+    document.querySelectorAll('.preset-theme-card.active').forEach(card => {
+      card.classList.remove('active');
+    });
+    document.querySelectorAll('.custom-theme-item.active').forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // 设置当前主题为选中状态
+    const element = document.querySelector(`[data-theme-id="${theme.id}"]`);
+    if (element) {
+      element.classList.add('active');
+    }
+    
+    if (type === 'preset') {
+      // 对于预制主题，创建可编辑副本
+      const editableTheme = Utils.deepClone(theme);
+      editableTheme.id = Utils.generateId();
+      editableTheme.isCustom = true;
+      this.appState.setCurrentTheme(editableTheme);
+      this.showThemeEditor(editableTheme);
+    } else if (type === 'custom') {
+      // 对于自定义主题，直接设置
+      this.appState.setCurrentTheme(theme);
+      this.showThemeEditor(theme);
+    }
   }
 
   // 加载预制主题
   loadPresetThemes() {
     this.appState.presetThemes = PRESET_THEMES;
-    this.renderPresetThemes();
   }
 
   // 加载自定义主题
-  loadCustomThemes() {
-    const saved = localStorage.getItem('customThemes');
-    if (saved) {
-      try {
-        this.appState.customThemes = JSON.parse(saved);
-        this.renderCustomThemes();
-      } catch (e) {
-        console.error('Failed to load custom themes:', e);
+  async loadCustomThemes() {
+    try {
+      const result = await chrome.storage.sync.get(['customThemes']);
+      if (result.customThemes && Array.isArray(result.customThemes)) {
+        this.appState.customThemes = result.customThemes;
       }
+    } catch (error) {
+      console.error('Failed to load custom themes:', error);
     }
   }
 
-  // 保存自定义主题到本地存储
+  // 保存自定义主题到chrome.storage.sync
   saveCustomThemes() {
-    localStorage.setItem('customThemes', JSON.stringify(this.appState.customThemes));
+    chrome.storage.sync.set({
+      customThemes: this.appState.customThemes
+    }).catch(error => {
+      console.error('Failed to save custom themes:', error);
+    });
   }
 
   // 渲染预制主题
@@ -284,6 +391,7 @@ class ThemeManager {
     this.appState.presetThemes.forEach(theme => {
       const card = document.createElement('div');
       card.className = 'preset-theme-card';
+      card.setAttribute('data-theme-id', theme.id);
       card.innerHTML = `
         <h4>${theme.name}</h4>
         <p>${theme.description}</p>
@@ -316,6 +424,7 @@ class ThemeManager {
     this.appState.customThemes.forEach(theme => {
       const item = document.createElement('div');
       item.className = 'custom-theme-item';
+      item.setAttribute('data-theme-id', theme.id);
       item.innerHTML = `
         <div class="custom-theme-info">
           <h5>${theme.name}</h5>
@@ -351,7 +460,7 @@ class ThemeManager {
   }
 
   // 选择预制主题
-  selectPresetTheme(theme) {
+  selectPresetTheme(theme, targetElement = null, applyTheme = true) {
     // 清除其他选中状态
     document.querySelectorAll('.preset-theme-card.active').forEach(card => {
       card.classList.remove('active');
@@ -361,7 +470,16 @@ class ThemeManager {
     });
     
     // 设置当前选中
-    event.target.closest('.preset-theme-card').classList.add('active');
+    if (targetElement) {
+      const card = targetElement.closest('.preset-theme-card');
+      if (card) card.classList.add('active');
+    } else if (typeof event !== 'undefined' && event.target) {
+      event.target.closest('.preset-theme-card').classList.add('active');
+    } else {
+      // 通过主题ID查找对应的卡片
+      const card = document.querySelector(`[data-theme-id="${theme.id}"]`);
+      if (card) card.classList.add('active');
+    }
     
     // 如果是"无主题"，清空当前主题
     if (theme.id === 'none') {
@@ -374,12 +492,16 @@ class ThemeManager {
       editableTheme.isCustom = true;
       
       this.appState.setCurrentTheme(editableTheme);
-      this.showThemeEditor(editableTheme);
+      if (applyTheme) {
+        this.showThemeEditor(editableTheme);
+        // 自动应用选中的主题
+        this.applyCurrentTheme();
+      }
     }
   }
 
   // 选择自定义主题
-  selectCustomTheme(theme) {
+  selectCustomTheme(theme, targetElement = null, applyTheme = true) {
     // 清除其他选中状态
     document.querySelectorAll('.preset-theme-card.active').forEach(card => {
       card.classList.remove('active');
@@ -389,14 +511,27 @@ class ThemeManager {
     });
     
     // 设置当前选中
-    event.target.closest('.custom-theme-item').classList.add('active');
+    if (targetElement) {
+      const item = targetElement.closest('.custom-theme-item');
+      if (item) item.classList.add('active');
+    } else if (typeof event !== 'undefined' && event.target) {
+      event.target.closest('.custom-theme-item').classList.add('active');
+    } else {
+      // 通过主题ID查找对应的项目
+      const item = document.querySelector(`[data-theme-id="${theme.id}"]`);
+      if (item) item.classList.add('active');
+    }
     
     this.appState.setCurrentTheme(theme);
-    this.showThemeEditor(theme);
+    if (applyTheme) {
+      this.showThemeEditor(theme);
+      // 自动应用选中的主题
+      this.applyCurrentTheme();
+    }
   }
   
   // 选择默认主题
-  selectDefaultTheme() {
+  selectDefaultTheme(applyTheme = true) {
     // 清除其他选中状态
     document.querySelectorAll('.preset-theme-card.active').forEach(card => {
       card.classList.remove('active');
@@ -408,21 +543,26 @@ class ThemeManager {
     // 设置默认主题为选中
     document.querySelector('[data-theme-id="default"]').classList.add('active');
     
-    // 应用默认主题（清除所有样式）
-    chrome.runtime.sendMessage({
-      action: 'pageBeautify',
-      type: 'RESET_STYLES'
-    }, (response) => {
-      if (chrome.runtime.lastError) {
-        Utils.showToast('重置样式失败: ' + chrome.runtime.lastError.message, 'error');
-      } else {
-        Utils.showToast('已应用默认主题', 'success');
-      }
-    });
-    
-    // 清空当前主题并隐藏编辑器
-    this.appState.setCurrentTheme(null);
-    this.hideThemeEditor();
+    if (applyTheme) {
+      // 应用默认主题（清除所有样式）
+      chrome.runtime.sendMessage({
+        action: 'pageBeautify',
+        type: 'RESET_STYLES',
+        data: {}
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          Utils.showToast('重置样式失败: ' + chrome.runtime.lastError.message, 'error');
+        } else {
+          // 保存默认主题状态
+          this.appState.setAppliedTheme('default');
+          Utils.showToast('已应用默认主题', 'success');
+        }
+      });
+      
+      // 清空当前主题并隐藏编辑器
+      this.appState.setCurrentTheme(null);
+      this.hideThemeEditor();
+    }
   }
 
   // 创建新主题
@@ -572,10 +712,19 @@ class ThemeManager {
     // 切换展开/收起
     header.addEventListener('click', (e) => {
       if (!e.target.closest('.group-actions')) {
+        const isExpanded = content.classList.contains('expanded');
         content.classList.toggle('expanded');
+        header.classList.toggle('expanded', !isExpanded);
         toggle.textContent = content.classList.contains('expanded') ? '▲' : '▼';
       }
     });
+    
+    // 默认展开第一个组
+    if (document.querySelectorAll('.group-card').length === 0) {
+      content.classList.add('expanded');
+      header.classList.add('expanded');
+      toggle.textContent = '▲';
+    }
     
     // 处理操作按钮
     card.addEventListener('click', (e) => {
@@ -706,11 +855,13 @@ class ThemeManager {
     chrome.runtime.sendMessage({
       action: 'pageBeautify',
       type: 'APPLY_THEME',
-      theme: theme
+      data: theme
     }, (response) => {
       if (chrome.runtime.lastError) {
         Utils.showToast('应用主题失败: ' + chrome.runtime.lastError.message, 'error');
       } else if (response && response.success) {
+        // 保存应用的主题ID到本地存储
+        this.appState.setAppliedTheme(theme.id);
         Utils.showToast('主题已应用', 'success');
       } else {
         Utils.showToast('应用主题失败', 'error');
@@ -721,6 +872,25 @@ class ThemeManager {
   // 导出当前主题
   exportCurrentTheme() {
     this.exportTheme();
+  }
+
+  // 删除修改组
+  deleteGroup(groupId) {
+    const theme = this.appState.currentTheme;
+    if (!theme) return;
+    
+    // 确认删除
+    if (!confirm('确定要删除这个修改组吗？此操作不可撤销。')) {
+      return;
+    }
+    
+    // 从主题中移除组
+    theme.groups = theme.groups.filter(group => group.id !== groupId);
+    
+    // 重新渲染组列表
+    this.renderGroups(theme);
+    
+    Utils.showToast('修改组已删除', 'success');
   }
 }
 
@@ -847,6 +1017,20 @@ class ModalManager {
     validateBtn.addEventListener('click', () => this.validateSelector());
     addPropertyBtn.addEventListener('click', () => this.showModal('propertySelectModal'));
     
+    // 选择器输入框变化时清除高亮和预览
+    const selectorInput = document.getElementById('cssSelector');
+    if (selectorInput) {
+      selectorInput.addEventListener('input', () => {
+        // 延迟清除高亮，避免频繁调用
+        clearTimeout(this.clearHighlightTimer);
+        this.clearHighlightTimer = setTimeout(() => {
+          this.clearSelectorHighlight();
+        }, 500);
+        // 选择器改变时清除之前的预览效果
+        this.clearAllPreview();
+      });
+    }
+    
     confirmBtn.addEventListener('click', () => {
       this.addCSSRule();
     });
@@ -954,9 +1138,91 @@ class ModalManager {
     // 添加删除事件
     editor.querySelector('.property-remove').addEventListener('click', () => {
       editor.remove();
+      // 删除属性时也要清除预览效果
+      this.clearPreviewForProperty(property);
     });
     
+    // 添加实时预览事件
+    const propertyInput = editor.querySelector('.property-value');
+    propertyInput.addEventListener('input', (e) => {
+      this.previewStyle(property, e.target.value);
+    });
+    
+    // 对于select类型，也要监听change事件
+    if (config.type === 'select') {
+      propertyInput.addEventListener('change', (e) => {
+        this.previewStyle(property, e.target.value);
+      });
+    }
+    
     container.appendChild(editor);
+  }
+
+  /**
+   * 实时预览样式效果
+   * @param {string} property - CSS属性名
+   * @param {string} value - CSS属性值
+   */
+  async previewStyle(property, value) {
+    const selector = document.getElementById('cssSelector').value;
+    
+    if (!selector || !property || !value) {
+      return;
+    }
+    
+    try {
+      // 通过background层路由转发消息到content script进行实时预览
+      await chrome.runtime.sendMessage({
+        action: 'pageBeautify',
+        type: 'PREVIEW_STYLE',
+        data: { 
+          selector: selector,
+          property: property,
+          value: value
+        }
+      });
+    } catch (error) {
+      console.warn('实时预览失败:', error);
+    }
+  }
+
+  /**
+   * 清除特定属性的预览效果
+   * @param {string} property - CSS属性名
+   */
+  async clearPreviewForProperty(property) {
+    const selector = document.getElementById('cssSelector').value;
+    
+    if (!selector || !property) {
+      return;
+    }
+    
+    try {
+      await chrome.runtime.sendMessage({
+        action: 'pageBeautify',
+        type: 'CLEAR_PREVIEW_PROPERTY',
+        data: { 
+          selector: selector,
+          property: property
+        }
+      });
+    } catch (error) {
+      console.warn('清除预览失败:', error);
+    }
+  }
+
+  /**
+   * 清除所有预览效果
+   */
+  async clearAllPreview() {
+    try {
+      await chrome.runtime.sendMessage({
+        action: 'pageBeautify',
+        type: 'CLEAR_ALL_PREVIEW'
+      });
+    } catch (error) {
+      console.warn('清除所有预览失败:', error);
+    }
   }
 
   // 验证选择器
@@ -969,6 +1235,8 @@ class ModalManager {
       indicator.className = 'selector-status-indicator';
       suggestions.textContent = '';
       suggestions.style.display = 'none';
+      // 清除高亮
+      this.clearSelectorHighlight();
       return;
     }
 
@@ -1014,6 +1282,21 @@ class ModalManager {
       suggestions.style.display = 'block';
     }
   }
+  
+  /**
+   * 清除选择器高亮效果
+   */
+  async clearSelectorHighlight() {
+    try {
+      await chrome.runtime.sendMessage({
+        action: 'pageBeautify',
+        type: 'CLEAR_SELECTOR_HIGHLIGHT',
+        data: {}
+      });
+    } catch (error) {
+      console.log('清除高亮失败:', error);
+    }
+  }
 
   // 添加修改组
   addGroup(name, description) {
@@ -1034,6 +1317,8 @@ class ModalManager {
     document.getElementById('groupName').value = '';
     document.getElementById('groupDescription').value = '';
   }
+
+
 
   // 添加CSS规则
   addCSSRule() {
@@ -1067,9 +1352,18 @@ class ModalManager {
     
     if (group) {
       group.rules.push({ selector, properties });
+      
+      // 清除该选择器的预览效果（因为规则已保存）
+      this.clearAllPreview();
+      
+      // 重新应用当前主题以显示已保存的样式
+      setTimeout(() => {
+        window.themeManager.applyCurrentTheme();
+      }, 100);
+      
       window.themeManager.renderGroups(theme);
       this.hideModal('addRuleModal');
-      Utils.showToast('CSS规则已添加', 'success');
+      Utils.showToast('CSS规则已添加并应用', 'success');
     } else {
       Utils.showToast('无法找到目标组，请重试', 'error');
     }
@@ -1113,7 +1407,14 @@ class ModalManager {
   }
 }
 
-// 应用程序主类
+/**
+ * 应用程序入口
+ * @class PageBeautifyApp
+ * @constructor 无参数
+ * @returns {PageBeautifyApp} 应用实例
+ * @example
+ * const app = new PageBeautifyApp();
+ */
 class PageBeautifyApp {
   constructor() {
     this.appState = new AppState();
@@ -1175,9 +1476,14 @@ class PageBeautifyApp {
       this.themeManager.saveAsNewTheme();
     });
     
-    // 应用主题按钮
-    document.getElementById('applyThemeBtn').addEventListener('click', () => {
-      this.themeManager.applyCurrentTheme();
+    // 重置预览按钮 - 清除所有实时预览效果并重新应用主题
+    document.getElementById('resetPreviewBtn').addEventListener('click', () => {
+      this.clearAllPreview();
+      // 重新应用当前主题以显示已保存的样式
+      setTimeout(() => {
+        this.themeManager.applyCurrentTheme();
+      }, 100);
+      Utils.showToast('预览已重置，主题已重新应用', 'success');
     });
     
     // 导出主题按钮
@@ -1200,6 +1506,14 @@ class PageBeautifyApp {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           this.modalManager.hideModal(modal.id);
+          // 关闭模态框时清除预览效果并重新应用主题
+          if (modal.id === 'addRuleModal') {
+            this.clearAllPreview();
+            // 重新应用当前主题以显示已保存的样式
+            setTimeout(() => {
+              this.themeManager.applyCurrentTheme();
+            }, 100);
+          }
         }
       });
     });

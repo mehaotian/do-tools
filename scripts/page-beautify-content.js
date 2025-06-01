@@ -3,14 +3,140 @@
  * 在目标网页中注入并应用美化效果
  */
 
+// 预制主题定义（与page-beautify.js保持同步）
+const PRESET_THEMES = [
+  {
+    id: 'none',
+    name: '无主题',
+    description: '不应用任何样式修改',
+    groups: []
+  },
+  {
+    id: 'modern-light',
+    name: '现代浅色',
+    description: '简洁现代的浅色主题',
+    groups: [
+      {
+        id: 'navbar',
+        name: '导航栏美化',
+        description: '为导航栏添加现代化样式',
+        rules: [
+          {
+            selector: 'nav, .navbar, header',
+            properties: {
+              'background-color': 'rgba(255, 255, 255, 0.9)',
+              'backdrop-filter': 'blur(10px)',
+              'border-bottom': '1px solid rgba(0, 0, 0, 0.1)',
+              'box-shadow': '0 2px 10px rgba(0, 0, 0, 0.1)'
+            }
+          }
+        ]
+      },
+      {
+        id: 'content',
+        name: '内容区域',
+        description: '优化内容区域的显示效果',
+        rules: [
+          {
+            selector: 'main, .main-content, .content',
+            properties: {
+              'background-color': '#ffffff',
+              'border-radius': '8px',
+              'box-shadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+              'padding': '20px'
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'modern-dark',
+    name: '现代深色',
+    description: '优雅的深色主题',
+    groups: [
+      {
+        id: 'global',
+        name: '全局样式',
+        description: '深色主题的全局样式',
+        rules: [
+          {
+            selector: 'body',
+            properties: {
+              'background-color': '#1a1a1a',
+              'color': '#ffffff'
+            }
+          }
+        ]
+      }
+    ]
+  }
+];
+
 class PageBeautifyContent {
   constructor() {
     this.appliedStyles = new Map();
+    // 存储预览样式的映射：selector -> { property -> originalValue }
+    this.previewStyles = new Map();
     this.init();
   }
 
   async init() {
     console.log("页面美化内容脚本初始化完成");
+    
+    // 自动加载并应用保存的主题
+    await this.loadAndApplyStoredTheme();
+  }
+
+  /**
+   * 加载并应用存储的主题
+   */
+  async loadAndApplyStoredTheme() {
+    try {
+      // 从chrome.storage.sync获取应用的主题ID
+      const result = await chrome.storage.sync.get(['appliedThemeId', 'customThemes']);
+      const appliedThemeId = result.appliedThemeId;
+      
+      if (!appliedThemeId) {
+        console.log('没有找到已应用的主题');
+        return;
+      }
+
+      console.log('找到已应用的主题ID:', appliedThemeId);
+
+      // 如果是默认主题，不需要应用任何样式
+      if (appliedThemeId === 'default') {
+        console.log('应用默认主题（无样式）');
+        return;
+      }
+
+      // 尝试获取主题数据
+      let themeData = null;
+      
+      // 首先检查自定义主题
+      const customThemes = result.customThemes;
+      if (customThemes && Array.isArray(customThemes)) {
+        themeData = customThemes.find(theme => theme.id === appliedThemeId);
+      }
+
+      // 如果没有找到自定义主题，检查预制主题
+      if (!themeData) {
+        themeData = PRESET_THEMES.find(theme => theme.id === appliedThemeId);
+      }
+
+      // 如果仍然没有找到主题数据
+      if (!themeData) {
+        console.log('未找到对应的主题数据，主题ID:', appliedThemeId);
+        return;
+      }
+
+      // 应用找到的主题
+      console.log('自动应用主题:', themeData.name);
+      this.applyTheme(themeData);
+      
+    } catch (error) {
+      console.error('加载存储主题失败:', error);
+    }
   }
 
   /**
@@ -24,7 +150,9 @@ class PageBeautifyContent {
 
       switch (request.type) {
         case "APPLY_THEME":
-          this.applyTheme(request.theme || request.data);
+          // 统一使用data字段，保持向后兼容
+          const themeData = request.data || request.theme;
+          this.applyTheme(themeData);
           sendResponse({ success: true });
           break;
 
@@ -39,10 +167,32 @@ class PageBeautifyContent {
           break;
 
         case "VALIDATE_SELECTOR":
-          const validationResult = this.validateSelector(request.selector);
+          console.log('验证选择器',request);
+          
+          const validationResult = this.validateSelector(request.data.selector);
           console.log('验证结果',validationResult);
           
           sendResponse({ success: true, data: validationResult });
+          break;
+
+        case "CLEAR_SELECTOR_HIGHLIGHT":
+          this.clearSelectorHighlight();
+          sendResponse({ success: true, data: { message: '高亮已清除' } });
+          break;
+
+        case "PREVIEW_STYLE":
+          this.previewStyle(request.data.selector, request.data.property, request.data.value);
+          sendResponse({ success: true });
+          break;
+
+        case "CLEAR_PREVIEW_PROPERTY":
+          this.clearPreviewProperty(request.data.selector, request.data.property);
+          sendResponse({ success: true });
+          break;
+
+        case "CLEAR_ALL_PREVIEW":
+          this.clearAllPreview();
+          sendResponse({ success: true });
           break;
 
         default:
@@ -252,6 +402,9 @@ class PageBeautifyContent {
    */
   validateSelector(selector) {
     try {
+      // 清除之前的高亮
+      this.clearSelectorHighlight();
+      
       if (!selector || !selector.trim()) {
         return {
           isValid: false,
@@ -261,6 +414,11 @@ class PageBeautifyContent {
       }
       
       const elements = document.querySelectorAll(selector);
+      
+      if (elements.length > 0) {
+        // 为匹配的元素添加高亮边框
+        this.highlightSelectedElements(elements);
+      }
       
       return {
         isValid: elements.length > 0,
@@ -275,16 +433,179 @@ class PageBeautifyContent {
       };
     }
   }
-}
-const pageBeautifyContent = new PageBeautifyContent();
+  
+  /**
+   * 为选中的元素添加高亮边框
+   * @param {NodeList} elements 匹配的元素列表
+   */
+  highlightSelectedElements(elements) {
+    elements.forEach(element => {
+      // 保存原始样式
+       const originalOutline = element.style.outline;
+       const originalOutlineOffset = element.style.outlineOffset;
+       const originalBoxShadow = element.style.boxShadow;
+       const originalPosition = element.style.position;
+       const originalZIndex = element.style.zIndex;
+       
+       // 添加高亮样式
+        element.style.outline = '3px dashed #3b82f6';
+        element.style.outlineOffset = '3px';
+        element.style.transition = 'outline 0.3s ease, box-shadow 0.3s ease';
+        element.style.boxShadow = '0 0 0 1px rgba(59, 130, 246, 0.3), 0 0 20px rgba(59, 130, 246, 0.2)';
+        element.style.position = 'relative';
+        element.style.zIndex = '9999';
+       
+       // 标记为已高亮的元素
+       element.setAttribute('data-page-beautify-highlighted', 'true');
+       element.setAttribute('data-original-outline', originalOutline);
+       element.setAttribute('data-original-outline-offset', originalOutlineOffset);
+       element.setAttribute('data-original-box-shadow', originalBoxShadow);
+       element.setAttribute('data-original-position', originalPosition);
+       element.setAttribute('data-original-z-index', originalZIndex);
+    });
+    
+    // 5秒后自动清除高亮
+    setTimeout(() => {
+      this.clearSelectorHighlight();
+    }, 5000);
+  }
+  
+  /**
+   * 清除选择器高亮效果
+   */
+  clearSelectorHighlight() {
+     const highlightedElements = document.querySelectorAll('[data-page-beautify-highlighted="true"]');
+     highlightedElements.forEach(element => {
+       // 恢复原始样式
+       const originalOutline = element.getAttribute('data-original-outline');
+       const originalOutlineOffset = element.getAttribute('data-original-outline-offset');
+       const originalBoxShadow = element.getAttribute('data-original-box-shadow');
+       const originalPosition = element.getAttribute('data-original-position');
+       const originalZIndex = element.getAttribute('data-original-z-index');
+       
+       element.style.outline = originalOutline || '';
+       element.style.outlineOffset = originalOutlineOffset || '';
+       element.style.boxShadow = originalBoxShadow || '';
+       element.style.position = originalPosition || '';
+       element.style.zIndex = originalZIndex || '';
+       
+       // 移除标记属性
+       element.removeAttribute('data-page-beautify-highlighted');
+       element.removeAttribute('data-original-outline');
+       element.removeAttribute('data-original-outline-offset');
+       element.removeAttribute('data-original-box-shadow');
+       element.removeAttribute('data-original-position');
+       element.removeAttribute('data-original-z-index');
+     });
+   }
 
-function initializeTimerDisplay() {
-  // 创建全局实例
-  console.log('初始化全局实例 ok');
+  /**
+   * 实时预览样式效果
+   * @param {string} selector - CSS选择器
+   * @param {string} property - CSS属性名
+   * @param {string} value - CSS属性值
+   */
+  previewStyle(selector, property, value) {
+    try {
+      const elements = document.querySelectorAll(selector);
+      
+      if (elements.length === 0) {
+        console.warn('未找到匹配的元素:', selector);
+        return;
+      }
+
+      // 初始化选择器的预览样式映射
+      if (!this.previewStyles.has(selector)) {
+        this.previewStyles.set(selector, new Map());
+      }
+      
+      const selectorPreview = this.previewStyles.get(selector);
+      
+      elements.forEach(element => {
+        // 如果是第一次预览这个属性，保存原始值
+        if (!selectorPreview.has(property)) {
+          const originalValue = element.style[property] || '';
+          selectorPreview.set(property, originalValue);
+        }
+        
+        // 应用预览样式
+        element.style[property] = value;
+      });
+      
+      console.log(`预览样式应用成功: ${selector} { ${property}: ${value} }`);
+    } catch (error) {
+      console.error('预览样式失败:', error);
+    }
+  }
+
+  /**
+   * 清除特定属性的预览效果
+   * @param {string} selector - CSS选择器
+   * @param {string} property - CSS属性名
+   */
+  clearPreviewProperty(selector, property) {
+    try {
+      const elements = document.querySelectorAll(selector);
+      const selectorPreview = this.previewStyles.get(selector);
+      
+      if (!selectorPreview || !selectorPreview.has(property)) {
+        return;
+      }
+      
+      const originalValue = selectorPreview.get(property);
+      
+      elements.forEach(element => {
+        element.style[property] = originalValue;
+      });
+      
+      // 移除预览记录
+      selectorPreview.delete(property);
+      
+      // 如果该选择器没有其他预览属性，移除整个选择器记录
+      if (selectorPreview.size === 0) {
+        this.previewStyles.delete(selector);
+      }
+      
+      console.log(`清除预览属性: ${selector} { ${property} }`);
+    } catch (error) {
+      console.error('清除预览属性失败:', error);
+    }
+  }
+
+  /**
+   * 清除所有预览效果
+   */
+  clearAllPreview() {
+    try {
+      this.previewStyles.forEach((selectorPreview, selector) => {
+        const elements = document.querySelectorAll(selector);
+        
+        selectorPreview.forEach((originalValue, property) => {
+          elements.forEach(element => {
+            element.style[property] = originalValue;
+          });
+        });
+      });
+      
+      // 清空预览样式映射
+      this.previewStyles.clear();
+      
+      console.log('已清除所有预览效果');
+    } catch (error) {
+      console.error('清除所有预览失败:', error);
+    }
+  }
+}
+let pageBeautifyContent = null;
+
+function initializePageBeautify() {
+  // 创建PageBeautifyContent实例
+  pageBeautifyContent = new PageBeautifyContent();
+  console.log('页面美化内容脚本初始化完成');
   
   // 监听来自background script的消息
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('收到来自background script的消息',request);
+    console.log('收到来自background script的消息', request);
     
     if (request.action === "pageBeautify") {
       pageBeautifyContent.handlePageBeautifyMessage(request, sendResponse);
@@ -295,9 +616,9 @@ function initializeTimerDisplay() {
 
 // 页面加载完成后初始化
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeTimerDisplay);
+  document.addEventListener("DOMContentLoaded", initializePageBeautify);
 } else {
-  initializeTimerDisplay();
+  initializePageBeautify();
 }
 
 console.log("页面美化内容脚本已加载");
