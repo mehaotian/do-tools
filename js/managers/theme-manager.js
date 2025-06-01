@@ -16,6 +16,13 @@ export class ThemeManager {
     this.appState = appState;
     this.isInitialized = false;
     
+    // 主题修改状态跟踪
+    this.hasUnsavedChanges = false;
+    this.originalThemeData = null;
+    
+    // 预绑定事件处理器，避免重复绑定问题
+    this.boundHandleThemeChange = this.handleThemeChange.bind(this);
+    
     // 模态框管理属性 - 统一使用 modalManager 管理滚动锁定
     // 移除了 openModalCount、preventScrollHandler、preventKeyScrollHandler
     // 这些功能现在由 modalManager 统一处理
@@ -35,20 +42,12 @@ export class ThemeManager {
   }
 
   /**
-   * 处理删除组的异步确认
+   * 处理删除组操作
    * @param {string} groupId - 组ID
    */
   async handleDeleteGroup(groupId) {
-    const confirmed = await this.showConfirmDialog('确定要删除这个组吗？', {
-      title: '删除确认',
-      type: 'warning',
-      confirmText: '删除',
-      cancelText: '取消'
-    });
-    
-    if (confirmed) {
-      this.deleteGroup(groupId);
-    }
+    // 直接调用deleteGroup，确认逻辑在deleteGroup方法中处理
+    await this.deleteGroup(groupId);
   }
 
   /**
@@ -108,8 +107,8 @@ export class ThemeManager {
     if (noneTheme) {
       container.appendChild(noneTheme);
       // 添加无主题点击事件
-      noneTheme.addEventListener('click', () => {
-        this.selectNoneTheme();
+      noneTheme.addEventListener('click', async () => {
+        await this.selectNoneTheme();
       });
     }
     
@@ -188,14 +187,14 @@ export class ThemeManager {
   bindThemeCardEvents(card, theme, isPreset) {
     if (isPreset) {
       // 预设主题点击直接选择并应用
-      card.addEventListener('click', () => {
-        this.selectPresetTheme(theme);
+      card.addEventListener('click', async () => {
+        await this.selectPresetTheme(theme);
       });
     } else {
       // 自定义主题点击选择
-      card.addEventListener('click', (e) => {
+      card.addEventListener('click', async (e) => {
         if (!e.target.closest('.custom-theme-actions')) {
-          this.selectCustomTheme(theme);
+          await this.selectCustomTheme(theme);
         }
       });
 
@@ -205,7 +204,7 @@ export class ThemeManager {
         const id = e.target.dataset.id;
 
         if (action === 'edit') {
-          this.editCustomTheme(id);
+          await this.editCustomTheme(id);
         } else if (action === 'delete') {
           await this.deleteCustomTheme(id);
         }
@@ -285,7 +284,28 @@ export class ThemeManager {
    * 选择预设主题
    * @param {Object} theme - 主题数据
    */
-  selectPresetTheme(theme) {
+  async selectPresetTheme(theme) {
+    // 检查是否有未保存的更改
+    if (this.hasUnsavedChanges) {
+      const confirmed = await this.showConfirmDialog(
+        '当前主题有未保存的更改，切换主题将丢失这些更改。确定要继续吗？',
+        {
+          title: '未保存的更改',
+          type: 'warning',
+          confirmText: '继续切换',
+          cancelText: '取消'
+        }
+      );
+      
+      if (!confirmed) {
+        return; // 用户取消切换
+      }
+      
+      // 用户确认丢弃更改，重置状态
+      this.hasUnsavedChanges = false;
+      this.updatePageTitle();
+    }
+
     // 清除其他选中状态
     document.querySelectorAll('.preset-theme-card.active').forEach(card => {
       card.classList.remove('active');
@@ -300,7 +320,7 @@ export class ThemeManager {
 
     // 如果是"无主题"，清空当前主题
     if (theme.id === 'none') {
-      this.selectNoneTheme();
+      await this.selectNoneTheme();
     } else {
       // 创建主题副本用于编辑
       const editableTheme = Utils.deepClone(theme);
@@ -319,7 +339,28 @@ export class ThemeManager {
    * 选择自定义主题
    * @param {Object} theme - 主题数据
    */
-  selectCustomTheme(theme) {
+  async selectCustomTheme(theme) {
+    // 检查是否有未保存的更改
+    if (this.hasUnsavedChanges) {
+      const confirmed = await this.showConfirmDialog(
+        '当前主题有未保存的更改，切换主题将丢失这些更改。确定要继续吗？',
+        {
+          title: '未保存的更改',
+          type: 'warning',
+          confirmText: '继续切换',
+          cancelText: '取消'
+        }
+      );
+      
+      if (!confirmed) {
+        return; // 用户取消切换
+      }
+      
+      // 用户确认丢弃更改，重置状态
+      this.hasUnsavedChanges = false;
+      this.updatePageTitle();
+    }
+
     // 清除其他选中状态
     document.querySelectorAll('.preset-theme-card.active').forEach(card => {
       card.classList.remove('active');
@@ -342,7 +383,28 @@ export class ThemeManager {
    * 选择无主题
     * @param {boolean} applyTheme - 是否实际应用主题（默认为true）
    */
-  selectNoneTheme(applyTheme = true) {
+  async selectNoneTheme(applyTheme = true) {
+    // 检查是否有未保存的更改
+    if (this.hasUnsavedChanges) {
+      const confirmed = await this.showConfirmDialog(
+        '当前主题有未保存的更改，切换主题将丢失这些更改。确定要继续吗？',
+        {
+          title: '未保存的更改',
+          type: 'warning',
+          confirmText: '继续切换',
+          cancelText: '取消'
+        }
+      );
+      
+      if (!confirmed) {
+        return; // 用户取消切换
+      }
+      
+      // 用户确认丢弃更改，重置状态
+      this.hasUnsavedChanges = false;
+      this.updatePageTitle();
+    }
+
     // 清除其他选中状态
     document.querySelectorAll('.preset-theme-card.active').forEach(card => {
       card.classList.remove('active');
@@ -397,7 +459,28 @@ export class ThemeManager {
    * 编辑自定义主题
    * @param {string} themeId - 主题ID
    */
-  editCustomTheme(themeId) {
+  async editCustomTheme(themeId) {
+    // 检查是否有未保存的更改
+    if (this.hasUnsavedChanges) {
+      const confirmed = await this.showConfirmDialog(
+        '当前主题有未保存的更改，切换主题将丢失这些更改。确定要继续吗？',
+        {
+          title: '未保存的更改',
+          type: 'warning',
+          confirmText: '继续切换',
+          cancelText: '取消'
+        }
+      );
+      
+      if (!confirmed) {
+        return; // 用户取消切换
+      }
+      
+      // 用户确认丢弃更改，重置状态
+      this.hasUnsavedChanges = false;
+      this.updatePageTitle();
+    }
+
     const theme = this.appState.customThemes.find(t => t.id === themeId);
     if (theme) {
       this.appState.setCurrentTheme(theme);
@@ -431,7 +514,7 @@ export class ThemeManager {
         
         // 如果删除的是当前应用的主题，或者没有任何主题被选中，自动选择无主题
         if (wasAppliedTheme || !this.appState.appliedThemeId) {
-          this.selectNoneTheme(true);
+          await this.selectNoneTheme(true);
         }
         
         Utils.showToast(`主题 "${theme.name}" 已删除`, 'success');
@@ -471,7 +554,7 @@ export class ThemeManager {
     console.log('从应用状态中获取的主题ID:', appliedThemeId);
     if (!appliedThemeId) {
       console.log('没有找到已应用的主题ID，自动选择无主题');
-      this.selectNoneTheme(false);
+      await this.selectNoneTheme(false);
       return;
     }
 
@@ -480,7 +563,7 @@ export class ThemeManager {
     // 查找并选中对应的主题（恢复UI状态和显示内容，但不重新应用主题）
     if (appliedThemeId === 'none' || appliedThemeId === 'default') {
       // 恢复无主题选中状态（兼容旧的default值）
-      this.selectNoneTheme(false);
+      await this.selectNoneTheme(false);
     } else {
       // 查找预制主题
       const presetTheme = this.appState.getPresetThemes().find(
@@ -542,7 +625,7 @@ export class ThemeManager {
   /**
    * 创建新主题
    */
-  createNewTheme() {
+  async createNewTheme() {
     const newTheme = {
       id: Utils.generateId(),
       name: this.appState.generateUniqueThemeName('新主题'),
@@ -551,15 +634,26 @@ export class ThemeManager {
       isCustom: true
     };
 
-    // 设置为当前主题并自动应用
-    this.appState.setCurrentTheme(newTheme);
-    this.appState.setAppliedThemeId(newTheme.id);
-    this.showThemeEditor(newTheme);
-    
-    // 更新主题选择状态
-    this.updateThemeSelection();
-    
-    Utils.showToast(`已创建新主题 "${newTheme.name}"`, 'success');
+    try {
+      // 立即添加到自定义主题列表中
+      await this.appState.addCustomTheme(newTheme);
+      
+      // 设置为当前主题并自动应用
+      this.appState.setCurrentTheme(newTheme);
+      this.appState.setAppliedThemeId(newTheme.id);
+      
+      // 显示主题编辑器
+      this.showThemeEditor(newTheme);
+      
+      // 更新主题选择状态和按钮显示
+      this.updateThemeSelection();
+      this.updateThemeActions(newTheme);
+      
+      Utils.showToast(`已创建新主题 "${newTheme.name}"`, 'success');
+    } catch (error) {
+      console.error('创建主题失败:', error);
+      Utils.showToast('创建主题失败: ' + error.message, 'error');
+    }
   }
 
 
@@ -569,13 +663,23 @@ export class ThemeManager {
    */
   async saveCurrentTheme() {
     try {
-      const currentTheme = this.appState.getCurrentTheme();
+      const currentTheme = this.getCurrentThemeFromEditor();
       if (!currentTheme) {
         Utils.showToast('没有要保存的主题', 'warning');
         return;
       }
 
+      // 更新当前主题数据
+      this.appState.setCurrentTheme(currentTheme);
+      
       await this.appState.addCustomTheme(currentTheme);
+      
+      // 重置修改状态
+      this.originalThemeData = Utils.deepClone(currentTheme);
+      this.hasUnsavedChanges = false;
+      this.updateSaveButtonState();
+      this.updatePageTitle();
+      
       Utils.showToast(`主题 "${currentTheme.name}" 已保存`, 'success');
     } catch (error) {
       console.error('保存主题失败:', error);
@@ -703,6 +807,12 @@ export class ThemeManager {
       return;
     }
 
+    // 只有在切换到不同主题时才更新原始数据
+    if (!this.originalThemeData || this.originalThemeData.id !== targetTheme.id) {
+      this.originalThemeData = Utils.deepClone(targetTheme);
+      this.hasUnsavedChanges = false;
+    }
+
     // 隐藏空状态
     const emptyState = document.getElementById('emptyState');
     if (emptyState) {
@@ -725,11 +835,17 @@ export class ThemeManager {
     const themeName = document.getElementById('themeName');
     if (themeName) {
       themeName.value = targetTheme.name || '';
+      // 监听主题名称变化
+      themeName.removeEventListener('input', this.boundHandleThemeChange);
+      themeName.addEventListener('input', this.boundHandleThemeChange);
     }
 
     const themeDescription = document.getElementById('themeDescription');
     if (themeDescription) {
       themeDescription.value = targetTheme.description || '';
+      // 监听主题描述变化
+      themeDescription.removeEventListener('input', this.boundHandleThemeChange);
+      themeDescription.addEventListener('input', this.boundHandleThemeChange);
     }
 
     // 根据主题类型显示不同的按钮
@@ -742,6 +858,119 @@ export class ThemeManager {
     setTimeout(() => {
       this.validateThemeSelectors(targetTheme);
     }, 100);
+  }
+
+  /**
+   * 处理主题变化
+   */
+  handleThemeChange() {
+    this.checkForChanges();
+    this.updateSaveButtonState();
+  }
+
+  /**
+   * 检查主题是否有修改
+   */
+  checkForChanges() {
+    const currentTheme = this.getCurrentThemeFromEditor();
+    if (!this.originalThemeData || !currentTheme) {
+      this.hasUnsavedChanges = false;
+      return;
+    }
+
+    // 比较主题数据
+    const hasChanges = JSON.stringify(currentTheme) !== JSON.stringify(this.originalThemeData);
+    this.hasUnsavedChanges = hasChanges;
+    
+    // 更新页面标题显示未保存状态
+    this.updatePageTitle();
+  }
+
+  /**
+   * 从编辑器获取当前主题数据
+   */
+  getCurrentThemeFromEditor() {
+    const currentTheme = this.appState.getCurrentTheme();
+    if (!currentTheme) return null;
+
+    const themeName = document.getElementById('themeName');
+    const themeDescription = document.getElementById('themeDescription');
+
+    // 获取当前编辑器中的所有数据
+    const editorTheme = {
+      ...Utils.deepClone(currentTheme),
+      name: themeName ? themeName.value : currentTheme.name,
+      description: themeDescription ? themeDescription.value : currentTheme.description
+    };
+
+    // 收集所有属性编辑器的值
+    const propertyInputs = document.querySelectorAll('.property-value');
+    propertyInputs.forEach(input => {
+      const property = input.dataset.property;
+      const groupIndex = parseInt(input.dataset.groupIndex);
+      const ruleIndex = parseInt(input.dataset.ruleIndex);
+      
+      if (property && !isNaN(groupIndex) && !isNaN(ruleIndex)) {
+        if (editorTheme.groups[groupIndex] && editorTheme.groups[groupIndex].rules[ruleIndex]) {
+          if (!editorTheme.groups[groupIndex].rules[ruleIndex].properties) {
+            editorTheme.groups[groupIndex].rules[ruleIndex].properties = {};
+          }
+          editorTheme.groups[groupIndex].rules[ruleIndex].properties[property] = input.value;
+        }
+      }
+    });
+
+    return editorTheme;
+  }
+
+  /**
+   * 更新页面标题显示未保存状态
+   */
+  updatePageTitle() {
+    const titleElement = document.querySelector('h1');
+    if (!titleElement) return;
+
+    const baseTitle = '页面美化 - 可视化CSS编辑器';
+    if (this.hasUnsavedChanges) {
+      titleElement.textContent = baseTitle + ' *';
+      titleElement.style.color = '#f59e0b'; // 橙色表示未保存
+    } else {
+      titleElement.textContent = baseTitle;
+      titleElement.style.color = '';
+    }
+  }
+
+  /**
+   * 更新保存按钮状态
+   */
+  updateSaveButtonState() {
+    const saveBtn = document.getElementById('saveThemeBtn');
+    if (!saveBtn) return;
+
+    const currentTheme = this.appState.getCurrentTheme();
+    const existingTheme = this.appState.customThemes.find((t) => t.id === currentTheme?.id);
+    const isExistingCustomTheme = existingTheme && currentTheme?.isCustom;
+
+    if (isExistingCustomTheme) {
+      if (this.hasUnsavedChanges) {
+        // 有修改 - 启用并高亮
+        saveBtn.disabled = false;
+        saveBtn.classList.remove('btn-outline');
+        saveBtn.classList.add('btn-primary');
+        saveBtn.style.backgroundColor = '#3b82f6';
+        saveBtn.style.borderColor = '#3b82f6';
+        saveBtn.style.color = 'white';
+      } else {
+        // 无修改 - 禁用
+        saveBtn.disabled = true;
+        saveBtn.classList.remove('btn-primary');
+        saveBtn.classList.add('btn-outline');
+        saveBtn.style.backgroundColor = '';
+        saveBtn.style.borderColor = '';
+        saveBtn.style.color = '';
+        saveBtn.style.opacity = '0.5';
+      }
+    }
   }
 
   /**
@@ -759,9 +988,12 @@ export class ThemeManager {
     const isExistingCustomTheme = existingTheme && theme.isCustom;
 
     if (isExistingCustomTheme) {
-      // 已存在的自定义主题 - 显示保存按钮，隐藏另存为按钮
+      // 已存在的自定义主题 - 显示保存按钮，显示另存为按钮（用于另存为副本）
       saveBtn.style.display = 'inline-block';
-      saveAsBtn.style.display = 'none';
+      saveAsBtn.style.display = 'inline-block';
+      
+      // 初始化保存按钮状态
+      this.updateSaveButtonState();
     } else {
       // 新主题或预设主题 - 隐藏保存按钮，显示另存为按钮
       saveBtn.style.display = 'none';
@@ -1104,18 +1336,25 @@ export class ThemeManager {
 
   /**
    * 删除组
-   * @param {number} groupIndex - 组索引
+   * @param {string} groupId - 组ID
    */
-  async deleteGroup(groupIndex) {
+  async deleteGroup(groupId) {
     const currentTheme = this.appState.getCurrentTheme();
-    if (!currentTheme || !currentTheme.groups[groupIndex]) {
+    if (!currentTheme || !currentTheme.groups) {
+      return;
+    }
+
+    // 通过ID查找组索引
+    const groupIndex = currentTheme.groups.findIndex(group => group.id === groupId);
+    if (groupIndex === -1) {
+      Utils.showToast('未找到要删除的组', 'error');
       return;
     }
 
     const group = currentTheme.groups[groupIndex];
     const confirmed = await this.showConfirmDialog(`确定要删除组 "${group.name}" 吗？`, {
       title: '删除确认',
-      type: 'warning',
+      type: 'danger',
       confirmText: '删除',
       cancelText: '取消'
     });
@@ -1127,6 +1366,9 @@ export class ThemeManager {
     currentTheme.groups.splice(groupIndex, 1);
     this.appState.setCurrentTheme(currentTheme);
     this.renderGroups(currentTheme);
+    
+    // 检测修改并更新按钮状态
+    this.handleThemeChange();
     
     Utils.showToast('组已删除', 'success');
   }
@@ -1145,7 +1387,7 @@ export class ThemeManager {
     const rule = currentTheme.groups[groupIndex].rules[ruleIndex];
     const confirmed = await this.showConfirmDialog(`确定要删除规则 "${rule.selector}" 吗？`, {
       title: '删除确认',
-      type: 'warning',
+      type: 'danger',
       confirmText: '删除',
       cancelText: '取消'
     });
@@ -1266,7 +1508,7 @@ export class ThemeManager {
   async deleteRule(groupId, ruleIndex) {
     const confirmed = await this.showConfirmDialog("确定要删除这个CSS规则吗？", {
       title: '删除确认',
-      type: 'warning',
+      type: 'danger',
       confirmText: '删除',
       cancelText: '取消'
     });
@@ -1447,23 +1689,46 @@ export class ThemeManager {
     const editor = document.createElement('div');
     editor.className = 'css-property-item';
 
+    // 获取当前编辑的规则信息
+    const currentSelector = document.getElementById('cssSelector')?.value || '';
+    const currentTheme = this.appState.getCurrentTheme();
+    let groupIndex = -1;
+    let ruleIndex = -1;
+    
+    if (currentTheme && currentSelector) {
+      // 查找当前选择器对应的组和规则索引
+      for (let gIndex = 0; gIndex < currentTheme.groups.length; gIndex++) {
+        const group = currentTheme.groups[gIndex];
+        for (let rIndex = 0; rIndex < group.rules.length; rIndex++) {
+          if (group.rules[rIndex].selector === currentSelector) {
+            groupIndex = gIndex;
+            ruleIndex = rIndex;
+            break;
+          }
+        }
+        if (groupIndex !== -1) break;
+      }
+    }
+
+    const dataAttributes = `data-property="${property}" data-group-index="${groupIndex}" data-rule-index="${ruleIndex}"`;
+    
     let inputHtml = '';
     switch (config.type) {
       case 'color':
-        inputHtml = `<input type="color" class="form-input property-value" data-property="${property}">`;
+        inputHtml = `<input type="color" class="form-input property-value" ${dataAttributes}>`;
         break;
       case 'range':
-        inputHtml = `<input type="range" class="form-input property-value" data-property="${property}" min="${config.min || 0}" max="${config.max || 100}" step="${config.step || 1}">`;
+        inputHtml = `<input type="range" class="form-input property-value" ${dataAttributes} min="${config.min || 0}" max="${config.max || 100}" step="${config.step || 1}">`;
         break;
       case 'select':
-        inputHtml = `<select class="form-input property-value" data-property="${property}">
+        inputHtml = `<select class="form-input property-value" ${dataAttributes}>
           ${config.options
             .map((option) => `<option value="${option}">${option}</option>`)
             .join('')}
         </select>`;
         break;
       default:
-        inputHtml = `<input type="text" class="form-input property-value" data-property="${property}" placeholder="输入${config.name}">`;
+        inputHtml = `<input type="text" class="form-input property-value" ${dataAttributes} placeholder="输入${config.name}">`;
     }
 
     editor.innerHTML = `
@@ -1483,12 +1748,16 @@ export class ThemeManager {
     const propertyInput = editor.querySelector('.property-value');
     propertyInput.addEventListener('input', (e) => {
       this.previewStyle(property, e.target.value);
+      // 检测修改并更新按钮状态
+      this.handleThemeChange();
     });
 
     // 对于select类型，也要监听change事件
     if (config.type === 'select') {
       propertyInput.addEventListener('change', (e) => {
         this.previewStyle(property, e.target.value);
+        // 检测修改并更新按钮状态
+        this.handleThemeChange();
       });
     }
 
@@ -1638,10 +1907,11 @@ export class ThemeManager {
 
     theme.groups.push(newGroup);
     this.renderGroups(theme);
+    
+    // 检测修改并更新按钮状态
+    this.handleThemeChange();
 
-    // 清空输入
-    document.getElementById('groupName').value = '';
-    document.getElementById('groupDescription').value = '';
+    // 输入框清空逻辑已移至modal-manager.js中统一处理
   }
 
   /**
@@ -1753,6 +2023,8 @@ export class ThemeManager {
         }, 500);
         // 选择器改变时清除之前的预览效果
         this.clearAllPreview();
+        // 检测修改并更新按钮状态
+        this.handleThemeChange();
       });
     }
 
@@ -1861,18 +2133,7 @@ export class ThemeManager {
     closeBtn.addEventListener('click', () => this.hideModal('addGroupModal'));
     cancelBtn.addEventListener('click', () => this.hideModal('addGroupModal'));
 
-    confirmBtn.addEventListener('click', () => {
-      const name = document.getElementById('groupName').value;
-      const description = document.getElementById('groupDescription').value;
-
-      if (!name.trim()) {
-        Utils.showToast('请输入组名称', 'warning');
-        return;
-      }
-
-      this.addGroup(name, description);
-      this.hideModal('addGroupModal');
-    });
+    // confirmAddGroup按钮的事件已在modal-manager.js中统一处理，避免重复绑定
   }
 
   /**

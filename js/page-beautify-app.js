@@ -215,8 +215,8 @@ class PageBeautifyApp {
       // 新建主题按钮
       const newThemeBtn = document.getElementById('newThemeBtn');
       if (newThemeBtn) {
-        newThemeBtn.addEventListener('click', () => {
-          this.themeManager.createNewTheme();
+        newThemeBtn.addEventListener('click', async () => {
+          await this.themeManager.createNewTheme();
         });
       }
       
@@ -231,8 +231,8 @@ class PageBeautifyApp {
       // 创建第一个主题按钮
       const createFirstTheme = document.getElementById('createFirstTheme');
       if (createFirstTheme) {
-        createFirstTheme.addEventListener('click', () => {
-          this.themeManager.createNewTheme();
+        createFirstTheme.addEventListener('click', async () => {
+          await this.themeManager.createNewTheme();
         });
       }
       
@@ -297,12 +297,7 @@ class PageBeautifyApp {
       });
     }
     
-    const confirmAddGroupBtn = document.getElementById('confirmAddGroup');
-    if (confirmAddGroupBtn) {
-      confirmAddGroupBtn.addEventListener('click', () => {
-        this.modalManager.addGroup();
-      });
-    }
+    // confirmAddGroup按钮的事件已在modal-manager.js中绑定，避免重复绑定
     
     // 添加规则模态框
     const closeAddRuleModal = document.getElementById('closeAddRuleModal');
@@ -312,12 +307,7 @@ class PageBeautifyApp {
       });
     }
     
-    const confirmAddRuleBtn = document.getElementById('confirmAddRuleBtn');
-    if (confirmAddRuleBtn) {
-      confirmAddRuleBtn.addEventListener('click', () => {
-        this.modalManager.handleAddRule();
-      });
-    }
+    // confirmAddRule按钮的事件已在modal-manager.js中绑定，避免重复绑定
   }
 
   /**

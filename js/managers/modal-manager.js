@@ -587,6 +587,10 @@ export class ModalManager {
     window.appState.setCurrentTheme(currentTheme);
     window.themeManager?.renderGroups(currentTheme);
     
+    // 清空输入框
+    nameInput.value = '';
+    descInput.value = '';
+    
     this.hideModal('addGroupModal');
     Utils.showToast(`组 "${name}" 已添加`, 'success');
   }

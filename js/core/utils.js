@@ -374,6 +374,12 @@ export class Utils {
         </div>
       `;
 
+      // 移除现有的确认对话框（如果存在）
+      const existingOverlay = document.getElementById('confirmDialogOverlay');
+      if (existingOverlay) {
+        existingOverlay.remove();
+      }
+
       // 创建对话框元素
       const dialogElement = document.createElement('div');
       dialogElement.innerHTML = dialogHTML;
@@ -494,6 +500,12 @@ export class Utils {
         </div>
       `;
 
+      // 移除现有的确认对话框（如果存在）
+      const existingOverlay = document.getElementById('confirmDialogOverlay');
+      if (existingOverlay) {
+        existingOverlay.remove();
+      }
+
       // 创建对话框元素
       const dialogElement = document.createElement('div');
       dialogElement.innerHTML = dialogHTML;
@@ -583,7 +595,7 @@ export class Utils {
       `,
       danger: `
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 9V13M12 17H12.01M4.93 4.93L19.07 19.07M19.07 4.93L4.93 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18A2 2 0 0 0 3.54 21H20.46A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       `,
       info: `
@@ -621,6 +633,10 @@ export class Utils {
     }
 
     const styles = `
+      :root {
+        --warning: 45 93% 47%; /* 黄色警告 */
+      }
+      
       .confirm-dialog-overlay {
         position: fixed;
         top: 0;
