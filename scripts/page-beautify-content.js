@@ -493,31 +493,13 @@ class PageBeautifyContent {
   /**
    * 清除选择器高亮效果
    */
+  /**
+   * 清除选择器高亮效果
+   */
   clearSelectorHighlight() {
-     const highlightedElements = document.querySelectorAll('[data-page-beautify-highlighted="true"]');
-     highlightedElements.forEach(element => {
-       // 恢复原始样式
-       const originalOutline = element.getAttribute('data-original-outline');
-       const originalOutlineOffset = element.getAttribute('data-original-outline-offset');
-       const originalBoxShadow = element.getAttribute('data-original-box-shadow');
-       const originalPosition = element.getAttribute('data-original-position');
-       const originalZIndex = element.getAttribute('data-original-z-index');
-       
-       element.style.outline = originalOutline || '';
-       element.style.outlineOffset = originalOutlineOffset || '';
-       element.style.boxShadow = originalBoxShadow || '';
-       element.style.position = originalPosition || '';
-       element.style.zIndex = originalZIndex || '';
-       
-       // 移除标记属性
-       element.removeAttribute('data-page-beautify-highlighted');
-       element.removeAttribute('data-original-outline');
-       element.removeAttribute('data-original-outline-offset');
-       element.removeAttribute('data-original-box-shadow');
-       element.removeAttribute('data-original-position');
-       element.removeAttribute('data-original-z-index');
-     });
-   }
+    // 直接调用removeHighlight方法来清除高亮
+    this.removeHighlight();
+  }
 
   /**
    * 实时预览样式效果

@@ -20,6 +20,11 @@ export class ThemeManager {
     this.hasUnsavedChanges = false;
     this.originalThemeData = null;
     
+    // 防抖和节流定时器
+    this.validateSelectorTimer = null;
+    this.clearHighlightTimer = null;
+    this.autoValidateTimer = null;
+    
     // 预绑定事件处理器，避免重复绑定问题
     this.boundHandleThemeChange = this.handleThemeChange.bind(this);
     
@@ -1385,6 +1390,12 @@ export class ThemeManager {
     this.appState.setCurrentTheme(currentTheme);
     this.renderGroups(currentTheme);
     
+    // 重新应用主题以清除被删除组的样式
+    const success = await chromeApi.applyTheme(currentTheme);
+    if (!success) {
+      Utils.showToast('删除组成功，但重新应用主题失败', 'warning');
+    }
+    
     // 检测修改并更新按钮状态
     this.handleThemeChange();
     
@@ -1417,6 +1428,12 @@ export class ThemeManager {
     currentTheme.groups[groupIndex].rules.splice(ruleIndex, 1);
     this.appState.setCurrentTheme(currentTheme);
     this.renderGroups(currentTheme);
+    
+    // 重新应用主题以清除被删除规则的样式
+    const success = await chromeApi.applyTheme(currentTheme);
+    if (!success) {
+      Utils.showToast('删除规则成功，但重新应用主题失败', 'warning');
+    }
     
     Utils.showToast('规则已删除', 'success');
   }
@@ -1843,12 +1860,14 @@ export class ThemeManager {
     const indicator = document.getElementById('selectorStatusIndicator');
     const suggestions = document.getElementById('selectorSuggestions');
 
+    // 清除之前的高亮效果
+    this.clearSelectorHighlight();
+
     if (!selector.trim()) {
-      indicator.className = 'selector-status-indicator';
-      suggestions.textContent = '';
-      suggestions.style.display = 'none';
-      // 清除高亮
-      this.clearSelectorHighlight();
+      indicator.className = 'selector-status-indicator invalid';
+      suggestions.textContent = '请输入CSS选择器，例如：nav, .navbar, #header';
+      suggestions.className = 'selector-suggestions error';
+      suggestions.style.display = 'block';
       return;
     }
 
@@ -1865,23 +1884,37 @@ export class ThemeManager {
       console.log('验证选择器结果:', response);
 
       if (response && response.success) {
-        if (response.isValid) {
+        if (response.isValid && response.elementCount > 0) {
           indicator.className = 'selector-status-indicator valid';
           suggestions.textContent = `找到 ${response.elementCount} 个匹配元素`;
           suggestions.className = 'selector-suggestions success';
           suggestions.style.display = 'block';
+          
+          // 高亮匹配的元素
+          this.highlightElements(selector);
+          
+          // 3秒后自动清除高亮
+          setTimeout(() => {
+            this.clearSelectorHighlight();
+          }, 3000);
         } else {
           indicator.className = 'selector-status-indicator invalid';
           suggestions.textContent =
             response.elementCount === 0 ? '未找到匹配元素' : '选择器语法错误';
           suggestions.className = 'selector-suggestions error';
           suggestions.style.display = 'block';
+          
+          // 验证失败时立即清除高亮
+          this.clearSelectorHighlight();
         }
       } else {
         indicator.className = 'selector-status-indicator invalid';
         suggestions.textContent = '无法连接到页面，请确保页面已加载';
         suggestions.className = 'selector-suggestions error';
         suggestions.style.display = 'block';
+        
+        // 连接失败时立即清除高亮
+        this.clearSelectorHighlight();
       }
     } catch (error) {
       console.error('验证选择器时发生错误:', error);
@@ -1889,6 +1922,9 @@ export class ThemeManager {
       suggestions.textContent = '验证失败，请确保页面已加载并刷新后重试';
       suggestions.className = 'selector-suggestions error';
       suggestions.style.display = 'block';
+      
+      // 异常时立即清除高亮
+      this.clearSelectorHighlight();
     }
   }
 
@@ -2025,12 +2061,21 @@ export class ThemeManager {
     closeBtn.addEventListener('click', () => this.hideModal('addRuleModal'));
     cancelBtn.addEventListener('click', () => this.hideModal('addRuleModal'));
 
-    validateBtn.addEventListener('click', () => this.validateSelector());
+    // 添加防抖机制，避免频繁点击验证按钮
+    validateBtn.addEventListener('click', () => {
+      // 清除之前的防抖定时器
+      clearTimeout(this.validateSelectorTimer);
+      
+      // 设置新的防抖定时器
+      this.validateSelectorTimer = setTimeout(() => {
+        this.validateSelector();
+      }, 300); // 300ms防抖延迟
+    });
     addPropertyBtn.addEventListener('click', () =>
       this.showModal('propertySelectModal')
     );
 
-    // 选择器输入框变化时清除高亮和预览
+    // 选择器输入框变化时清除高亮和预览，并添加节流验证
     const selectorInput = document.getElementById('cssSelector');
     if (selectorInput) {
       selectorInput.addEventListener('input', () => {
@@ -2039,10 +2084,23 @@ export class ThemeManager {
         this.clearHighlightTimer = setTimeout(() => {
           this.clearSelectorHighlight();
         }, 500);
+        
         // 选择器改变时清除之前的预览效果
         this.clearAllPreview();
+        
         // 检测修改并更新按钮状态
         this.handleThemeChange();
+        
+        // 清空时重置状态
+        const currentValue = selectorInput.value.trim();
+        if (!currentValue) {
+          const indicator = document.getElementById('selectorStatusIndicator');
+          const suggestions = document.getElementById('selectorSuggestions');
+          if (indicator) indicator.className = 'selector-status-indicator';
+          if (suggestions) {
+            suggestions.style.display = 'none';
+          }
+        }
       });
     }
 
