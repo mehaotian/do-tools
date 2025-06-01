@@ -245,12 +245,12 @@ class PageBeautifyApp {
       }
       
       // 导出主题按钮
-      const exportThemeBtn = document.getElementById('exportThemeBtn');
-      if (exportThemeBtn) {
-        exportThemeBtn.addEventListener('click', () => {
-          this.themeManager.exportCurrentTheme();
-        });
-      }
+    const exportThemeBtn = document.getElementById('exportThemeBtn');
+    if (exportThemeBtn) {
+      exportThemeBtn.addEventListener('click', async () => {
+        await this.themeManager.exportCurrentTheme();
+      });
+    }
       
       // 保存主题按钮
       const saveThemeBtn = document.getElementById('saveThemeBtn');

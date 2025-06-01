@@ -704,8 +704,8 @@ body {
 .css-property-name {
   color: hsl(var(--destructive));
   font-weight: 600;
-  min-width: 120px;
-  text-align: right;
+  min-width: 80px;
+  text-align: left;
 }
 
 .css-property-value {

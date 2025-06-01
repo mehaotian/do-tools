@@ -152,20 +152,48 @@ export class Utils {
    * @param {any} data - 要导出的数据
    * @param {string} filename - 文件名
    */
-  static exportJSON(data, filename) {
+  static async exportJSON(data, filename) {
     try {
       const jsonString = JSON.stringify(data, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
       
+      // 检查是否支持文件系统访问API
+      if ('showSaveFilePicker' in window) {
+        try {
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: 'JSON文件',
+              accept: {
+                'application/json': ['.json'],
+              },
+            }],
+          });
+          
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          
+          this.showToast('主题导出成功', 'success');
+          return;
+        } catch (error) {
+          // 用户取消了文件选择或其他错误，回退到默认下载
+          if (error.name === 'AbortError') {
+            return; // 用户取消，不显示错误
+          }
+        }
+      }
+      
+      // 回退到传统下载方式
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       URL.revokeObjectURL(url);
+      
       this.showToast('主题导出成功', 'success');
     } catch (error) {
       console.error('导出失败:', error);

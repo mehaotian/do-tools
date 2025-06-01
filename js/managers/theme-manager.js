@@ -759,7 +759,7 @@ export class ThemeManager {
   /**
    * 导出当前主题
    */
-  exportCurrentTheme() {
+  async exportCurrentTheme() {
     const currentTheme = this.appState.getCurrentTheme();
     if (!currentTheme) {
       Utils.showToast('没有要导出的主题', 'warning');
@@ -767,7 +767,7 @@ export class ThemeManager {
     }
 
     const filename = `${currentTheme.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}_theme.json`;
-    Utils.exportJSON(currentTheme, filename);
+    await Utils.exportJSON(currentTheme, filename);
   }
 
   /**
@@ -787,9 +787,18 @@ export class ThemeManager {
       themeData.name = this.appState.generateUniqueThemeName(themeData.name);
 
       await this.appState.addCustomTheme(themeData);
+      
+      // 自动切换并应用导入的主题
+      await this.appState.setAppliedThemeId(themeData.id);
       this.appState.setCurrentTheme(themeData);
       
-      Utils.showToast(`主题 "${themeData.name}" 导入成功`, 'success');
+      // 直接应用主题样式，避免重复的状态设置和toast消息
+      const success = await chromeApi.applyTheme(themeData);
+      if (!success) {
+        throw new Error('主题应用失败');
+      }
+      
+      Utils.showToast(`主题 "${themeData.name}" 导入成功并已应用`, 'success');
       this.showThemeEditor(themeData);
     } catch (error) {
       console.error('导入主题失败:', error);
@@ -1100,9 +1109,18 @@ export class ThemeManager {
     return rules.map((rule, index) => {
       const propertiesHtml = Object.entries(rule.properties || {})
         .map(([prop, value]) => {
+          // 查找CSS属性的中文名称
+          let displayName = prop;
+          for (const category in CSS_PROPERTIES) {
+            if (CSS_PROPERTIES[category].properties[prop]) {
+              displayName = CSS_PROPERTIES[category].properties[prop].name;
+              break;
+            }
+          }
+          
           return `
             <div class="css-property">
-              <span class="css-property-name">${Utils.escapeHtml(prop)}:</span>
+              <span class="css-property-name">${Utils.escapeHtml(displayName)}:</span>
               <span class="css-property-value">${Utils.escapeHtml(value)};</span>
             </div>
           `;
@@ -1456,7 +1474,7 @@ export class ThemeManager {
   /**
    * 导出当前主题
    */
-  exportCurrentTheme() {
+  async exportCurrentTheme() {
     const currentTheme = this.appState.getCurrentTheme();
     if (!currentTheme) {
       Utils.showToast('没有要导出的主题', 'warning');
@@ -1464,7 +1482,7 @@ export class ThemeManager {
     }
 
     const filename = `${currentTheme.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}_theme.json`;
-    Utils.exportJSON(currentTheme, filename);
+    await Utils.exportJSON(currentTheme, filename);
   }
 
   /**
