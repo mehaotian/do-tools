@@ -6,7 +6,6 @@
 import { Utils } from '../core/utils.js';
 import { chromeApi } from '../services/chrome-api.js';
 import { CSS_PROPERTIES } from '../core/constants.js';
-import { showConfirmDialog } from '../components/confirm-dialog.js';
 
 /**
  * 主题管理器类
@@ -32,7 +31,7 @@ export class ThemeManager {
    * @returns {Promise<boolean>} 用户选择结果
    */
   async showConfirmDialog(message, options = {}) {
-    return await showConfirmDialog(message, options);
+    return await Utils.showConfirmDialog(message, options);
   }
 
   /**
@@ -247,6 +246,12 @@ export class ThemeManager {
       if (activeCard) {
         activeCard.classList.add('active');
       }
+    } else {
+      // 如果没有应用任何主题，选择无主题
+      const noneElement = document.querySelector('[data-theme-id="none"]');
+      if (noneElement) {
+        noneElement.classList.add('active');
+      }
     }
   }
 
@@ -415,15 +420,21 @@ export class ThemeManager {
       });
       
       if (confirmed) {
+        const wasAppliedTheme = this.appState.appliedThemeId === themeId;
         await this.appState.removeCustomTheme(themeId);
       
-      // 如果删除的是当前主题，清空编辑器
-      if (this.appState.currentTheme && this.appState.currentTheme.id === themeId) {
-        this.appState.setCurrentTheme(null);
-        this.hideThemeEditor();
-      }
-      
-      Utils.showToast(`主题 "${theme.name}" 已删除`, 'success');
+        // 如果删除的是当前主题，清空编辑器
+        if (this.appState.currentTheme && this.appState.currentTheme.id === themeId) {
+          this.appState.setCurrentTheme(null);
+          this.hideThemeEditor();
+        }
+        
+        // 如果删除的是当前应用的主题，或者没有任何主题被选中，自动选择无主题
+        if (wasAppliedTheme || !this.appState.appliedThemeId) {
+          this.selectNoneTheme(true);
+        }
+        
+        Utils.showToast(`主题 "${theme.name}" 已删除`, 'success');
       }
     }
   }
@@ -459,7 +470,8 @@ export class ThemeManager {
     const appliedThemeId = this.appState.getAppliedThemeId();
     console.log('从应用状态中获取的主题ID:', appliedThemeId);
     if (!appliedThemeId) {
-      console.log('没有找到已应用的主题ID，跳过恢复');
+      console.log('没有找到已应用的主题ID，自动选择无主题');
+      this.selectNoneTheme(false);
       return;
     }
 
@@ -535,11 +547,19 @@ export class ThemeManager {
       id: Utils.generateId(),
       name: this.appState.generateUniqueThemeName('新主题'),
       description: '自定义主题',
-      groups: []
+      groups: [],
+      isCustom: true
     };
 
+    // 设置为当前主题并自动应用
     this.appState.setCurrentTheme(newTheme);
+    this.appState.setAppliedThemeId(newTheme.id);
     this.showThemeEditor(newTheme);
+    
+    // 更新主题选择状态
+    this.updateThemeSelection();
+    
+    Utils.showToast(`已创建新主题 "${newTheme.name}"`, 'success');
   }
 
 
@@ -574,19 +594,57 @@ export class ThemeManager {
         return;
       }
 
-      const newName = prompt('请输入新主题名称:', currentTheme.name + ' 副本');
-      if (!newName || !newName.trim()) {
-        return;
+      // 判断当前主题是否已存在于自定义主题中
+      const existingTheme = this.appState.customThemes.find(t => t.id === currentTheme.id);
+      const isExistingCustomTheme = existingTheme && currentTheme.isCustom;
+      
+      let defaultName;
+      let dialogTitle;
+      
+      if (isExistingCustomTheme) {
+        // 已存在的自定义主题 - 另存为
+        defaultName = currentTheme.name + ' 副本';
+        dialogTitle = '另存为新主题';
+      } else {
+        // 新主题或预设主题 - 保存
+        defaultName = currentTheme.name;
+        dialogTitle = '保存主题';
+      }
+
+      const newName = await Utils.showInputDialog(
+        '请输入主题名称:',
+        {
+          title: dialogTitle,
+          placeholder: '主题名称',
+          defaultValue: defaultName,
+          confirmText: '保存',
+          cancelText: '取消',
+          type: 'info'
+        }
+      );
+      
+      if (!newName) {
+        return; // 用户取消
       }
 
       const newTheme = {
         ...Utils.deepClone(currentTheme),
         id: Utils.generateId(),
-        name: newName.trim()
+        name: newName,
+        isCustom: true
       };
 
+      // 保存新主题
       await this.appState.addCustomTheme(newTheme);
+      
+      // 设置为当前主题并应用
       this.appState.setCurrentTheme(newTheme);
+      this.appState.setAppliedThemeId(newTheme.id);
+      
+      // 更新UI状态
+      this.updateThemeSelection();
+      this.updateThemeActions(newTheme);
+      
       Utils.showToast(`主题 "${newTheme.name}" 已保存`, 'success');
     } catch (error) {
       console.error('另存为失败:', error);
@@ -696,15 +754,16 @@ export class ThemeManager {
 
     if (!saveBtn || !saveAsBtn) return;
 
-    if (
-      theme.isCustom &&
-      this.appState.customThemes.find((t) => t.id === theme.id)
-    ) {
-      // 已存在的自定义主题 - 显示保存按钮
+    // 检查当前主题是否已存在于自定义主题中
+    const existingTheme = this.appState.customThemes.find((t) => t.id === theme.id);
+    const isExistingCustomTheme = existingTheme && theme.isCustom;
+
+    if (isExistingCustomTheme) {
+      // 已存在的自定义主题 - 显示保存按钮，隐藏另存为按钮
       saveBtn.style.display = 'inline-block';
       saveAsBtn.style.display = 'none';
     } else {
-      // 预制主题或新主题 - 显示另存为按钮
+      // 新主题或预设主题 - 隐藏保存按钮，显示另存为按钮
       saveBtn.style.display = 'none';
       saveAsBtn.style.display = 'inline-block';
     }
