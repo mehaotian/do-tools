@@ -40,13 +40,21 @@ export class ThemeManager {
     this.throttledValidateUrl = Utils.throttle(
       async (inputElement, value) => {
         try {
-          await this.validateUrlPattern(inputElement, value);
+          // 获取当前URL进行验证
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          const currentUrl = tabs[0]?.url;
+          if (currentUrl) {
+            await this.validateUrlPattern(inputElement, value, currentUrl);
+          }
         } catch (error) {
           console.error('URL验证失败:', error);
         }
       },
       500
     );
+    
+    // 绑定页面URL变化监听
+    this.setupUrlChangeListener();
     
     // 预绑定事件处理器，避免重复绑定问题
     this.boundHandleThemeChange = this.handleThemeChange.bind(this);
@@ -110,6 +118,8 @@ export class ThemeManager {
       // 初始化最后保存的应用主题ID
       this.lastSavedAppliedThemeId = this.appState.getAppliedThemeId();
       
+
+      
       this.isInitialized = true;
     } catch (error) {
       console.error('主题管理器初始化失败:', error);
@@ -118,6 +128,175 @@ export class ThemeManager {
   }
 
   /**
+   * 设置页面URL变化监听器
+   * 监听来自content script的URL变化通知，更新插件状态
+   */
+  setupUrlChangeListener() {
+    try {
+      // 监听自定义事件（来自content script）
+      document.addEventListener('pageBeautifyUrlChanged', (event) => {
+        console.log('[ThemeManager] 收到URL变化事件:', event.detail);
+        this.handleUrlChangeEvent(event.detail);
+      });
+      
+      // 监听postMessage（来自iframe通信）
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'urlChanged') {
+          console.log('[ThemeManager] 收到URL变化消息:', event.data);
+          this.handleUrlChangeEvent({
+            url: event.data.url,
+            hasAppliedStyles: event.data.hasAppliedStyles,
+            timestamp: event.data.timestamp
+          });
+        }
+      });
+      
+      console.log('[ThemeManager] URL变化监听器已设置');
+      
+    } catch (error) {
+      console.error('[ThemeManager] 设置URL变化监听器失败:', error);
+    }
+  }
+
+  /**
+   * 处理URL变化事件
+   * 当页面URL发生变化时，更新所有URL模式的验证状态
+   * @param {Object} eventData - 事件数据
+   * @param {string} eventData.url - 新的URL地址
+   * @param {boolean} eventData.hasAppliedStyles - 是否有应用的样式
+   * @param {number} eventData.timestamp - 时间戳
+   */
+  async handleUrlChangeEvent(eventData) {
+    const { url, hasAppliedStyles, timestamp } = eventData;
+    
+    console.log(`[ThemeManager] 处理URL变化: ${url}`);
+    
+    try {
+      // 获取当前选中的主题
+      const currentTheme = this.appState.getCurrentTheme();
+      
+      if (currentTheme) {
+        console.log(`[ThemeManager] 当前主题: "${currentTheme.name}"`);
+        
+        // 检查主题是否配置了URL规则
+        if (!currentTheme.urlPatterns || currentTheme.urlPatterns.length === 0) {
+          console.log(`[ThemeManager] 主题 "${currentTheme.name}" 没有配置适用网站，清除样式`);
+          await chromeApi.clearStyles();
+        } else {
+          // 检查URL是否匹配
+          const isUrlMatch = Utils.isThemeMatchUrl(currentTheme, url);
+          console.log(`[ThemeManager] URL匹配检查结果: ${isUrlMatch}`);
+          
+          if (isUrlMatch) {
+            // URL匹配，应用主题
+            console.log(`[ThemeManager] URL匹配，应用主题 "${currentTheme.name}"`);
+            const success = await chromeApi.applyTheme(currentTheme);
+            if (success) {
+              console.log(`[ThemeManager] 主题 "${currentTheme.name}" 应用成功`);
+            } else {
+              console.error(`[ThemeManager] 主题 "${currentTheme.name}" 应用失败`);
+            }
+          } else {
+            // URL不匹配，清除样式
+            console.log(`[ThemeManager] URL不匹配，清除样式`);
+            await chromeApi.clearStyles();
+          }
+        }
+      } else {
+        console.log(`[ThemeManager] 没有选中的主题，清除样式`);
+        await chromeApi.clearStyles();
+      }
+      
+    } catch (error) {
+      console.error('[ThemeManager] 处理URL变化事件失败:', error);
+    }
+    
+    // 无论主题应用是否成功，都要更新所有URL模式输入框的验证状态显示
+    try {
+      await this.updateAllUrlPatternValidation(url);
+    } catch (updateError) {
+      console.error('[ThemeManager] 更新URL匹配状态显示失败:', updateError);
+    }
+  }
+
+  /**
+   * 更新所有URL模式输入框的验证状态
+   * @param {string} currentUrl - 当前页面URL
+   */
+  async updateAllUrlPatternValidation(currentUrl) {
+    try {
+      const urlInputs = document.querySelectorAll('.url-pattern-input');
+      
+      for (const input of urlInputs) {
+        const pattern = input.value.trim();
+        if (pattern) {
+          // 重新验证每个URL模式
+          await this.validateUrlPattern(input, pattern, currentUrl);
+        }
+      }
+      
+      console.log(`[ThemeManager] 已更新 ${urlInputs.length} 个URL模式的验证状态`);
+      
+    } catch (error) {
+      console.error('[ThemeManager] 更新URL模式验证状态失败:', error);
+    }
+  }
+
+  /**
+   * 检查主题是否匹配当前URL
+   * @param {Object} theme - 主题数据
+   * @param {string} currentUrl - 当前URL
+   * @returns {boolean} 是否匹配
+   */
+  isThemeMatchCurrentUrl(theme, currentUrl) {
+    if (!theme || !currentUrl) {
+      return false;
+    }
+
+    // 如果没有URL模式，则不匹配
+    if (!theme.urlPatterns || !Array.isArray(theme.urlPatterns) || theme.urlPatterns.length === 0) {
+      return false;
+    }
+
+    // 检查是否有任何启用的模式匹配当前URL
+     return theme.urlPatterns.some(urlPattern => {
+       if (!urlPattern.enabled) {
+         return false;
+       }
+       return Utils.matchUrlPattern(currentUrl, urlPattern.pattern, urlPattern.type || 'wildcard');
+     });
+  }
+
+  /**
+   * 显示URL变化通知
+   * @param {Object} theme - 当前主题
+   * @param {string} newUrl - 新URL
+   * @param {boolean} isMatch - 是否匹配
+   * @param {boolean} hasAppliedStyles - 是否有应用的样式
+   */
+  showUrlChangeNotification(theme, newUrl, isMatch, hasAppliedStyles) {
+    try {
+      // 创建简单的状态提示
+      const statusText = isMatch ? '匹配' : '不匹配';
+      const styleText = hasAppliedStyles ? '已应用' : '未应用';
+      
+      console.log(`[ThemeManager] 主题状态: ${theme.name} - ${statusText}, 样式: ${styleText}`);
+      
+      // 可以在这里添加更丰富的UI提示，比如toast通知
+      // 暂时只在控制台输出，避免过度打扰用户
+      
+    } catch (error) {
+      console.error('[ThemeManager] 显示URL变化通知失败:', error);
+    }
+  }
+
+
+
+
+
+
+ 
+   /**
    * 渲染所有主题
    */
   renderThemes() {
@@ -2531,7 +2710,13 @@ export class ThemeManager {
     // 立即验证URL模式并应用样式
     const inputElement = item.querySelector('.url-pattern-input');
     if (inputElement && urlPattern.pattern) {
-      this.validateUrlPattern(inputElement, urlPattern.pattern).catch(console.error);
+      // 获取当前URL并验证模式
+      chrome.tabs.query({ active: true, currentWindow: true }).then(tabs => {
+        const currentUrl = tabs[0]?.url;
+        if (currentUrl) {
+          this.validateUrlPattern(inputElement, urlPattern.pattern, currentUrl).catch(console.error);
+        }
+      }).catch(console.error);
     }
 
     return item;
@@ -2849,8 +3034,9 @@ export class ThemeManager {
    * 校验URL模式是否匹配当前页面
    * @param {HTMLElement} inputElement - 输入框元素
    * @param {string} value - URL模式值
+   * @param {string} currentUrl - 当前页面URL（可选，如果不提供则自动获取）
    */
-  async validateUrlPattern(inputElement, value) {
+  async validateUrlPattern(inputElement, value, currentUrl = null) {
     // 移除之前的校验状态
     inputElement.classList.remove('url-pattern-valid', 'url-pattern-invalid');
     
@@ -2860,9 +3046,11 @@ export class ThemeManager {
     }
     
     try {
-      // 获取当前页面URL
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const currentUrl = tabs[0]?.url;
+      // 如果没有提供currentUrl，则获取当前页面URL
+      if (!currentUrl) {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        currentUrl = tabs[0]?.url;
+      }
       
       if (!currentUrl) {
         // 无法获取当前URL时，不显示状态

@@ -169,6 +169,13 @@ class PageBeautifyApp {
       chrome.storage.onChanged.addListener(this.handleStorageChange);
     }
     
+    // 监听来自background的消息（URL变化、标签页激活等）
+    if (this.isExtensionEnvironment) {
+      chromeApi.onMessage((message, sender, sendResponse) => {
+        this.handleBackgroundMessage(message, sender, sendResponse);
+      });
+    }
+    
     // 全局错误处理
     window.addEventListener('error', this.errorHandler);
     window.addEventListener('unhandledrejection', this.errorHandler);
@@ -563,6 +570,47 @@ class PageBeautifyApp {
       console.error('重置应用失败:', error);
       Utils.showToast('重置失败，请刷新页面重试', 'error');
       return false;
+    }
+  }
+
+  /**
+   * 处理来自background的消息
+   * @param {Object} message - 消息对象
+   * @param {Object} sender - 发送者信息
+   * @param {Function} sendResponse - 响应函数
+   */
+  handleBackgroundMessage(message, sender, sendResponse) {
+    try {
+      console.log('[PageBeautifyApp] 收到background消息:', message);
+      
+      switch (message.action) {
+        case 'urlChanged':
+        case 'tabActivated':
+          // 通知ThemeManager处理URL变化
+          if (this.themeManager && message.url) {
+            this.themeManager.handleUrlChangeEvent({
+              url: message.url,
+              hasAppliedStyles: false, // background消息中没有这个信息，设为false
+              timestamp: Date.now()
+            });
+          }
+          break;
+          
+        default:
+          console.log('[PageBeautifyApp] 未知的消息类型:', message.action);
+          break;
+      }
+      
+      // 发送响应确认消息已处理
+      if (sendResponse) {
+        sendResponse({ success: true });
+      }
+      
+    } catch (error) {
+      console.error('[PageBeautifyApp] 处理background消息失败:', error);
+      if (sendResponse) {
+        sendResponse({ success: false, error: error.message });
+      }
     }
   }
 }

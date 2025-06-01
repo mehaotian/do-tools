@@ -249,6 +249,120 @@ class PageBeautifyContent {
   }
 
   /**
+   * 处理URL变化事件
+   * 当页面URL发生变化时，重新检查和应用主题
+   * @param {string} newUrl - 新的URL地址
+   */
+  async handleUrlChange(newUrl) {
+    try {
+      console.log('[Content Script] 处理URL变化事件:', newUrl);
+      
+      // 清除当前应用的样式
+      this.clearAllStyles();
+      
+      // 重新加载并应用匹配的主题
+      await this.loadAndApplyStoredTheme();
+      
+      // 通知页面美化应用更新插件状态（如果存在）
+      this.notifyPluginStatusUpdate(newUrl);
+      
+    } catch (error) {
+      console.error('[Content Script] 处理URL变化失败:', error);
+    }
+  }
+
+  /**
+   * 处理标签页激活事件
+   * 当用户切换到当前标签页时，重新检查和应用主题
+   * @param {string} currentUrl - 当前URL地址
+   */
+  async handleTabActivation(currentUrl) {
+    try {
+      console.log('[Content Script] 处理标签页激活事件:', currentUrl);
+      
+      // 检查当前是否有应用的主题
+      const hasAppliedStyles = this.appliedStyles.size > 0;
+      
+      if (!hasAppliedStyles) {
+        // 如果没有应用的样式，重新加载并应用主题
+        console.log('[Content Script] 标签页激活时未检测到应用的样式，重新加载主题');
+        await this.loadAndApplyStoredTheme();
+      } else {
+        console.log('[Content Script] 标签页激活时检测到已有应用的样式，保持当前状态');
+      }
+      
+      // 通知页面美化应用更新插件状态（如果存在）
+      this.notifyPluginStatusUpdate(currentUrl);
+      
+    } catch (error) {
+      console.error('[Content Script] 处理标签页激活失败:', error);
+    }
+  }
+
+  /**
+   * 通知页面美化应用更新插件状态
+   * 向页面中的美化应用发送消息，更新插件状态显示
+   * @param {string} currentUrl - 当前URL地址
+   */
+  notifyPluginStatusUpdate(currentUrl) {
+    try {
+      // 查找页面中的美化应用iframe或窗口
+      const beautifyFrame = document.querySelector('iframe[src*="page-beautify.html"]');
+      
+      if (beautifyFrame && beautifyFrame.contentWindow) {
+        // 向美化应用发送URL更新消息
+        beautifyFrame.contentWindow.postMessage({
+          type: 'urlChanged',
+          url: currentUrl,
+          timestamp: Date.now()
+        }, '*');
+        console.log('[Content Script] 已通知美化应用URL变化:', currentUrl);
+      }
+      
+      // 也可以通过自定义事件通知页面
+      const event = new CustomEvent('pageBeautifyUrlChanged', {
+        detail: {
+          url: currentUrl,
+          hasAppliedStyles: this.appliedStyles.size > 0,
+          timestamp: Date.now()
+        }
+      });
+      document.dispatchEvent(event);
+      
+    } catch (error) {
+      console.debug('[Content Script] 通知插件状态更新失败:', error);
+    }
+  }
+
+  /**
+   * 清除所有应用的样式
+   * 移除当前页面上所有通过插件应用的样式
+   */
+  clearAllStyles() {
+    try {
+      console.log('[Content Script] 清除所有应用的样式');
+      
+      // 移除所有应用的样式元素
+      this.appliedStyles.forEach((styleElement, selector) => {
+        if (styleElement && styleElement.parentNode) {
+          styleElement.parentNode.removeChild(styleElement);
+        }
+      });
+      
+      // 清空样式映射
+      this.appliedStyles.clear();
+      
+      // 清除预览样式
+      this.clearAllPreview();
+      
+      console.log('[Content Script] 所有样式已清除');
+      
+    } catch (error) {
+      console.error('[Content Script] 清除样式失败:', error);
+    }
+  }
+
+  /**
    * 处理页面美化相关消息
    * @param {Object} request - 请求对象
    * @param {Function} sendResponse - 响应函数
@@ -851,6 +965,14 @@ function initializePageBeautify() {
     if (request.action === "pageBeautify") {
       pageBeautifyContent.handlePageBeautifyMessage(request, sendResponse);
       return true; // 保持消息通道开放
+    } else if (request.action === "urlChanged") {
+      // URL变化时重新检查和应用主题
+      console.log('[Content Script] URL已变化，重新检查主题应用:', request.url);
+      pageBeautifyContent.handleUrlChange(request.url);
+    } else if (request.action === "tabActivated") {
+      // 标签页激活时重新检查和应用主题
+      console.log('[Content Script] 标签页已激活，重新检查主题应用:', request.url);
+      pageBeautifyContent.handleTabActivation(request.url);
     }
   });
 }

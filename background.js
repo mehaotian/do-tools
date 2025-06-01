@@ -420,10 +420,69 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
+ * 监听标签页更新事件（URL变化、页面加载等）
+ * 当页面URL改变或页面重新加载时，通知content script更新插件状态
+ */
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  // 只在页面完全加载完成时处理
+  if (changeInfo.status === 'complete' && tab.url) {
+    // 排除chrome内部页面和扩展页面
+    if (tab.url.startsWith('chrome://') || 
+        tab.url.startsWith('chrome-extension://') || 
+        tab.url.startsWith('moz-extension://')) {
+      return;
+    }
+
+    try {
+      // 向该标签页发送URL变化通知
+      await chrome.tabs.sendMessage(tabId, {
+        action: 'urlChanged',
+        url: tab.url,
+        tabId: tabId
+      });
+      console.log(`[Background] 通知标签页 ${tabId} URL已变化:`, tab.url);
+    } catch (error) {
+      // 忽略无法发送消息的错误（可能是页面还未准备好接收消息）
+      console.debug(`[Background] 无法向标签页 ${tabId} 发送URL变化通知:`, error.message);
+    }
+  }
+});
+
+/**
+ * 监听标签页激活事件（用户切换标签页）
+ * 当用户切换到不同标签页时，通知新激活的标签页更新插件状态
+ */
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    // 获取激活标签页的详细信息
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    
+    // 排除chrome内部页面和扩展页面
+    if (tab.url && 
+        !tab.url.startsWith('chrome://') && 
+        !tab.url.startsWith('chrome-extension://') && 
+        !tab.url.startsWith('moz-extension://')) {
+      
+      // 向激活的标签页发送激活通知
+      await chrome.tabs.sendMessage(activeInfo.tabId, {
+        action: 'tabActivated',
+        url: tab.url,
+        tabId: activeInfo.tabId
+      });
+      console.log(`[Background] 通知标签页 ${activeInfo.tabId} 已激活:`, tab.url);
+    }
+  } catch (error) {
+    // 忽略无法发送消息的错误
+    console.debug(`[Background] 无法向激活标签页 ${activeInfo.tabId} 发送激活通知:`, error.message);
+  }
+});
+
+/**
  * 扩展安装或启动时的初始化
  */
 chrome.runtime.onInstalled.addListener((details) => {
   // 扩展安装或更新时的初始化逻辑
+  console.log('[Background] 扩展已安装/更新:', details.reason);
 });
 
 /**
@@ -431,4 +490,5 @@ chrome.runtime.onInstalled.addListener((details) => {
  */
 chrome.runtime.onStartup.addListener(() => {
   // 扩展启动时的初始化逻辑
+  console.log('[Background] 扩展已启动');
 });
