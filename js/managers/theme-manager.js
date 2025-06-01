@@ -6,6 +6,7 @@
 import { Utils } from '../core/utils.js';
 import { chromeApi } from '../services/chrome-api.js';
 import { CSS_PROPERTIES } from '../core/constants.js';
+import { showConfirmDialog } from '../components/confirm-dialog.js';
 
 /**
  * 主题管理器类
@@ -22,6 +23,33 @@ export class ThemeManager {
     
     // 绑定事件处理器
     this.bindEvents();
+  }
+
+  /**
+   * 显示确认对话框
+   * @param {string} message - 确认消息
+   * @param {Object} options - 配置选项
+   * @returns {Promise<boolean>} 用户选择结果
+   */
+  async showConfirmDialog(message, options = {}) {
+    return await showConfirmDialog(message, options);
+  }
+
+  /**
+   * 处理删除组的异步确认
+   * @param {string} groupId - 组ID
+   */
+  async handleDeleteGroup(groupId) {
+    const confirmed = await this.showConfirmDialog('确定要删除这个组吗？', {
+      title: '删除确认',
+      type: 'warning',
+      confirmText: '删除',
+      cancelText: '取消'
+    });
+    
+    if (confirmed) {
+      this.deleteGroup(groupId);
+    }
   }
 
   /**
@@ -173,14 +201,14 @@ export class ThemeManager {
       });
 
       // 处理操作按钮
-      card.addEventListener('click', (e) => {
+      card.addEventListener('click', async (e) => {
         const action = e.target.dataset.action;
         const id = e.target.dataset.id;
 
         if (action === 'edit') {
           this.editCustomTheme(id);
         } else if (action === 'delete') {
-          this.deleteCustomTheme(id);
+          await this.deleteCustomTheme(id);
         }
       });
     }
@@ -378,8 +406,16 @@ export class ThemeManager {
    */
   async deleteCustomTheme(themeId) {
     const theme = this.appState.customThemes.find(t => t.id === themeId);
-    if (theme && confirm(`确定要删除主题 "${theme.name}" 吗？`)) {
-      await this.appState.removeCustomTheme(themeId);
+    if (theme) {
+      const confirmed = await this.showConfirmDialog(`确定要删除主题 "${theme.name}" 吗？`, {
+        title: '删除主题',
+        type: 'danger',
+        confirmText: '删除',
+        cancelText: '取消'
+      });
+      
+      if (confirmed) {
+        await this.appState.removeCustomTheme(themeId);
       
       // 如果删除的是当前主题，清空编辑器
       if (this.appState.currentTheme && this.appState.currentTheme.id === themeId) {
@@ -388,6 +424,7 @@ export class ThemeManager {
       }
       
       Utils.showToast(`主题 "${theme.name}" 已删除`, 'success');
+      }
     }
   }
 
@@ -854,25 +891,27 @@ export class ThemeManager {
           this.showAddRuleModal(groupId);
           break;
         case 'delete-group':
-          if (confirm('确定要删除这个组吗？')) {
-            this.deleteGroup(groupId);
-          }
+          this.handleDeleteGroup(groupId);
           break;
       }
     });
 
     // 处理规则编辑和删除按钮
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       if (e.target.closest('.edit-rule-btn')) {
         const btn = e.target.closest('.edit-rule-btn');
         const ruleIndex = parseInt(btn.dataset.ruleIndex);
         const groupId = btn.dataset.groupId;
+        // 移除高亮效果
+        this.removeElementHighlight();
         this.editRule(groupId, ruleIndex);
       } else if (e.target.closest('.delete-rule-btn')) {
         const btn = e.target.closest('.delete-rule-btn');
         const ruleIndex = parseInt(btn.dataset.ruleIndex);
         const groupId = btn.dataset.groupId;
-        this.deleteRule(groupId, ruleIndex);
+        // 移除高亮效果
+        this.removeElementHighlight();
+        await this.deleteRule(groupId, ruleIndex);
       }
     });
 
@@ -1008,14 +1047,21 @@ export class ThemeManager {
    * 删除组
    * @param {number} groupIndex - 组索引
    */
-  deleteGroup(groupIndex) {
+  async deleteGroup(groupIndex) {
     const currentTheme = this.appState.getCurrentTheme();
     if (!currentTheme || !currentTheme.groups[groupIndex]) {
       return;
     }
 
     const group = currentTheme.groups[groupIndex];
-    if (!confirm(`确定要删除组 "${group.name}" 吗？`)) {
+    const confirmed = await this.showConfirmDialog(`确定要删除组 "${group.name}" 吗？`, {
+      title: '删除确认',
+      type: 'warning',
+      confirmText: '删除',
+      cancelText: '取消'
+    });
+    
+    if (!confirmed) {
       return;
     }
 
@@ -1031,14 +1077,21 @@ export class ThemeManager {
    * @param {number} groupIndex - 组索引
    * @param {number} ruleIndex - 规则索引
    */
-  deleteRule(groupIndex, ruleIndex) {
+  async deleteRule(groupIndex, ruleIndex) {
     const currentTheme = this.appState.getCurrentTheme();
     if (!currentTheme || !currentTheme.groups[groupIndex] || !currentTheme.groups[groupIndex].rules[ruleIndex]) {
       return;
     }
 
     const rule = currentTheme.groups[groupIndex].rules[ruleIndex];
-    if (!confirm(`确定要删除规则 "${rule.selector}" 吗？`)) {
+    const confirmed = await this.showConfirmDialog(`确定要删除规则 "${rule.selector}" 吗？`, {
+      title: '删除确认',
+      type: 'warning',
+      confirmText: '删除',
+      cancelText: '取消'
+    });
+    
+    if (!confirmed) {
       return;
     }
 
@@ -1151,8 +1204,15 @@ export class ThemeManager {
    * @param {string} groupId - 组ID
    * @param {number} ruleIndex - 规则索引
    */
-  deleteRule(groupId, ruleIndex) {
-    if (!confirm("确定要删除这个CSS规则吗？")) return;
+  async deleteRule(groupId, ruleIndex) {
+    const confirmed = await this.showConfirmDialog("确定要删除这个CSS规则吗？", {
+      title: '删除确认',
+      type: 'warning',
+      confirmText: '删除',
+      cancelText: '取消'
+    });
+    
+    if (!confirmed) return;
 
     const theme = this.appState.getCurrentTheme();
     if (!theme) return;
