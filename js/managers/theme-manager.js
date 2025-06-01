@@ -20,6 +20,11 @@ export class ThemeManager {
     this.hasUnsavedChanges = false;
     this.originalThemeData = null;
     
+    // 临时状态管理
+    this.isInTemporaryMode = false;
+    this.temporaryThemeState = null;
+    this.lastSavedAppliedThemeId = null;
+    
     // 防抖和节流定时器
     this.validateSelectorTimer = null;
     this.clearHighlightTimer = null;
@@ -80,6 +85,10 @@ export class ThemeManager {
       this.initializeModals();
       this.renderThemes();
       await this.restoreAppliedTheme();
+      
+      // 初始化最后保存的应用主题ID
+      this.lastSavedAppliedThemeId = this.appState.getAppliedThemeId();
+      
       this.isInitialized = true;
     } catch (error) {
       console.error('主题管理器初始化失败:', error);
@@ -679,9 +688,14 @@ export class ThemeManager {
       
       await this.appState.addCustomTheme(currentTheme);
       
-      // 重置修改状态
+      // 保存应用主题ID并记录为最后保存的状态
+      await this.appState.setAppliedThemeId(currentTheme.id);
+      this.lastSavedAppliedThemeId = currentTheme.id;
+      
+      // 重置修改状态和临时状态
       this.originalThemeData = Utils.deepClone(currentTheme);
       this.hasUnsavedChanges = false;
+      this.clearTemporaryState();
       this.updateSaveButtonState();
       this.updatePageTitle();
       
@@ -748,11 +762,19 @@ export class ThemeManager {
       
       // 设置为当前主题并应用
       this.appState.setCurrentTheme(newTheme);
-      this.appState.setAppliedThemeId(newTheme.id);
+      await this.appState.setAppliedThemeId(newTheme.id);
+      this.lastSavedAppliedThemeId = newTheme.id;
+      
+      // 重置修改状态和临时状态
+      this.originalThemeData = Utils.deepClone(newTheme);
+      this.hasUnsavedChanges = false;
+      this.clearTemporaryState();
       
       // 更新UI状态
       this.updateThemeSelection();
       this.updateThemeActions(newTheme);
+      this.updateSaveButtonState();
+      this.updatePageTitle();
       
       Utils.showToast(`主题 "${newTheme.name}" 已保存`, 'success');
     } catch (error) {
@@ -773,6 +795,53 @@ export class ThemeManager {
 
     const filename = `${currentTheme.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}_theme.json`;
     await Utils.exportJSON(currentTheme, filename);
+  }
+
+  /**
+   * 进入临时编辑模式
+   */
+  enterTemporaryMode() {
+    if (!this.isInTemporaryMode) {
+      this.isInTemporaryMode = true;
+      // 保存当前编辑状态作为临时状态
+      this.temporaryThemeState = this.getCurrentThemeFromEditor();
+      console.log('进入临时编辑模式');
+    }
+  }
+
+  /**
+   * 清空临时状态
+   */
+  clearTemporaryState() {
+    this.isInTemporaryMode = false;
+    this.temporaryThemeState = null;
+    console.log('清空临时状态');
+  }
+
+  /**
+   * 恢复到上次保存的状态
+   */
+  async restoreToLastSavedState() {
+    try {
+      if (this.lastSavedAppliedThemeId) {
+        // 恢复到上次保存的应用主题
+        await this.appState.setAppliedThemeId(this.lastSavedAppliedThemeId);
+        
+        // 重新应用上次保存的主题
+        const savedTheme = this.appState.getThemeById(this.lastSavedAppliedThemeId);
+        if (savedTheme) {
+          await chromeApi.applyTheme(savedTheme);
+          console.log('已恢复到上次保存的主题状态');
+        }
+      } else {
+        // 如果没有保存的状态，清除所有应用的主题
+        await chromeApi.clearAllPreview();
+        await this.appState.setAppliedThemeId(null);
+        console.log('已清除所有主题应用');
+      }
+    } catch (error) {
+      console.error('恢复到上次保存状态失败:', error);
+    }
   }
 
   /**
@@ -823,6 +892,8 @@ export class ThemeManager {
 
     // 只有在切换到不同主题时才更新原始数据
     if (!this.originalThemeData || this.originalThemeData.id !== targetTheme.id) {
+      // 切换主题时清空临时状态
+      this.clearTemporaryState();
       this.originalThemeData = Utils.deepClone(targetTheme);
       this.hasUnsavedChanges = false;
     }
@@ -878,6 +949,8 @@ export class ThemeManager {
    * 处理主题变化
    */
   handleThemeChange() {
+    // 进入临时编辑模式
+    this.enterTemporaryMode();
     this.checkForChanges();
     this.updateSaveButtonState();
   }
@@ -1390,16 +1463,16 @@ export class ThemeManager {
     this.appState.setCurrentTheme(currentTheme);
     this.renderGroups(currentTheme);
     
-    // 重新应用主题以清除被删除组的样式
-    const success = await chromeApi.applyTheme(currentTheme);
-    if (!success) {
-      Utils.showToast('删除组成功，但重新应用主题失败', 'warning');
-    }
-    
-    // 检测修改并更新按钮状态
+    // 检测修改并更新按钮状态（进入临时编辑模式）
     this.handleThemeChange();
     
-    Utils.showToast('组已删除', 'success');
+    // 重新应用主题以清除被删除组的样式
+    this.clearAllPreview();
+    setTimeout(() => {
+      this.applyCurrentTheme();
+    }, 100);
+    
+    Utils.showToast('组已删除（临时预览）', 'success');
   }
 
   /**
@@ -1451,28 +1524,13 @@ export class ThemeManager {
       
       // 延迟一下，然后重新应用当前编辑的主题
       setTimeout(async () => {
-        const currentTheme = this.appState.currentTheme;
+        const currentTheme = this.getCurrentThemeFromEditor();
         if (currentTheme) {
           // 直接应用当前编辑的主题，确保页面显示与编辑器一致
           try {
             const success = await chromeApi.applyTheme(currentTheme);
             if (success) {
-              // 重要：保存当前编辑主题的ID，确保刷新后能恢复
-              // 如果是预制主题的副本，需要找到原始主题ID
-              let themeIdToSave = currentTheme.id;
-              if (currentTheme.isCustom && currentTheme.originalId) {
-                themeIdToSave = currentTheme.originalId;
-              } else if (currentTheme.isCustom) {
-                // 如果是自定义主题，检查是否已保存
-                const existingTheme = this.appState.customThemes.find(t => t.id === currentTheme.id);
-                if (!existingTheme) {
-                  // 如果是未保存的预制主题副本，不保存appliedThemeId
-                  Utils.showToast('预览已重置，当前编辑主题已应用', 'success');
-                  return;
-                }
-              }
-              
-              await this.appState.setAppliedThemeId(themeIdToSave);
+              // 重置预览不保存appliedThemeId，只是临时预览
               Utils.showToast('预览已重置，当前编辑主题已应用', 'success');
             } else {
               Utils.showToast('重置预览失败', 'error');
@@ -1565,24 +1623,22 @@ export class ThemeManager {
     // 从组中移除规则
     group.rules.splice(ruleIndex, 1);
 
-    // 保存主题变更
-    this.appState.updateCustomTheme(theme);
-
-    // 重新渲染主题列表
-    this.renderThemes();
+    // 更新当前主题数据（仅在内存中，不保存）
+    this.appState.setCurrentTheme(theme);
 
     // 重新渲染主题编辑器内容
-    this.showThemeEditor(theme);
+    this.renderGroups(theme);
 
-    // 检测修改并更新按钮状态
+    // 检测修改并更新按钮状态（进入临时编辑模式）
     this.handleThemeChange();
 
     // 重新应用主题
-    if (this.appState.getAppliedThemeId() === theme.id) {
-      chromeApi.applyTheme(theme);
-    }
+    this.clearAllPreview();
+    setTimeout(() => {
+      this.applyCurrentTheme();
+    }, 100);
 
-    Utils.showToast("CSS规则已删除", "success");
+    Utils.showToast("CSS规则已删除（临时预览）", "success");
   }
 
   /**
@@ -1968,10 +2024,13 @@ export class ThemeManager {
     };
 
     theme.groups.push(newGroup);
+    this.appState.setCurrentTheme(theme);
     this.renderGroups(theme);
     
-    // 检测修改并更新按钮状态
+    // 检测修改并更新按钮状态（进入临时编辑模式）
     this.handleThemeChange();
+    
+    Utils.showToast('组已添加（临时预览）', 'success');
 
     // 输入框清空逻辑已移至modal-manager.js中统一处理
   }
@@ -2017,7 +2076,7 @@ export class ThemeManager {
       // 编辑模式：更新现有规则
       if (group.rules[this.currentRuleIndex]) {
         group.rules[this.currentRuleIndex] = { selector, properties };
-        Utils.showToast('CSS规则已更新并应用', 'success');
+        Utils.showToast('CSS规则已更新（临时预览）', 'success');
       } else {
         Utils.showToast('无法找到要编辑的规则', 'error');
         return;
@@ -2025,20 +2084,21 @@ export class ThemeManager {
     } else {
       // 添加模式：新增规则
       group.rules.push({ selector, properties });
-      Utils.showToast('CSS规则已添加并应用', 'success');
+      Utils.showToast('CSS规则已添加（临时预览）', 'success');
     }
 
-    // 清除该选择器的预览效果（因为规则已保存）
-    this.clearAllPreview();
+    // 更新当前主题数据（仅在内存中，不保存）
+    this.appState.setCurrentTheme(theme);
 
-    // 重新应用当前主题以显示已保存的样式
+    // 清除预览效果并重新应用当前编辑的主题
+    this.clearAllPreview();
     setTimeout(() => {
       this.applyCurrentTheme();
     }, 100);
 
     this.renderGroups(theme);
     
-    // 触发主题修改状态检测
+    // 触发主题修改状态检测（进入临时编辑模式）
     this.handleThemeChange();
     
     this.hideModal('addRuleModal');
