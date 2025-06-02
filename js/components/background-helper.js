@@ -267,10 +267,109 @@ export class BackgroundHelper {
     let input;
     
     if (config.type === 'color') {
+      // 创建RGBA颜色选择器容器
+      const colorContainer = document.createElement('div');
+      colorContainer.className = 'color-input-container';
+      
+      // 颜色选择器
+      const colorPicker = document.createElement('input');
+      colorPicker.type = 'color';
+      colorPicker.className = 'color-picker';
+      
+      // 透明度滑块容器
+      const alphaContainer = document.createElement('div');
+      alphaContainer.className = 'alpha-container';
+      
+      const alphaLabel = document.createElement('label');
+      alphaLabel.className = 'alpha-label';
+      alphaLabel.textContent = '透明度:';
+      
+      const alphaSlider = document.createElement('input');
+      alphaSlider.type = 'range';
+      alphaSlider.className = 'alpha-slider';
+      alphaSlider.min = '0';
+      alphaSlider.max = '1';
+      alphaSlider.step = '0.01';
+      
+      const alphaValue = document.createElement('span');
+      alphaValue.className = 'alpha-value';
+      
+      // 隐藏的RGBA输入框
       input = document.createElement('input');
-      input.type = 'color';
-      input.className = 'form-input color-input';
-      input.value = this.currentStyles[property] || '#ffffff';
+      input.type = 'hidden';
+      input.className = 'rgba-input';
+      
+      // 解析当前值
+      const currentValue = this.currentStyles[property];
+      let hexColor = '#ffffff';
+      let alpha = 1;
+      
+      console.log(`解析颜色属性 ${property}:`, currentValue); // 调试日志
+      
+      if (currentValue) {
+        if (currentValue.startsWith('rgba(')) {
+          const rgbaMatch = currentValue.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+          if (rgbaMatch) {
+            const [, r, g, b, a] = rgbaMatch;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            alpha = parseFloat(a);
+            console.log(`解析RGBA成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
+          }
+        } else if (currentValue.startsWith('rgb(')) {
+          const rgbMatch = currentValue.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+          if (rgbMatch) {
+            const [, r, g, b] = rgbMatch;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            alpha = 1;
+            console.log(`解析RGB成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
+          }
+        } else if (currentValue.startsWith('#')) {
+          hexColor = currentValue;
+          alpha = 1;
+          console.log(`解析HEX成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
+        }
+      } else {
+        console.log(`使用默认颜色值: hex=${hexColor}, alpha=${alpha}`); // 调试日志
+      }
+      
+      colorPicker.value = hexColor;
+      alphaSlider.value = alpha;
+      alphaValue.textContent = Math.round(alpha * 100) + '%';
+      
+      // 更新RGBA值的函数
+      const updateRGBA = () => {
+        const hex = colorPicker.value;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        const a = parseFloat(alphaSlider.value);
+        
+        const rgba = `rgba(${r}, ${g}, ${b}, ${a})`;
+        input.value = rgba;
+        alphaValue.textContent = Math.round(a * 100) + '%';
+        
+        // 触发属性更新
+        this.updateProperty(property, rgba);
+      };
+      
+      // 绑定事件
+      colorPicker.addEventListener('input', updateRGBA);
+      alphaSlider.addEventListener('input', updateRGBA);
+      
+      // 组装元素
+      alphaContainer.appendChild(alphaLabel);
+      alphaContainer.appendChild(alphaSlider);
+      alphaContainer.appendChild(alphaValue);
+      
+      colorContainer.appendChild(colorPicker);
+      colorContainer.appendChild(alphaContainer);
+      colorContainer.appendChild(input);
+      
+      // 初始化RGBA值
+      input.value = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
+      
+      wrapper.appendChild(colorContainer);
+      return wrapper;
     } else if (config.type === 'select') {
       input = document.createElement('select');
       input.className = 'form-select';
@@ -300,12 +399,15 @@ export class BackgroundHelper {
     
     input.dataset.property = property;
     
-    // 绑定输入事件
-    input.addEventListener('input', () => {
-      this.updateProperty(property, input.value);
-    });
+    // 只为非颜色输入绑定输入事件（颜色输入已在updateRGBA中处理）
+    if (config.type !== 'color') {
+      input.addEventListener('input', () => {
+        this.updateProperty(property, input.value);
+      });
+      
+      wrapper.appendChild(input);
+    }
     
-    wrapper.appendChild(input);
     return wrapper;
   }
 

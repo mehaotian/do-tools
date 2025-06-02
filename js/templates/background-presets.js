@@ -141,14 +141,14 @@ export const BACKGROUND_PRESETS = {
       {
         name: "半透明白色",
         styles: {
-          "background-color": "rgba(255, 255, 255, 0.8)",
+          "background-color": "rgba(255, 255, 255, 0.5)",
           "background-image": "none"
         }
       },
       {
         name: "半透明黑色",
         styles: {
-          "background-color": "rgba(0, 0, 0, 0.8)",
+          "background-color": "rgba(0, 0, 0, 0.5)",
           "background-image": "none"
         }
       },

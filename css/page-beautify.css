@@ -1558,6 +1558,13 @@ body {
   line-height: 1.4;
 }
 
+/* 颜色选择器需要更高的高度以显示颜色 */
+.css-property-item .form-input.color-picker {
+  height: 40px;
+  padding: 0.25rem;
+  min-width: 60px;
+}
+
 .css-property-item .form-input:focus {
   outline: none;
   border-color: hsl(var(--ring));

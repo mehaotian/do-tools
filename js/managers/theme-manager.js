@@ -2255,7 +2255,16 @@ export class ThemeManager {
     let inputHtml = '';
     switch (config.type) {
       case 'color':
-        inputHtml = `<input type="color" class="form-input property-value" ${dataAttributes}>`;
+        inputHtml = `
+          <div class="color-input-container">
+            <input type="color" class="form-input color-picker" ${dataAttributes}>
+            <div class="alpha-container">
+              <label class="alpha-label">透明度:</label>
+              <input type="range" class="alpha-slider" min="0" max="1" step="0.01" value="1" ${dataAttributes}>
+              <span class="alpha-value">100%</span>
+            </div>
+            <input type="hidden" class="property-value rgba-value" ${dataAttributes}>
+          </div>`;
         break;
       case 'range':
         inputHtml = `<input type="range" class="form-input property-value" ${dataAttributes} min="${config.min || 0}" max="${config.max || 100}" step="${config.step || 1}">`;
@@ -2311,20 +2320,53 @@ export class ThemeManager {
     });
 
     // 添加实时预览事件
-    const propertyInput = editor.querySelector('.property-value');
-    propertyInput.addEventListener('input', (e) => {
-      this.previewStyle(property, e.target.value);
-      // 检测修改并更新按钮状态
-      this.handleThemeChange();
-    });
-
-    // 对于select和combo类型，也要监听change事件
-    if (config.type === 'select' || config.type === 'combo') {
-      propertyInput.addEventListener('change', (e) => {
+    if (config.type === 'color') {
+      // 处理颜色选择器的特殊逻辑
+      const colorPicker = editor.querySelector('.color-picker');
+      const alphaSlider = editor.querySelector('.alpha-slider');
+      const alphaValue = editor.querySelector('.alpha-value');
+      const hiddenInput = editor.querySelector('.rgba-value');
+      
+      const updateRGBA = () => {
+        const hex = colorPicker.value;
+        const alpha = parseFloat(alphaSlider.value);
+        
+        // 将hex转换为RGB
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        
+        // 生成RGBA值
+        const rgba = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        hiddenInput.value = rgba;
+        alphaValue.textContent = Math.round(alpha * 100) + '%';
+        
+        this.previewStyle(property, rgba);
+        // 检测修改并更新按钮状态
+        this.handleThemeChange();
+      };
+      
+      colorPicker.addEventListener('input', updateRGBA);
+      alphaSlider.addEventListener('input', updateRGBA);
+      
+      // 初始化RGBA值
+      updateRGBA();
+    } else {
+      const propertyInput = editor.querySelector('.property-value');
+      propertyInput.addEventListener('input', (e) => {
         this.previewStyle(property, e.target.value);
         // 检测修改并更新按钮状态
         this.handleThemeChange();
       });
+      
+      // 对于select和combo类型，也要监听change事件
+      if (config.type === 'select' || config.type === 'combo') {
+        propertyInput.addEventListener('change', (e) => {
+          this.previewStyle(property, e.target.value);
+          // 检测修改并更新按钮状态
+          this.handleThemeChange();
+        });
+      }
     }
 
     container.appendChild(editor);
@@ -2334,13 +2376,7 @@ export class ThemeManager {
       this.previewStyle(property, config.options[0]);
     }
     
-    // 对于color类型，立即应用默认颜色值
-    if (config.type === 'color') {
-      const colorInput = propertyInput;
-      const defaultColor = '#000000';
-      colorInput.value = defaultColor;
-      this.previewStyle(property, defaultColor);
-    }
+    // 注意：color类型的默认值现在由updateRGBA函数处理
   }
 
   /**
@@ -2627,9 +2663,34 @@ export class ThemeManager {
         this.validateSelector();
       }, 300); // 300ms防抖延迟
     });
-    addPropertyBtn.addEventListener('click', () =>
-      this.showModal('propertySelectModal')
-    );
+    addPropertyBtn.addEventListener('click', async () => {
+      // 验证选择器是否有效且找到元素
+      const selector = document.getElementById('cssSelector').value;
+      if (!selector.trim()) {
+         Utils.showToast('请先输入CSS选择器', 'error');
+         return;
+       }
+      
+      try {
+        const response = await chrome.runtime.sendMessage({
+          action: 'pageBeautify',
+          type: 'VALIDATE_SELECTOR',
+          data: { selector: selector },
+        });
+        
+        if (response && response.success && response.isValid && response.elementCount > 0) {
+          this.showModal('propertySelectModal');
+        } else {
+          const message = response && response.elementCount === 0 
+             ? '未找到匹配元素，无法添加属性' 
+             : '选择器语法错误，无法添加属性';
+           Utils.showToast(message, 'error');
+        }
+      } catch (error) {
+        console.error('验证选择器时发生错误:', error);
+        Utils.showToast('验证失败，请确保页面已加载并刷新后重试', 'error');
+      }
+    });
 
     // 选择器输入框变化时清除高亮和预览，并添加节流验证
     const selectorInput = document.getElementById('cssSelector');
@@ -2743,11 +2804,21 @@ export class ThemeManager {
     const modal = document.getElementById(modalId);
     const inputs = modal.querySelectorAll('input, textarea');
     inputs.forEach((input) => {
-      if (input.type === 'color') {
-        input.value = '#000000'; // 颜色输入框设置默认黑色
+      if (input.classList.contains('color-picker')) {
+        input.value = '#000000'; // 颜色选择器设置默认黑色
+      } else if (input.classList.contains('alpha-slider')) {
+        input.value = '1'; // 透明度滑块设置默认不透明
+      } else if (input.classList.contains('rgba-value')) {
+        input.value = 'rgba(0, 0, 0, 1)'; // RGBA隐藏输入框设置默认值
       } else {
         input.value = '';
       }
+    });
+    
+    // 更新透明度显示值
+    const alphaValues = modal.querySelectorAll('.alpha-value');
+    alphaValues.forEach((alphaValue) => {
+      alphaValue.textContent = '100%';
     });
   }
 
@@ -2835,11 +2906,21 @@ export class ThemeManager {
     
     const inputs = modal.querySelectorAll('input, textarea');
     inputs.forEach((input) => {
-      if (input.type === 'color') {
-        input.value = '#000000'; // 颜色输入框设置默认黑色
+      if (input.classList.contains('color-picker')) {
+        input.value = '#000000'; // 颜色选择器设置默认黑色
+      } else if (input.classList.contains('alpha-slider')) {
+        input.value = '1'; // 透明度滑块设置默认不透明
+      } else if (input.classList.contains('rgba-value')) {
+        input.value = 'rgba(0, 0, 0, 1)'; // RGBA隐藏输入框设置默认值
       } else {
         input.value = '';
       }
+    });
+    
+    // 更新透明度显示值
+    const alphaValues = modal.querySelectorAll('.alpha-value');
+    alphaValues.forEach((alphaValue) => {
+      alphaValue.textContent = '100%';
     });
   }
 
