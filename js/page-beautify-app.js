@@ -11,6 +11,7 @@ import { chromeApi } from './services/chrome-api.js';
 import { StyleApplier } from './services/style-applier.js';
 import { ThemeManager } from './managers/theme-manager.js';
 import { ModalManager } from './managers/modal-manager.js';
+import { backgroundHelper } from './components/background-helper.js';
 
 /**
  * 页面美化应用主类

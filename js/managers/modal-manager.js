@@ -338,9 +338,22 @@ export class ModalManager {
     Object.entries(CSS_PROPERTIES).forEach(([categoryKey, category]) => {
       const categoryDiv = document.createElement('div');
       categoryDiv.className = 'property-category';
+      
+      // 为外观分类添加背景助手入口
+      let backgroundHelperHtml = '';
+      if (categoryKey === 'appearance') {
+        backgroundHelperHtml = `
+          <div class="property-item background-helper-entry" data-action="background-helper">
+            <div class="property-name-cn">🎨 背景样式助手</div>
+            <div class="property-name-en">可视化背景编辑器</div>
+          </div>
+        `;
+      }
+      
       categoryDiv.innerHTML = `
         <div class="property-category-header">${category.name}</div>
         <div class="property-category-list">
+          ${backgroundHelperHtml}
           ${Object.entries(category.properties)
             .map(
               ([propKey, prop]) => `
@@ -357,16 +370,21 @@ export class ModalManager {
       // 添加属性选择事件
       categoryDiv.addEventListener('click', (e) => {
         if (e.target.classList.contains('property-item')) {
-          const property = e.target.dataset.property;
-          const category = e.target.dataset.category;
-          this.addPropertyEditor(
-            property,
-            CSS_PROPERTIES[category].properties[property]
-          );
-          // 检测修改并更新按钮状态
-          window.themeManager?.handleThemeChange();
-          // 立即关闭模态框，避免动画延迟导致的卡顿
-          this.hideModal('propertySelectModal', true);
+          if (e.target.dataset.action === 'background-helper') {
+            // 打开背景助手
+            this.openBackgroundHelper();
+          } else {
+            const property = e.target.dataset.property;
+            const category = e.target.dataset.category;
+            this.addPropertyEditor(
+              property,
+              CSS_PROPERTIES[category].properties[property]
+            );
+            // 检测修改并更新按钮状态
+            window.themeManager?.handleThemeChange();
+            // 立即关闭模态框，避免动画延迟导致的卡顿
+            this.hideModal('propertySelectModal', true);
+          }
         }
       });
       
@@ -411,8 +429,21 @@ export class ModalManager {
         inputHtml = `<input type="text" class="form-input property-value" data-property="${property}" placeholder="输入${config.name}">`;
     }
 
+    // 查找属性的中文名称
+    let propInfo = null;
+    for (const category in CSS_PROPERTIES) {
+      if (CSS_PROPERTIES[category].properties[property]) {
+        propInfo = CSS_PROPERTIES[category].properties[property];
+        break;
+      }
+    }
+    const chineseName = propInfo ? propInfo.name : property;
+    
     editor.innerHTML = `
-      <input type="text" class="form-input property-name" value="${property}" readonly>
+      <div class="property-name">
+        <div class="property-name-cn">${chineseName}</div>
+        <div class="property-name-en">${property}</div>
+      </div>
       ${inputHtml}
       <button type="button" class="property-remove">×</button>
     `;
@@ -824,5 +855,113 @@ export class ModalManager {
   emit(event, data) {
     const customEvent = new CustomEvent(event, { detail: data });
     document.dispatchEvent(customEvent);
+  }
+
+  /**
+   * 打开背景样式助手
+   */
+  openBackgroundHelper() {
+    // 先关闭属性选择模态框
+    this.hideModal('propertySelectModal', true);
+    
+    // 获取当前已有的背景相关样式
+    const currentStyles = this.getCurrentBackgroundStyles();
+    
+    // 导入背景助手并显示
+    import('../components/background-helper.js').then(({ backgroundHelper }) => {
+      backgroundHelper.show(currentStyles, (appliedStyles) => {
+        this.applyBackgroundStyles(appliedStyles);
+      });
+    }).catch(error => {
+      console.error('加载背景助手失败:', error);
+      Utils.showToast('背景助手加载失败', 'error');
+    });
+  }
+
+  /**
+   * 获取当前的背景相关样式
+   * @returns {Object} 背景样式对象
+   */
+  getCurrentBackgroundStyles() {
+    const styles = {};
+    const container = document.getElementById('cssProperties');
+    if (!container) return styles;
+    
+    // 收集所有背景相关的属性
+    const backgroundProperties = [
+      'background-color', 'background-image', 'background-size',
+      'background-position', 'background-repeat', 'background-attachment',
+      'background-clip', 'background-origin', 'background-blend-mode'
+    ];
+    
+    container.querySelectorAll('.css-property-item').forEach(item => {
+      const property = item.dataset.property;
+      if (backgroundProperties.includes(property)) {
+        const valueInput = item.querySelector('.property-value');
+        if (valueInput && valueInput.value.trim()) {
+          styles[property] = valueInput.value.trim();
+        }
+      }
+    });
+    
+    return styles;
+  }
+
+  /**
+   * 应用背景样式到当前规则
+   * @param {Object} styles - 背景样式对象
+   */
+  applyBackgroundStyles(styles) {
+    Object.entries(styles).forEach(([property, value]) => {
+      if (value && value.trim()) {
+        // 查找现有的属性编辑器
+        const container = document.getElementById('cssProperties');
+        let existingEditor = container?.querySelector(`[data-property="${property}"]`);
+        
+        if (existingEditor) {
+          // 更新现有编辑器的值
+          const valueInput = existingEditor.querySelector('.property-value');
+          if (valueInput) {
+            valueInput.value = value;
+            // 触发输入事件以更新状态
+            valueInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        } else {
+          // 添加新的属性编辑器
+          const config = this.findPropertyConfig(property);
+          if (config) {
+            this.addPropertyEditor(property, config);
+            // 设置值
+            setTimeout(() => {
+              const newEditor = container?.querySelector(`[data-property="${property}"]`);
+              const valueInput = newEditor?.querySelector('.property-value');
+              if (valueInput) {
+                valueInput.value = value;
+                valueInput.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+            }, 0);
+          }
+        }
+      }
+    });
+    
+    // 检测修改并更新按钮状态
+    window.themeManager?.handleThemeChange();
+    
+    Utils.showToast('背景样式已应用', 'success');
+  }
+
+  /**
+   * 查找属性配置
+   * @param {string} property - CSS属性名
+   * @returns {Object|null} 属性配置
+   */
+  findPropertyConfig(property) {
+    for (const [categoryKey, category] of Object.entries(CSS_PROPERTIES)) {
+      if (category.properties[property]) {
+        return category.properties[property];
+      }
+    }
+    return null;
   }
 }

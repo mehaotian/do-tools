@@ -2270,8 +2270,21 @@ export class ThemeManager {
         inputHtml = `<input type="text" class="form-input property-value" ${dataAttributes} placeholder="输入${config.name}">`;
     }
 
+    // 查找属性的中文名称
+    let propInfo = null;
+    for (const category in CSS_PROPERTIES) {
+      if (CSS_PROPERTIES[category].properties[property]) {
+        propInfo = CSS_PROPERTIES[category].properties[property];
+        break;
+      }
+    }
+    const chineseName = propInfo ? propInfo.name : property;
+    
     editor.innerHTML = `
-      <input type="text" class="form-input property-name" value="${property}" readonly>
+      <div class="property-name">
+        <div class="property-name-cn">${chineseName}</div>
+        <div class="property-name-en">${property}</div>
+      </div>
       ${inputHtml}
       <button type="button" class="property-remove">×</button>
     `;

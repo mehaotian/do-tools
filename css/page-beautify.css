@@ -1582,9 +1582,27 @@ body {
 .css-property-item .property-name {
   min-width: 120px;
   max-width: 200px;
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.375rem 0.5rem;
+  border: none;
+}
+
+.css-property-item .property-name-cn {
+  font-size: 0.875rem;
   font-weight: 500;
   color: hsl(var(--primary));
-  flex: 0 1 auto;
+  line-height: 1.2;
+}
+
+.css-property-item .property-name-en {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.7;
+  line-height: 1.1;
+  margin-top: 0.1rem;
 }
 
 .css-property-item .property-value {
@@ -2270,27 +2288,61 @@ body {
   }
   
   .css-property-item {
+    flex-direction: column;
+    align-items: stretch;
     gap: 0.5rem;
-    padding: 0.875rem;
-    border-width: 1px;
+    padding: 0.875rem 2.5rem 0.875rem 0.875rem; /* 右侧留出删除按钮空间 */
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) / 2);
+    background: hsl(var(--card));
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    position: relative; /* 为绝对定位的删除按钮提供定位上下文 */
+  }
+  
+  .css-property-item:last-child {
+    margin-bottom: 0;
   }
   
   .css-property-item .property-name {
-    min-width: 100px;
-    max-width: 150px;
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    text-align: left;
+    padding: 0.375rem 0.5rem;
+    border: none;
+  }
+  
+  .css-property-item .property-name-cn {
     font-size: 0.875rem;
+    font-weight: 600;
+    color: hsl(var(--primary));
+    line-height: 1.2;
+  }
+  
+  .css-property-item .property-name-en {
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+    opacity: 0.7;
+    line-height: 1.1;
+    margin-top: 0.1rem;
   }
   
   .css-property-item .property-value {
-    min-width: 120px;
+    min-width: unset;
+    width: 100%;
     font-size: 0.875rem;
+    padding: 0.5rem;
   }
   
   .css-property-item .property-remove {
+    position: absolute;
+    top: 0.875rem;
+    right: 0.875rem;
     width: 20px;
     height: 20px;
     font-size: 0.7rem;
+    margin: 0;
+    z-index: 1;
   }
 }
 
@@ -2348,17 +2400,17 @@ body {
     padding: 0.375rem;
   }
   
+  /* CSS属性项在极小屏幕上使用列布局，删除按钮在右上角 */
   .css-property-item {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.5rem;
-    padding: 0.5rem 2.5rem 0.5rem 0.5rem; /* 右侧留出关闭按钮空间 */
-    /* margin-bottom: 0.5rem; */
+    gap: 0.375rem;
+    padding: 0.5rem 2rem 0.5rem 0.5rem; /* 右侧留出删除按钮空间 */
     border: 1px solid hsl(var(--border));
     border-radius: calc(var(--radius) / 2);
     background: hsl(var(--card));
     box-shadow: none;
-    position: relative; /* 为绝对定位的关闭按钮提供定位上下文 */
+    position: relative; /* 为绝对定位的删除按钮提供定位上下文 */
   }
   
   .css-property-item:last-child {
@@ -2373,7 +2425,7 @@ body {
     padding: 0.375rem 0.5rem;
     background: hsl(var(--muted) / 0.3);
     border-radius: calc(var(--radius) / 2);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     border: none;
   }
@@ -2381,7 +2433,7 @@ body {
   .css-property-item .property-value {
     min-width: unset;
     width: 100%;
-    font-size: 12px; /* 防止iOS缩放 */
+    font-size: 11px; /* 防止iOS缩放 */
     padding: 0.5rem;
   }
   
@@ -2389,9 +2441,9 @@ body {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
-    width: 24px;
-    height: 24px;
-    font-size: 0.875rem;
+    width: 18px;
+    height: 18px;
+    font-size: 0.65rem;
     margin: 0;
     z-index: 1;
   }
@@ -2432,10 +2484,200 @@ body {
 .property-category-list,
 .property-list {
   padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.25rem;
   flex: 1;
+}
+
+/* 中等屏幕下属性项优化 */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .property-list {
+    grid-template-columns: 1fr;
+    gap: 0.22rem;
+  }
+  
+  .property-item,
+  .property-option {
+    min-height: 2.1rem;
+    padding: 0.45rem 0.65rem;
+  }
+  
+  .property-name-cn {
+    font-size: 0.76rem;
+    margin-bottom: 0.1rem;
+  }
+  
+  .property-name-en {
+    font-size: 0.66rem;
+  }
+  
+  /* CSS属性项一行显示 */
+  .css-property-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .css-property-item .property-name {
+    min-width: 120px;
+    max-width: 150px;
+    width: auto;
+    background: transparent;
+    padding: 0;
+  }
+  
+  .css-property-item .property-name-cn {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: hsl(var(--primary));
+    line-height: 1.2;
+  }
+  
+  .css-property-item .property-name-en {
+    font-size: 0.7rem;
+    color: hsl(var(--muted-foreground));
+    opacity: 0.7;
+    line-height: 1.1;
+    margin-top: 0.05rem;
+  }
+  
+  .css-property-item .property-value {
+    flex: 1;
+    min-width: 150px;
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+  
+  .css-property-item .property-remove {
+    position: static;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+  }
+}
+
+/* 大屏幕下属性项网格布局 - 一行显示多个 */
+@media (min-width: 1200px) {
+  .property-list {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+  
+  .property-item,
+  .property-option {
+    min-height: 2rem;
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .property-name-cn {
+    font-size: 0.75rem;
+    margin-bottom: 0.1rem;
+  }
+  
+  .property-name-en {
+    font-size: 0.65rem;
+  }
+  
+  /* CSS属性项一行显示 */
+  .css-property-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .css-property-item .property-name {
+    min-width: 120px;
+    max-width: 150px;
+    width: auto;
+    background: transparent;
+    padding: 0;
+  }
+  
+  .css-property-item .property-name-cn {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: hsl(var(--primary));
+    line-height: 1.2;
+  }
+  
+  .css-property-item .property-name-en {
+    font-size: 0.7rem;
+    color: hsl(var(--muted-foreground));
+    opacity: 0.7;
+    line-height: 1.1;
+    margin-top: 0.05rem;
+  }
+  
+  .css-property-item .property-value {
+    flex: 1;
+    min-width: 150px;
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+  
+  .css-property-item .property-remove {
+    position: static;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+  }
+}
+
+/* 超大屏幕下属性项进一步优化 */
+@media (min-width: 1400px) {
+  .property-list {
+    grid-template-columns: 1fr;
+    gap: 0.18rem;
+  }
+  
+  .property-item,
+  .property-option {
+    min-height: 1.9rem;
+    padding: 0.35rem 0.55rem;
+  }
+  
+  .property-name-cn {
+    font-size: 0.74rem;
+    margin-bottom: 0.08rem;
+  }
+  
+  .property-name-en {
+    font-size: 0.64rem;
+  }
+  
+  /* CSS属性项一行显示 - 超大屏优化 */
+  .css-property-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem;
+  }
+  
+  .css-property-item .property-name {
+    min-width: 140px;
+    max-width: 180px;
+    width: auto;
+    background: transparent;
+    font-size: 0.85rem;
+    padding: 0;
+  }
+  
+  .css-property-item .property-value {
+    flex: 1;
+    min-width: 180px;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+  
+  .css-property-item .property-remove {
+    position: static;
+    width: 30px;
+    height: 30px;
+    margin: 0;
+  }
 }
 
 /* 滚动条样式已移除，因为使用瀑布流完全展开 */
