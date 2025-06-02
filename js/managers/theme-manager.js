@@ -372,15 +372,15 @@ export class ThemeManager {
     if (isPreset) {
       // 预设主题使用简单布局
       card.innerHTML = `
-        <h4>${Utils.escapeHtml(theme.name)}</h4>
-        <p>${Utils.escapeHtml(theme.description || '')}</p>
+        <h4 title="${Utils.escapeHtml(theme.name)}">${Utils.escapeHtml(theme.name)}</h4>
+        <p title="${Utils.escapeHtml(theme.description || '')}">${Utils.escapeHtml(theme.description || '')}</p>
       `;
     } else {
       // 自定义主题使用简洁布局
       card.innerHTML = `
         <div class="custom-theme-info">
-          <h5>${Utils.escapeHtml(theme.name)}</h5>
-          <p>${Utils.escapeHtml(theme.description || '无描述')}</p>
+          <h5 title="${Utils.escapeHtml(theme.name)}">${Utils.escapeHtml(theme.name)}</h5>
+          <p title="${Utils.escapeHtml(theme.description || '无描述')}">${Utils.escapeHtml(theme.description || '无描述')}</p>
         </div>
       `;
     }
