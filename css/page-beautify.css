@@ -1601,13 +1601,67 @@ input[list] {
   position: relative;
 }
 
-/* 为combo类型的输入框添加下拉箭头指示 */
+/* 为combo类型的输入框添加现代化下拉箭头指示 */
 input[list].property-value {
-  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 0.75rem;
-  padding-right: 1.5rem;
+  background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.98) 100%), 
+              url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="%23666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 0, right 0.75rem center;
+  background-size: 100% 100%, 0.75rem;
+  padding-right: 2rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border-radius: calc(var(--radius) - 1px);
+}
+
+/* combo输入框悬停效果 */
+input[list].property-value:hover {
+  border-color: hsl(var(--ring) / 0.5);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, hsl(var(--background) / 0.95) 0%, hsl(var(--background) / 0.92) 100%), 
+              url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="%23333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 0, right 0.75rem center;
+  background-size: 100% 100%, 0.75rem;
+  transform: translateY(-1px);
+}
+
+/* combo输入框聚焦效果 */
+input[list].property-value:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.2), 0 2px 4px 0 rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.96) 100%), 
+              url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="hsl(var(--ring))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 0, right 0.75rem center;
+  background-size: 100% 100%, 0.75rem;
+  transform: translateY(0);
+}
+
+/* 优化datalist选项的显示 */
+datalist {
+  display: none;
+}
+
+/* combo输入框禁用状态 */
+input[list].property-value:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: hsl(var(--muted) / 0.5), 
+              url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 0, right 0.75rem center;
+  background-size: 100% 100%, 0.75rem;
+}
+
+/* combo输入框占位符样式 */
+input[list].property-value::placeholder {
+  color: hsl(var(--muted-foreground) / 0.7);
+  font-style: italic;
 }
 
 .css-property-item .property-name {

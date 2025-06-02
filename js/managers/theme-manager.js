@@ -2318,8 +2318,8 @@ export class ThemeManager {
       this.handleThemeChange();
     });
 
-    // 对于select类型，也要监听change事件
-    if (config.type === 'select') {
+    // 对于select和combo类型，也要监听change事件
+    if (config.type === 'select' || config.type === 'combo') {
       propertyInput.addEventListener('change', (e) => {
         this.previewStyle(property, e.target.value);
         // 检测修改并更新按钮状态
@@ -2328,6 +2328,19 @@ export class ThemeManager {
     }
 
     container.appendChild(editor);
+
+    // 对于select类型，立即应用默认选中的值
+    if (config.type === 'select' && config.options && config.options.length > 0) {
+      this.previewStyle(property, config.options[0]);
+    }
+    
+    // 对于color类型，立即应用默认颜色值
+    if (config.type === 'color') {
+      const colorInput = propertyInput;
+      const defaultColor = '#000000';
+      colorInput.value = defaultColor;
+      this.previewStyle(property, defaultColor);
+    }
   }
 
   /**
