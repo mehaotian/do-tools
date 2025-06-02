@@ -80,6 +80,11 @@ class PageBeautifyContent {
     this.previewStyles = new Map();
     // 存储页面真正的原始状态（按需记录）
     this.originalPageState = new Map();
+    
+    // CSS注入管理
+    this.injectedStyles = new Map(); // styleId -> HTMLStyleElement
+    this.currentThemeCSS = null; // 当前主题的CSS内容
+    this.currentThemeId = null; // 当前主题ID
     this.init();
   }
 
@@ -430,6 +435,7 @@ class PageBeautifyContent {
         case "RESET_STYLES":
         case "CLEAR_STYLES":
           this.resetAllStyles();
+          this.clearAllInjectedStyles();
           sendResponse({ success: true });
           break;
 
@@ -455,6 +461,11 @@ class PageBeautifyContent {
 
         case "CLEAR_ALL_PREVIEW":
           this.clearAllPreview();
+          sendResponse({ success: true });
+          break;
+
+        case "APPLY_CSS":
+          this.applyCSSToPage(request.data.css, request.data.styleId);
           sendResponse({ success: true });
           break;
 
@@ -493,19 +504,126 @@ class PageBeautifyContent {
       return;
     }
 
-    // 先清除现有样式
+    // 先清除现有的行内样式和注入的CSS
     this.resetAllStyles();
+    this.clearAllInjectedStyles();
 
-    // 应用新主题的样式组
-    themeData.groups.forEach((group) => {
-      if (group.rules && Array.isArray(group.rules)) {
-        group.rules.forEach((rule) => {
-          this.applyRule(rule, group.id);
-        });
+    // 生成CSS并注入到页面
+    const css = this.generateThemeCSS(themeData);
+    if (css && css.trim()) {
+      this.applyCSSToPage(css, themeData.id || 'theme');
+      console.log("主题CSS已注入:", themeData.name || "未命名主题");
+    } else {
+      console.log("主题CSS为空，仅清除现有样式");
+    }
+  }
+
+  /**
+   * 生成主题CSS代码
+   * @param {Object} theme - 主题对象
+   * @returns {string} CSS代码
+   */
+  generateThemeCSS(theme) {
+    if (!theme || !theme.groups || !Array.isArray(theme.groups)) {
+      return '';
+    }
+
+    const cssRules = [];
+    
+    theme.groups.forEach(group => {
+      if (!group.rules || !Array.isArray(group.rules)) {
+        return;
+      }
+
+      group.rules.forEach(rule => {
+        if (!rule.selector || !rule.properties) {
+          return;
+        }
+
+        // 验证选择器
+        if (!this.isValidSelector(rule.selector)) {
+          console.warn('[CSS生成] 无效的CSS选择器:', rule.selector);
+          return;
+        }
+
+        // 生成CSS属性
+        const properties = this.generateCSSProperties(rule.properties);
+        if (properties.trim()) {
+          cssRules.push(`${rule.selector} {\n${properties}\n}`);
+        }
+      });
+    });
+
+    return cssRules.join('\n\n');
+  }
+
+  /**
+   * 生成CSS属性字符串
+   * @param {Object} properties - CSS属性对象
+   * @returns {string} CSS属性字符串
+   */
+  generateCSSProperties(properties) {
+    if (!properties || typeof properties !== 'object') {
+      return '';
+    }
+
+    const cssProps = [];
+    
+    Object.entries(properties).forEach(([prop, value]) => {
+      if (this.isValidCSSProperty(prop, value)) {
+        // 确保属性名使用kebab-case
+        const kebabProp = this.toKebabCase(prop);
+        cssProps.push(`  ${kebabProp}: ${value};`);
       }
     });
 
-    console.log("主题样式已应用:", themeData.name || "未命名主题");
+    return cssProps.join('\n');
+  }
+
+  /**
+   * 验证CSS选择器
+   * @param {string} selector - CSS选择器
+   * @returns {boolean} 是否有效
+   */
+  isValidSelector(selector) {
+    if (!selector || typeof selector !== 'string') {
+      return false;
+    }
+
+    try {
+      document.querySelector(selector);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * 验证CSS属性
+   * @param {string} property - CSS属性名
+   * @param {string} value - CSS属性值
+   * @returns {boolean} 是否有效
+   */
+  isValidCSSProperty(property, value) {
+    if (!property || !value || typeof property !== 'string' || typeof value !== 'string') {
+      return false;
+    }
+
+    // 基本的CSS属性名验证
+    if (!/^[a-zA-Z-]+$/.test(property)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * 将camelCase转换为kebab-case
+   * @param {string} str - 输入字符串
+   * @returns {string} kebab-case字符串
+   */
+  toKebabCase(str) {
+    return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
   }
 
   /**
@@ -602,6 +720,10 @@ class PageBeautifyContent {
     }
 
     this.appliedStyles.clear();
+    
+    // 清除所有注入的CSS样式
+    this.clearAllInjectedStyles();
+    
     console.log('[Content Script] 所有样式已重置');
   }
 
@@ -891,6 +1013,94 @@ class PageBeautifyContent {
     } catch (error) {
       console.error('清除所有预览失败:', error);
     }
+  }
+
+  /**
+   * 通过CSS注入方式应用样式到页面
+   * @param {string} css - CSS代码
+   * @param {string} styleId - 样式ID
+   */
+  applyCSSToPage(css, styleId) {
+    try {
+      // 移除旧的样式
+      if (this.injectedStyles.has(styleId)) {
+        const oldStyleElement = this.injectedStyles.get(styleId);
+        if (oldStyleElement && oldStyleElement.parentNode) {
+          oldStyleElement.parentNode.removeChild(oldStyleElement);
+        }
+        this.injectedStyles.delete(styleId);
+      }
+      
+      // 如果CSS为空，只清除不注入
+      if (!css || !css.trim()) {
+        console.log(`[CSS注入] 清除样式: ${styleId}`);
+        return;
+      }
+      
+      // 创建新的style元素
+      const styleElement = document.createElement('style');
+      styleElement.type = 'text/css';
+      styleElement.setAttribute('data-page-beautify-id', styleId);
+      styleElement.setAttribute('data-page-beautify-type', 'theme');
+      
+      // 添加CSS内容
+      if (styleElement.styleSheet) {
+        // IE支持
+        styleElement.styleSheet.cssText = css;
+      } else {
+        styleElement.appendChild(document.createTextNode(css));
+      }
+      
+      // 注入到页面头部
+      const head = document.head || document.getElementsByTagName('head')[0];
+      head.appendChild(styleElement);
+      
+      // 记录注入的样式
+      this.injectedStyles.set(styleId, styleElement);
+      this.currentThemeCSS = css;
+      this.currentThemeId = styleId;
+      
+      console.log(`[CSS注入] 样式已注入: ${styleId}`, css.length + ' 字符');
+    } catch (error) {
+      console.error('[CSS注入] 注入失败:', error);
+    }
+  }
+
+  /**
+   * 清除所有注入的CSS样式
+   */
+  clearAllInjectedStyles() {
+    try {
+      this.injectedStyles.forEach((styleElement, styleId) => {
+        if (styleElement && styleElement.parentNode) {
+          styleElement.parentNode.removeChild(styleElement);
+        }
+      });
+      
+      this.injectedStyles.clear();
+      this.currentThemeCSS = null;
+      this.currentThemeId = null;
+      
+      console.log('[CSS注入] 已清除所有注入的样式');
+    } catch (error) {
+      console.error('[CSS注入] 清除失败:', error);
+    }
+  }
+
+  /**
+   * 获取当前注入的CSS内容
+   * @returns {string|null} 当前CSS内容
+   */
+  getCurrentInjectedCSS() {
+    return this.currentThemeCSS;
+  }
+
+  /**
+   * 获取当前主题ID
+   * @returns {string|null} 当前主题ID
+   */
+  getCurrentThemeId() {
+    return this.currentThemeId;
   }
 
   /**

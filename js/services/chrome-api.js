@@ -210,6 +210,28 @@ export class ChromeApiService {
   }
 
   /**
+   * 应用CSS样式到页面（通过CSS注入）
+   * @param {string} css - CSS代码
+   * @param {string} styleId - 样式ID
+   * @returns {Promise<boolean>} 是否成功
+   */
+  async applyStyles(css, styleId) {
+    try {
+      const response = await this.sendMessageWithRetry({
+        action: "pageBeautify",
+        type: "APPLY_CSS",
+        data: { css, styleId }
+      });
+      
+      return response?.success || false;
+    } catch (error) {
+      console.error('CSS应用失败:', error);
+      Utils.showToast('CSS应用失败: ' + error.message, 'error');
+      return false;
+    }
+  }
+
+  /**
    * 清除选择器高亮效果
    * @returns {Promise<boolean>} 是否成功
    */

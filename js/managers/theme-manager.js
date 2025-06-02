@@ -832,7 +832,7 @@ export class ThemeManager {
 
     console.log('开始恢复主题:', appliedThemeId);
 
-    // 查找并选中对应的主题（恢复UI状态和显示内容，但不重新应用主题）
+    // 查找并选中对应的主题，同时应用主题样式
     if (appliedThemeId === 'none' || appliedThemeId === 'default') {
       // 恢复无主题选中状态（兼容旧的default值）
       await this.selectNoneTheme(false);
@@ -842,8 +842,10 @@ export class ThemeManager {
         (theme) => theme.id === appliedThemeId
       );
       if (presetTheme) {
-        // 手动设置UI状态和显示内容，但不应用主题
+        // 恢复UI状态并应用主题
         this.restoreThemeUIState(presetTheme, 'preset');
+        // 应用主题到页面（使用CSS注入）
+        await this.applyCurrentTheme();
         return;
       }
 
@@ -852,10 +854,17 @@ export class ThemeManager {
         (theme) => theme.id === appliedThemeId
       );
       if (customTheme) {
-        // 手动设置UI状态和显示内容，但不应用主题
+        // 恢复UI状态并应用主题
         this.restoreThemeUIState(customTheme, 'custom');
+        // 应用主题到页面（使用CSS注入）
+        await this.applyCurrentTheme();
         return;
       }
+      
+      // 如果找不到对应的主题，清除样式并选择无主题
+      console.warn('找不到对应的主题:', appliedThemeId, '，将清除样式');
+      await chromeApi.clearStyles();
+      await this.selectNoneTheme(false);
     }
   }
 
@@ -963,10 +972,12 @@ export class ThemeManager {
       
       Utils.showToast(`主题 "${currentTheme.name}" 已保存`, 'success');
       
-      // 保存后立即校验URL匹配并应用主题
-      setTimeout(() => {
-        this.applyCurrentTheme();
-      }, 100);
+      // 保存后立即校验URL匹配并重新应用主题（确保CSS注入同步）
+       setTimeout(() => {
+         this.applyCurrentTheme();
+       }, 100);
+       
+       console.log('[主题保存] 主题已保存并将重新应用CSS注入');
     } catch (error) {
       console.error('保存主题失败:', error);
       Utils.showToast('保存主题失败: ' + error.message, 'error');
@@ -1064,10 +1075,12 @@ export class ThemeManager {
       
       Utils.showToast(`主题 "${newTheme.name}" 已保存`, 'success');
       
-      // 保存后立即校验URL匹配并应用主题
-      setTimeout(() => {
-        this.applyCurrentTheme();
-      }, 100);
+      // 保存后立即校验URL匹配并重新应用主题（确保CSS注入同步）
+       setTimeout(() => {
+         this.applyCurrentTheme();
+       }, 100);
+       
+       console.log('[主题保存] 主题已保存并将重新应用CSS注入');
     } catch (error) {
       console.error('另存为失败:', error);
       Utils.showToast('另存为失败: ' + error.message, 'error');
