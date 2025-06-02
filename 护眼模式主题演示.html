@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux DO 论坛 - 护眼模式主题演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1a1f2e;
+            color: #e8e6e3;
+            line-height: 1.6;
+        }
+
+        /* 顶部导航栏 */
+        .header {
+            background-color: #242b3d;
+            border-bottom: 1px solid #3a4553;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a9eff;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #4a9eff, #3b8bef);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .search-bar {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 16px;
+            background-color: #2d3548;
+            border: 1px solid #3a4553;
+            border-radius: 6px;
+            color: #e8e6e3;
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.1);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notification-icon {
+            width: 36px;
+            height: 36px;
+            background-color: #2d3548;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #b8b5b2;
+            position: relative;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 16px;
+            height: 16px;
+            background-color: #faad14;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a1f2e;
+            font-weight: 600;
+        }
+
+        /* 主要布局 */
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* 左侧边栏 */
+        .sidebar {
+            background-color: #242b3d;
+            border-right: 1px solid #3a4553;
+            width: 240px;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .nav-category {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 16px 20px 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            padding: 10px 20px;
+            color: #b8b5b2;
+            border-radius: 0 20px 20px 0;
+            margin-right: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(74, 158, 255, 0.1);
+            color: #4a9eff;
+        }
+
+        .nav-item.active {
+            background-color: rgba(74, 158, 255, 0.15);
+            color: #4a9eff;
+            border-right: 3px solid #4a9eff;
+        }
+
+        .nav-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        /* 主内容区域 */
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: #1a1f2e;
+        }
+
+        /* 重点通知横幅 */
+        .notice-banner {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(74, 158, 255, 0.05) 100%);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notice-banner::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #4a9eff;
+        }
+
+        .notice-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notice-icon {
+            color: #4a9eff;
+            font-size: 18px;
+        }
+
+        .notice-text {
+            color: #e8e6e3;
+            font-weight: 500;
+        }
+
+        /* Tab切换 */
+        .tab-container {
+            border-bottom: 1px solid #3a4553;
+            background-color: #242b3d;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+
+        .tab-list {
+            display: flex;
+            padding: 0 20px;
+        }
+
+        .tab-item {
+            padding: 12px 20px;
+            color: #b8b5b2;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .tab-item:hover {
+            color: #e8e6e3;
+            background-color: rgba(74, 158, 255, 0.05);
+        }
+
+        .tab-item.active {
+            color: #4a9eff;
+            border-bottom-color: #4a9eff;
+            background-color: rgba(74, 158, 255, 0.1);
+        }
+
+        .tab-badge {
+            background-color: #faad14;
+            color: #1a1f2e;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 6px;
+            font-weight: 600;
+        }
+
+        /* 帖子列表 */
+        .post-list {
+            background-color: #242b3d;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+
+        .post-item {
+            background-color: #2d3548;
+            border-bottom: 1px solid #3a4553;
+            padding: 16px 20px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .post-item:hover {
+            background-color: #34405a;
+        }
+
+        .post-item.read {
+            opacity: 0.7;
+            background-color: #252a3a;
+        }
+
+        .post-item.read .post-title {
+            color: #9ca3af;
+        }
+
+        .post-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .post-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a9eff, #52c41a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .post-content {
+            flex: 1;
+        }
+
+        .post-title {
+            color: #e8e6e3;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .post-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: #b8b5b2;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .post-stats {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-left: auto;
+        }
+
+        .stat-item {
+            text-align: center;
+            color: #b8b5b2;
+            font-size: 13px;
+        }
+
+        .stat-number {
+            display: block;
+            color: #e8e6e3;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 11px;
+        }
+
+        /* 按钮样式 */
+        .btn-primary {
+            background-color: #4a9eff;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background-color: #3b8bef;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #b8b5b2;
+            border: 1px solid #3a4553;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #3a4553;
+            color: #e8e6e3;
+            border-color: #4a5568;
+        }
+
+        .btn-text {
+            background: none;
+            border: none;
+            color: #4a9eff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-text:hover {
+            background-color: rgba(74, 158, 255, 0.1);
+            color: #3b8bef;
+        }
+
+        /* 标签样式 */
+        .tag {
+            background-color: rgba(74, 158, 255, 0.1);
+            color: #4a9eff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .tag.hot {
+            background-color: rgba(250, 173, 20, 0.1);
+            color: #faad14;
+        }
+
+        .tag.new {
+            background-color: rgba(82, 196, 26, 0.1);
+            color: #52c41a;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .content {
+                padding: 16px;
+            }
+            
+            .post-item {
+                padding: 12px 16px;
+            }
+            
+            .tab-item {
+                padding: 10px 16px;
+            }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #242b3d;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3a4553;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">L</div>
+            <span>LINUX DO</span>
+        </div>
+        <div class="search-bar">
+            <input type="text" class="search-input" placeholder="搜索">
+        </div>
+        <div class="user-menu">
+            <div class="notification-icon">
+                🔔
+                <div class="notification-badge">2</div>
+            </div>
+            <div class="notification-icon">👤</div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <div class="main-container">
+        <!-- 左侧边栏 -->
+        <aside class="sidebar">
+            <div class="nav-category">导航</div>
+            <div class="nav-item active">
+                <span class="nav-icon">🏠</span>
+                <span>首页</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">👥</span>
+                <span>我的帖子</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">ℹ️</span>
+                <span>关于</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🎯</span>
+                <span>时刻对某的活动</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📝</span>
+                <span>更多</span>
+            </div>
+
+            <div class="nav-category">外部链接</div>
+            <div class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span>Status</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">👕</span>
+                <span>T-Shirt</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🔗</span>
+                <span>Connect</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📧</span>
+                <span>Webmail</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">💬</span>
+                <span>Channel</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📱</span>
+                <span>Telegram</span>
+            </div>
+
+            <div class="nav-category">类别</div>
+            <div class="nav-item">
+                <span class="nav-icon">💻</span>
+                <span>开发资料</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📚</span>
+                <span>深度资料</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🎮</span>
+                <span>能美市场</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🛠️</span>
+                <span>非我负责</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🎯</span>
+                <span>体验资料</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🔧</span>
+                <span>探讨起始</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📰</span>
+                <span>普通讨论</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">💭</span>
+                <span>网络记忆</span>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="content">
+            <!-- 重点通知横幅 -->
+            <div class="notice-banner">
+                <div class="notice-content">
+                    <span class="notice-icon">📢</span>
+                    <span class="notice-text">真诚、友善、专业，共建和谐引以为豪的社区。《情况问题解答》</span>
+                </div>
+            </div>
+
+            <!-- Tab切换 -->
+            <div class="tab-container">
+                <div class="tab-list">
+                    <div class="tab-item active">类别</div>
+                    <div class="tab-item">标签</div>
+                    <div class="tab-item">最新 <span class="tab-badge">154</span></div>
+                    <div class="tab-item">未读 <span class="tab-badge">84</span></div>
+                    <div class="tab-item">未读</div>
+                    <div class="tab-item">排行榜</div>
+                    <div class="tab-item">热门</div>
+                    <div class="tab-item">类别</div>
+                    <div class="tab-item">我的帖子</div>
+                    <div class="tab-item">书签</div>
+                    <button class="btn-primary" style="margin-left: auto; margin-top: 8px; margin-bottom: 8px;">新建话题</button>
+                </div>
+            </div>
+
+            <!-- 帖子列表 -->
+            <div class="post-list">
+                <!-- 置顶帖子 -->
+                <div class="post-item">
+                    <div class="post-header">
+                        <div class="post-avatar">📌</div>
+                        <div class="post-content">
+                            <div class="post-title">👑 新人、我有一些疑问想出结果 👑</div>
+                            <div class="post-meta">
+                                <span>📍 置顶三</span>
+                                <span>🏷️ 新手</span>
+                                <span class="tag new">NEW</span>
+                            </div>
+                        </div>
+                        <div class="post-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">17</span>
+                                <span class="stat-label">回复</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">121</span>
+                                <span class="stat-label">查看</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">4分钟</span>
+                                <span class="stat-label">活动</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 普通帖子 -->
+                <div class="post-item">
+                    <div class="post-header">
+                        <div class="post-avatar">L</div>
+                        <div class="post-content">
+                            <div class="post-title">🎉 欢迎来到 LINUX DO! 🎉</div>
+                            <div class="post-meta">
+                                <span>💚 精华帖三</span>
+                                <span>🏷️ 快速开始</span>
+                                <span class="tag hot">HOT</span>
+                            </div>
+                        </div>
+                        <div class="post-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">6.4k</span>
+                                <span class="stat-label">回复</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">277k</span>
+                                <span class="stat-label">查看</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">2小时</span>
+                                <span class="stat-label">活动</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已读帖子 -->
+                <div class="post-item read">
+                    <div class="post-header">
+                        <div class="post-avatar">H</div>
+                        <div class="post-content">
+                            <div class="post-title">热夜冠军，谁与争锋！（参赛为问题23：00-6：00）</div>
+                            <div class="post-meta">
+                                <span>🔥 精华帖三</span>
+                                <span>🏷️ 竞赛</span>
+                            </div>
+                        </div>
+                        <div class="post-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">4.0k</span>
+                                <span class="stat-label">回复</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">62.1k</span>
+                                <span class="stat-label">查看</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">1天</span>
+                                <span class="stat-label">活动</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="post-item">
+                    <div class="post-header">
+                        <div class="post-avatar">A</div>
+                        <div class="post-content">
+                            <div class="post-title">【抽奖】抽奖、马克杯带你Logo（结束）</div>
+                            <div class="post-meta">
+                                <span>🎁 精华帖三</span>
+                                <span>🏷️ 抽奖</span>
+                                <span class="tag">CLOSED</span>
+                            </div>
+                        </div>
+                        <div class="post-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">4.0k</span>
+                                <span class="stat-label">回复</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">9.4k</span>
+                                <span class="stat-label">查看</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">2024年8月</span>
+                                <span class="stat-label">活动</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="post-item">
+                    <div class="post-header">
+                        <div class="post-avatar">T</div>
+                        <div class="post-content">
+                            <div class="post-title">本站长期无偿提供优化投资服务【资计分享到100T资源】【恢复，有序回复】</div>
+                            <div class="post-meta">
+                                <span>📊 普通资料</span>
+                                <span>🏷️ 资源</span>
+                                <span class="tag">FREE</span>
+                            </div>
+                        </div>
+                        <div class="post-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">3.6k</span>
+                                <span class="stat-label">回复</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">83.2k</span>
+                                <span class="stat-label">查看</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">2小时</span>
+                                <span class="stat-label">活动</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="post-item">
+                    <div class="post-header">
+                        <div class="post-avatar">R</div>
+                        <div class="post-content">
+                            <div class="post-title">【预告】今天上午10:00充值活动放好礼</div>
+                            <div class="post-meta">
+                                <span>🎯 精华帖三</span>
+                                <span>🏷️ 活动</span>
+                                <span class="tag hot">HOT</span>
+                            </div>
+                        </div>
+                        <div class="post-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">3.6k</span>
+                                <span class="stat-label">回复</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">19.4k</span>
+                                <span class="stat-label">查看</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">2024年4月</span>
+                                <span class="stat-label">活动</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="post-item">
+                    <div class="post-header">
+                        <div class="post-avatar">S</div>
+                        <div class="post-content">
+                            <div class="post-title">【神曲运用】再续前缘,兆玩有缘,媒体身心心!!!</div>
+                            <div class="post-meta">
+                                <span>🎵 普通讨论</span>
+                                <span>🏷️ 娱乐</span>
+                            </div>
+                        </div>
+                        <div class="post-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">2.1k</span>
+                                <span class="stat-label">回复</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">15.7k</span>
+                                <span class="stat-label">查看</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">1小时</span>
+                                <span class="stat-label">活动</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 简单的交互效果
+        document.querySelectorAll('.tab-item').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.nav-item').forEach(nav => {
+            nav.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 模拟帖子点击效果
+        document.querySelectorAll('.post-item').forEach(post => {
+            post.addEventListener('click', function() {
+                if (!this.classList.contains('read')) {
+                    this.classList.add('read');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
