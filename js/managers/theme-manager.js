@@ -697,8 +697,8 @@ export class ThemeManager {
       // 应用主题样式
       const success = await chromeApi.applyTheme(currentTheme);
       if (success) {
-        // 如果是预制主题的副本，保存原始主题ID
-        const themeIdToSave = currentTheme.originalId || currentTheme.id;
+        // 保存当前主题ID（不使用originalId，确保保存的是当前编辑的主题）
+        const themeIdToSave = currentTheme.id;
         console.log('准备保存的主题ID:', themeIdToSave);
         await this.appState.setAppliedThemeId(themeIdToSave);
         Utils.showToast(`主题 "${currentTheme.name}" 已应用`, 'success');
@@ -935,6 +935,10 @@ export class ThemeManager {
       this.originalThemeData = Utils.deepClone(currentTheme);
       this.hasUnsavedChanges = false;
       this.clearTemporaryState();
+      
+      // 更新UI状态
+      this.renderCustomThemes(); // 重新渲染自定义主题列表，确保主题状态正确
+      this.updateThemeSelection();
       this.updateSaveButtonState();
       this.updatePageTitle();
       
@@ -1014,7 +1018,22 @@ export class ThemeManager {
       this.hasUnsavedChanges = false;
       this.clearTemporaryState();
       
+      // 更新编辑器界面显示新主题信息
+      const themeName = document.getElementById('themeName');
+      if (themeName) {
+        themeName.value = newTheme.name || '';
+      }
+      const themeDescription = document.getElementById('themeDescription');
+      if (themeDescription) {
+        themeDescription.value = newTheme.description || '';
+      }
+      
+      // 重新渲染编辑器内容
+      this.renderGroups(newTheme);
+      this.renderUrlPatterns(newTheme);
+      
       // 更新UI状态
+      this.renderCustomThemes(); // 重新渲染自定义主题列表，确保新主题显示
       this.updateThemeSelection();
       this.updateThemeActions(newTheme);
       this.updateSaveButtonState();
@@ -1140,7 +1159,11 @@ export class ThemeManager {
     }
 
     // 只有在切换到不同主题时才更新原始数据
-    if (!this.originalThemeData || this.originalThemeData.id !== targetTheme.id) {
+    // 但是如果当前正在编辑模式且目标主题就是当前主题，则不重置状态
+    const currentTheme = this.appState.getCurrentTheme();
+    const isSameTheme = currentTheme && currentTheme.id === targetTheme.id;
+    
+    if (!this.originalThemeData || (this.originalThemeData.id !== targetTheme.id && !isSameTheme)) {
       // 切换主题时清空临时状态
       this.clearTemporaryState();
       this.originalThemeData = Utils.deepClone(targetTheme);
