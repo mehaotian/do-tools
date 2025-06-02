@@ -3,9 +3,9 @@
  * 负责所有模态框的显示、隐藏、事件处理等功能
  */
 
-import { Utils } from '../core/utils.js';
-import { CSS_PROPERTIES, APP_CONFIG } from '../core/constants.js';
-import { chromeApi } from '../services/chrome-api.js';
+import { Utils } from "../core/utils.js";
+import { CSS_PROPERTIES, APP_CONFIG } from "../core/constants.js";
+import { chromeApi } from "../services/chrome-api.js";
 
 /**
  * 模态框管理器类
@@ -15,24 +15,24 @@ export class ModalManager {
   constructor() {
     // 当前打开的模态框数量
     this.openModalCount = 0;
-    
+
     // 保存的滚动位置
     this.savedScrollPosition = 0;
-    
+
     // 当前编辑的组ID和规则索引
     this.currentGroupId = null;
     this.currentRuleIndex = null;
-    
+
     // 防止滚动的事件处理器
     this.preventScrollHandler = this.createPreventScrollHandler();
     this.preventKeyScrollHandler = this.createPreventKeyScrollHandler();
-    
+
     // 选择器验证防抖函数
     this.debouncedValidateSelector = Utils.debounce(
-      this.validateSelector.bind(this), 
+      this.validateSelector.bind(this),
       APP_CONFIG.UI.DEBOUNCE_DELAY
     );
-    
+
     this.initializeModals();
   }
 
@@ -43,13 +43,13 @@ export class ModalManager {
   createPreventScrollHandler() {
     return (e) => {
       // 检查事件目标是否在模态框区域内
-      const isInModal = e.target.closest('.modal');
-      
+      const isInModal = e.target.closest(".modal");
+
       // 如果在模态框内（包括背景区域），允许滚动
       if (isInModal) {
         return true;
       }
-      
+
       // 只阻止模态框外部的滚动
       e.preventDefault();
       e.stopPropagation();
@@ -66,13 +66,13 @@ export class ModalManager {
       const scrollKeys = [32, 33, 34, 35, 36, 37, 38, 39, 40];
       if (scrollKeys.includes(e.keyCode)) {
         // 检查是否在模态框内
-        const isInModal = e.target.closest('.modal');
-        
+        const isInModal = e.target.closest(".modal");
+
         // 如果在模态框内，允许键盘滚动
         if (isInModal) {
           return true;
         }
-        
+
         // 只阻止模态框外部的键盘滚动
         e.preventDefault();
         e.stopPropagation();
@@ -95,25 +95,25 @@ export class ModalManager {
    */
   setupModalEvents() {
     // 添加组确认按钮
-    const confirmAddGroupBtn = document.getElementById('confirmAddGroup');
+    const confirmAddGroupBtn = document.getElementById("confirmAddGroup");
     if (confirmAddGroupBtn) {
-      confirmAddGroupBtn.addEventListener('click', () => {
+      confirmAddGroupBtn.addEventListener("click", () => {
         this.addGroup();
       });
     }
 
     // 添加规则确认按钮
-    const confirmAddRuleBtn = document.getElementById('confirmAddRule');
+    const confirmAddRuleBtn = document.getElementById("confirmAddRule");
     if (confirmAddRuleBtn) {
-      confirmAddRuleBtn.addEventListener('click', () => {
+      confirmAddRuleBtn.addEventListener("click", () => {
         this.addCSSRule();
       });
     }
 
     // 模态框关闭按钮
-    document.querySelectorAll('.modal-close').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const modal = e.target.closest('.modal');
+    document.querySelectorAll(".modal-close").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const modal = e.target.closest(".modal");
         if (modal) {
           this.hideModal(modal.id);
         }
@@ -121,9 +121,9 @@ export class ModalManager {
     });
 
     // ESC键关闭模态框
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.openModalCount > 0) {
-        const openModals = document.querySelectorAll('.modal.show');
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && this.openModalCount > 0) {
+        const openModals = document.querySelectorAll(".modal.show");
         if (openModals.length > 0) {
           const lastModal = openModals[openModals.length - 1];
           this.hideModal(lastModal.id);
@@ -137,22 +137,22 @@ export class ModalManager {
    */
   setupFormEvents() {
     // 选择器输入验证
-    const selectorInput = document.getElementById('cssSelector');
+    const selectorInput = document.getElementById("cssSelector");
     if (selectorInput) {
-      selectorInput.addEventListener('input', () => {
+      selectorInput.addEventListener("input", () => {
         this.debouncedValidateSelector();
       });
-      
-      selectorInput.addEventListener('blur', () => {
+
+      selectorInput.addEventListener("blur", () => {
         this.validateSelector();
       });
     }
 
     // 组名输入回车提交
-    const groupNameInput = document.getElementById('groupName');
+    const groupNameInput = document.getElementById("groupName");
     if (groupNameInput) {
-      groupNameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
+      groupNameInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
           this.addGroup();
         }
       });
@@ -166,7 +166,7 @@ export class ModalManager {
   showModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) {
-      console.error('模态框不存在:', modalId);
+      console.error("模态框不存在:", modalId);
       return;
     }
 
@@ -179,17 +179,17 @@ export class ModalManager {
     }
 
     // 显示模态框
-    modal.classList.add('show');
-    modal.style.display = 'flex';
-    
+    modal.classList.add("show");
+    modal.style.display = "flex";
+
     // 聚焦到第一个输入框
-    const firstInput = modal.querySelector('input, textarea, select');
+    const firstInput = modal.querySelector("input, textarea, select");
     if (firstInput) {
       setTimeout(() => firstInput.focus(), 100);
     }
 
     // 触发显示事件
-    this.emit('modalShown', { modalId, modal });
+    this.emit("modalShown", { modalId, modal });
   }
 
   /**
@@ -200,7 +200,7 @@ export class ModalManager {
   hideModal(modalId, immediate = false) {
     const modal = document.getElementById(modalId);
     if (!modal) {
-      console.error('模态框不存在:', modalId);
+      console.error("模态框不存在:", modalId);
       return;
     }
 
@@ -209,18 +209,18 @@ export class ModalManager {
 
     if (immediate) {
       // 立即隐藏，不等待动画
-      modal.classList.remove('show');
-      modal.classList.remove('hiding');
-      modal.style.display = 'none';
+      modal.classList.remove("show");
+      modal.classList.remove("hiding");
+      modal.style.display = "none";
     } else {
       // 添加隐藏动画类
-      modal.classList.remove('show');
-      modal.classList.add('hiding');
-      
+      modal.classList.remove("show");
+      modal.classList.add("hiding");
+
       // 等待退出动画完成后隐藏
       setTimeout(() => {
-        modal.classList.remove('hiding');
-        modal.style.display = 'none';
+        modal.classList.remove("hiding");
+        modal.style.display = "none";
       }, APP_CONFIG.UI.MODAL_ANIMATION_DURATION);
     }
 
@@ -233,7 +233,7 @@ export class ModalManager {
     this.clearModalInputs(modal);
 
     // 特殊处理：关闭规则编辑模态框时清除预览
-    if (modalId === 'addRuleModal') {
+    if (modalId === "addRuleModal") {
       this.clearAllPreview();
       // 重新应用当前编辑的主题
       setTimeout(() => {
@@ -245,7 +245,7 @@ export class ModalManager {
     }
 
     // 触发隐藏事件
-    this.emit('modalHidden', { modalId, modal });
+    this.emit("modalHidden", { modalId, modal });
   }
 
   /**
@@ -253,19 +253,26 @@ export class ModalManager {
    */
   lockPageScroll() {
     // 保存当前滚动位置
-    this.savedScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-    
+    this.savedScrollPosition =
+      window.pageYOffset || document.documentElement.scrollTop;
+
     // 添加modal-open类并设置body样式
-    document.body.classList.add('modal-open');
-    document.documentElement.classList.add('modal-open');
-    document.body.style.position = 'fixed';
+    document.body.classList.add("modal-open");
+    document.documentElement.classList.add("modal-open");
+    document.body.style.position = "fixed";
     document.body.style.top = `-${this.savedScrollPosition}px`;
-    document.body.style.width = '100%';
-    
+    document.body.style.width = "100%";
+
     // 添加事件监听器防止滚动
-    document.addEventListener('wheel', this.preventScrollHandler, { passive: false });
-    document.addEventListener('touchmove', this.preventScrollHandler, { passive: false });
-    document.addEventListener('keydown', this.preventKeyScrollHandler, { passive: false });
+    document.addEventListener("wheel", this.preventScrollHandler, {
+      passive: false,
+    });
+    document.addEventListener("touchmove", this.preventScrollHandler, {
+      passive: false,
+    });
+    document.addEventListener("keydown", this.preventKeyScrollHandler, {
+      passive: false,
+    });
   }
 
   /**
@@ -274,21 +281,21 @@ export class ModalManager {
   unlockPageScroll() {
     // 移除事件监听器
     if (this.preventScrollHandler) {
-      document.removeEventListener('wheel', this.preventScrollHandler);
-      document.removeEventListener('touchmove', this.preventScrollHandler);
+      document.removeEventListener("wheel", this.preventScrollHandler);
+      document.removeEventListener("touchmove", this.preventScrollHandler);
     }
-    
+
     if (this.preventKeyScrollHandler) {
-      document.removeEventListener('keydown', this.preventKeyScrollHandler);
+      document.removeEventListener("keydown", this.preventKeyScrollHandler);
     }
-    
+
     // 恢复body样式
-    document.body.classList.remove('modal-open');
-    document.documentElement.classList.remove('modal-open');
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    
+    document.body.classList.remove("modal-open");
+    document.documentElement.classList.remove("modal-open");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.width = "";
+
     // 恢复滚动位置
     window.scrollTo(0, this.savedScrollPosition);
   }
@@ -299,30 +306,32 @@ export class ModalManager {
    */
   clearModalInputs(modal) {
     // 清空文本输入
-    modal.querySelectorAll('input[type="text"], input[type="email"], textarea').forEach(input => {
-      input.value = '';
-    });
-    
+    modal
+      .querySelectorAll('input[type="text"], input[type="email"], textarea')
+      .forEach((input) => {
+        input.value = "";
+      });
+
     // 重置选择框
-    modal.querySelectorAll('select').forEach(select => {
+    modal.querySelectorAll("select").forEach((select) => {
       select.selectedIndex = 0;
     });
-    
+
     // 清空动态生成的内容
-    const propertiesContainer = modal.querySelector('#cssProperties');
+    const propertiesContainer = modal.querySelector("#cssProperties");
     if (propertiesContainer) {
-      propertiesContainer.innerHTML = '';
+      propertiesContainer.innerHTML = "";
     }
-    
+
     // 重置选择器状态
-    const indicator = modal.querySelector('#selectorStatusIndicator');
-    const suggestions = modal.querySelector('#selectorSuggestions');
+    const indicator = modal.querySelector("#selectorStatusIndicator");
+    const suggestions = modal.querySelector("#selectorSuggestions");
     if (indicator) {
-      indicator.className = 'selector-status-indicator';
+      indicator.className = "selector-status-indicator";
     }
     if (suggestions) {
-      suggestions.textContent = '';
-      suggestions.style.display = 'none';
+      suggestions.textContent = "";
+      suggestions.style.display = "none";
     }
   }
 
@@ -330,18 +339,18 @@ export class ModalManager {
    * 渲染属性分类
    */
   renderPropertyCategories() {
-    const container = document.getElementById('propertyCategories');
+    const container = document.getElementById("propertyCategories");
     if (!container) return;
 
-    container.innerHTML = '';
-    
+    container.innerHTML = "";
+
     Object.entries(CSS_PROPERTIES).forEach(([categoryKey, category]) => {
-      const categoryDiv = document.createElement('div');
-      categoryDiv.className = 'property-category';
-      
+      const categoryDiv = document.createElement("div");
+      categoryDiv.className = "property-category";
+
       // 为外观分类添加背景助手入口
-      let backgroundHelperHtml = '';
-      if (categoryKey === 'appearance') {
+      let backgroundHelperHtml = "";
+      if (categoryKey === "appearance") {
         backgroundHelperHtml = `
           <div class="property-item background-helper-entry" data-action="background-helper">
             <div class="property-name-cn">🎨 背景样式助手</div>
@@ -349,7 +358,7 @@ export class ModalManager {
           </div>
         `;
       }
-      
+
       categoryDiv.innerHTML = `
         <div class="property-category-header">${category.name}</div>
         <div class="property-category-list">
@@ -363,14 +372,14 @@ export class ModalManager {
             </div>
           `
             )
-            .join('')}
+            .join("")}
         </div>
       `;
-      
+
       // 添加属性选择事件
-      categoryDiv.addEventListener('click', (e) => {
-        if (e.target.classList.contains('property-item')) {
-          if (e.target.dataset.action === 'background-helper') {
+      categoryDiv.addEventListener("click", (e) => {
+        if (e.target.classList.contains("property-item")) {
+          if (e.target.dataset.action === "background-helper") {
             // 打开背景助手
             this.openBackgroundHelper();
           } else {
@@ -383,11 +392,11 @@ export class ModalManager {
             // 检测修改并更新按钮状态
             window.themeManager?.handleThemeChange();
             // 立即关闭模态框，避免动画延迟导致的卡顿
-            this.hideModal('propertySelectModal', true);
+            this.hideModal("propertySelectModal", true);
           }
         }
       });
-      
+
       container.appendChild(categoryDiv);
     });
   }
@@ -398,7 +407,7 @@ export class ModalManager {
    * @param {Object} config - 属性配置
    */
   addPropertyEditor(property, config) {
-    const container = document.getElementById('cssProperties');
+    const container = document.getElementById("cssProperties");
     if (!container) return;
 
     // 检查是否已存在该属性
@@ -408,22 +417,26 @@ export class ModalManager {
       return;
     }
 
-    const editor = document.createElement('div');
-    editor.className = 'css-property-item';
-    editor.setAttribute('data-property', property);
-    
-    let inputHtml = '';
+    const editor = document.createElement("div");
+    editor.className = "css-property-item";
+    editor.setAttribute("data-property", property);
+
+    let inputHtml = "";
     switch (config.type) {
       case "color":
         inputHtml = `<input type="color" class="form-input property-value" data-property="${property}">`;
         break;
       case "range":
         inputHtml = `<input type="range" class="form-input property-value" data-property="${property}" 
-          min="${config.min || 0}" max="${config.max || 100}" step="${config.step || 1}">`;
+          min="${config.min || 0}" max="${config.max || 100}" step="${
+          config.step || 1
+        }">`;
         break;
       case "select":
         inputHtml = `<select class="form-input property-value" data-property="${property}">
-          ${config.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+          ${config.options
+            .map((option) => `<option value="${option}">${option}</option>`)
+            .join("")}
         </select>`;
         break;
       default:
@@ -439,7 +452,7 @@ export class ModalManager {
       }
     }
     const chineseName = propInfo ? propInfo.name : property;
-    
+
     editor.innerHTML = `
       <div class="property-name">
         <div class="property-name-cn">${chineseName}</div>
@@ -451,7 +464,7 @@ export class ModalManager {
     `;
 
     // 添加删除事件
-    editor.querySelector('.property-remove').addEventListener('click', () => {
+    editor.querySelector(".property-remove").addEventListener("click", () => {
       editor.remove();
       this.clearPreviewForProperty(property);
       // 检测修改并更新按钮状态
@@ -459,16 +472,16 @@ export class ModalManager {
     });
 
     // 添加实时预览事件
-    const propertyInput = editor.querySelector('.property-value');
-    propertyInput.addEventListener('input', (e) => {
+    const propertyInput = editor.querySelector(".property-value");
+    propertyInput.addEventListener("input", (e) => {
       this.previewStyle(property, e.target.value);
       // 检测修改并更新按钮状态
       window.themeManager?.handleThemeChange();
     });
 
     // 对于select类型，也要监听change事件
-    if (config.type === 'select') {
-      propertyInput.addEventListener('change', (e) => {
+    if (config.type === "select") {
+      propertyInput.addEventListener("change", (e) => {
         this.previewStyle(property, e.target.value);
         // 检测修改并更新按钮状态
         window.themeManager?.handleThemeChange();
@@ -484,7 +497,8 @@ export class ModalManager {
    * @param {string} value - CSS属性值
    */
   async previewStyle(property, value) {
-    const selector = document.getElementById('cssSelector')?.value;
+    const selector = document.getElementById("cssSelector")?.value;
+    console.log('-=-=-= 3 selector, property, value', selector, property, value);
     
     if (!selector || !property || !value) {
       return;
@@ -493,7 +507,7 @@ export class ModalManager {
     try {
       await chromeApi.previewStyle(selector, property, value);
     } catch (error) {
-      console.warn('实时预览失败:', error);
+      console.warn("实时预览失败:", error);
     }
   }
 
@@ -502,8 +516,8 @@ export class ModalManager {
    * @param {string} property - CSS属性名
    */
   async clearPreviewForProperty(property) {
-    const selector = document.getElementById('cssSelector')?.value;
-    
+    const selector = document.getElementById("cssSelector")?.value;
+
     if (!selector || !property) {
       return;
     }
@@ -511,7 +525,7 @@ export class ModalManager {
     try {
       await chromeApi.clearPreviewProperty(selector, property);
     } catch (error) {
-      console.warn('清除预览失败:', error);
+      console.warn("清除预览失败:", error);
     }
   }
 
@@ -522,7 +536,7 @@ export class ModalManager {
     try {
       await chromeApi.clearAllPreview();
     } catch (error) {
-      console.warn('清除所有预览失败:', error);
+      console.warn("清除所有预览失败:", error);
     }
   }
 
@@ -530,15 +544,15 @@ export class ModalManager {
    * 验证选择器
    */
   async validateSelector() {
-    const selector = document.getElementById('cssSelector')?.value;
-    const indicator = document.getElementById('selectorStatusIndicator');
-    const suggestions = document.getElementById('selectorSuggestions');
+    const selector = document.getElementById("cssSelector")?.value;
+    const indicator = document.getElementById("selectorStatusIndicator");
+    const suggestions = document.getElementById("selectorSuggestions");
 
     if (!selector?.trim()) {
-      if (indicator) indicator.className = 'selector-status-indicator';
+      if (indicator) indicator.className = "selector-status-indicator";
       if (suggestions) {
-        suggestions.textContent = '';
-        suggestions.style.display = 'none';
+        suggestions.textContent = "";
+        suggestions.style.display = "none";
       }
       await this.clearSelectorHighlight();
       return;
@@ -546,38 +560,45 @@ export class ModalManager {
 
     try {
       const result = await chromeApi.validateSelector(selector);
-      
+
       if (result.success) {
         if (result.isValid) {
-          if (indicator) indicator.className = 'selector-status-indicator valid animate-in';
+          if (indicator)
+            indicator.className = "selector-status-indicator valid animate-in";
           if (suggestions) {
             suggestions.textContent = `找到 ${result.elementCount} 个匹配元素`;
-            suggestions.className = 'selector-suggestions success show';
-            suggestions.style.display = 'block';
+            suggestions.className = "selector-suggestions success show";
+            suggestions.style.display = "block";
           }
         } else {
-          if (indicator) indicator.className = 'selector-status-indicator invalid animate-in';
+          if (indicator)
+            indicator.className =
+              "selector-status-indicator invalid animate-in";
           if (suggestions) {
-            suggestions.textContent = result.elementCount === 0 ? '未找到匹配元素' : '选择器语法错误';
-            suggestions.className = 'selector-suggestions error show';
-            suggestions.style.display = 'block';
+            suggestions.textContent =
+              result.elementCount === 0 ? "未找到匹配元素" : "选择器语法错误";
+            suggestions.className = "selector-suggestions error show";
+            suggestions.style.display = "block";
           }
         }
       } else {
-        if (indicator) indicator.className = 'selector-status-indicator invalid animate-in';
+        if (indicator)
+          indicator.className = "selector-status-indicator invalid animate-in";
         if (suggestions) {
-          suggestions.textContent = result.error || '无法连接到页面，请确保页面已加载';
-          suggestions.className = 'selector-suggestions error show';
-          suggestions.style.display = 'block';
+          suggestions.textContent =
+            result.error || "无法连接到页面，请确保页面已加载";
+          suggestions.className = "selector-suggestions error show";
+          suggestions.style.display = "block";
         }
       }
     } catch (error) {
-      console.error('验证选择器时发生错误:', error);
-      if (indicator) indicator.className = 'selector-status-indicator invalid animate-in';
+      console.error("验证选择器时发生错误:", error);
+      if (indicator)
+        indicator.className = "selector-status-indicator invalid animate-in";
       if (suggestions) {
-        suggestions.textContent = '验证失败，请确保页面已加载并刷新后重试';
-        suggestions.className = 'selector-suggestions error show';
-        suggestions.style.display = 'block';
+        suggestions.textContent = "验证失败，请确保页面已加载并刷新后重试";
+        suggestions.className = "selector-suggestions error show";
+        suggestions.style.display = "block";
       }
     }
   }
@@ -589,7 +610,7 @@ export class ModalManager {
     try {
       await chromeApi.clearSelectorHighlight();
     } catch (error) {
-      console.log('清除高亮失败:', error);
+      console.log("清除高亮失败:", error);
     }
   }
 
@@ -597,60 +618,60 @@ export class ModalManager {
    * 添加组
    */
   addGroup() {
-    const nameInput = document.getElementById('groupName');
-    const descInput = document.getElementById('groupDescription');
-    
+    const nameInput = document.getElementById("groupName");
+    const descInput = document.getElementById("groupDescription");
+
     if (!nameInput || !descInput) return;
-    
+
     const name = nameInput.value.trim();
     const description = descInput.value.trim();
-    
+
     if (!name) {
-      Utils.showToast('请输入组名称', 'error');
+      Utils.showToast("请输入组名称", "error");
       nameInput.focus();
       return;
     }
-    
+
     const currentTheme = window.appState?.getCurrentTheme();
     if (!currentTheme) {
-      Utils.showToast('请先选择或创建一个主题', 'error');
+      Utils.showToast("请先选择或创建一个主题", "error");
       return;
     }
-    
+
     const newGroup = {
       id: Utils.generateId(),
       name,
       description,
-      rules: []
+      rules: [],
     };
-    
+
     currentTheme.groups.push(newGroup);
     window.appState.setCurrentTheme(currentTheme);
     window.themeManager?.renderGroups(currentTheme);
-    
+
     // 触发主题修改状态检测
     window.themeManager?.handleThemeChange();
-    
+
     // 清空输入框
-    nameInput.value = '';
-    descInput.value = '';
-    
-    this.hideModal('addGroupModal');
-    Utils.showToast(`组 "${name}" 已添加`, 'success');
+    nameInput.value = "";
+    descInput.value = "";
+
+    this.hideModal("addGroupModal");
+    Utils.showToast(`组 "${name}" 已添加`, "success");
   }
 
   /**
    * 添加或更新CSS规则
    */
   addCSSRule() {
-    const selector = document.getElementById('cssSelector')?.value;
+    const selector = document.getElementById("cssSelector")?.value;
     const properties = {};
 
     // 收集属性
-    document.querySelectorAll('.css-property-item').forEach(editor => {
-      const propertyNameElement = editor.querySelector('.property-name-input');
-      const propertyValueElement = editor.querySelector('.property-value');
-      
+    document.querySelectorAll(".css-property-item").forEach((editor) => {
+      const propertyNameElement = editor.querySelector(".property-name-input");
+      const propertyValueElement = editor.querySelector(".property-value");
+
       const propertyName = propertyNameElement?.value;
       const propertyValue = propertyValueElement?.value;
 
@@ -660,24 +681,24 @@ export class ModalManager {
     });
 
     if (!selector?.trim()) {
-      Utils.showToast('请输入CSS选择器', 'error');
+      Utils.showToast("请输入CSS选择器", "error");
       return;
     }
 
     if (Object.keys(properties).length === 0) {
-      Utils.showToast('请至少添加一个CSS属性', 'error');
+      Utils.showToast("请至少添加一个CSS属性", "error");
       return;
     }
 
     const currentTheme = window.appState?.getCurrentTheme();
     if (!currentTheme) {
-      Utils.showToast('请先选择或创建一个主题', 'error');
+      Utils.showToast("请先选择或创建一个主题", "error");
       return;
     }
 
-    const group = currentTheme.groups.find(g => g.id === this.currentGroupId);
+    const group = currentTheme.groups.find((g) => g.id === this.currentGroupId);
     if (!group) {
-      Utils.showToast('无法找到目标组，请重试', 'error');
+      Utils.showToast("无法找到目标组，请重试", "error");
       return;
     }
 
@@ -686,15 +707,15 @@ export class ModalManager {
       // 编辑模式：更新现有规则
       if (group.rules[this.currentRuleIndex]) {
         group.rules[this.currentRuleIndex] = { selector, properties };
-        Utils.showToast('CSS规则已更新并应用', 'success');
+        Utils.showToast("CSS规则已更新并应用", "success");
       } else {
-        Utils.showToast('无法找到要编辑的规则', 'error');
+        Utils.showToast("无法找到要编辑的规则", "error");
         return;
       }
     } else {
       // 添加模式：新增规则
       group.rules.push({ selector, properties });
-      Utils.showToast('CSS规则已添加并应用', 'success');
+      Utils.showToast("CSS规则已添加并应用", "success");
     }
 
     // 清除预览效果
@@ -707,11 +728,11 @@ export class ModalManager {
 
     window.appState.setCurrentTheme(currentTheme);
     window.themeManager?.renderGroups(currentTheme);
-    
+
     // 触发主题修改状态检测
     window.themeManager?.handleThemeChange();
-    
-    this.hideModal('addRuleModal');
+
+    this.hideModal("addRuleModal");
   }
 
   /**
@@ -719,14 +740,14 @@ export class ModalManager {
    */
   showAddGroupModal() {
     this.resetAddGroupModalState();
-    this.showModal('addGroupModal');
+    this.showModal("addGroupModal");
   }
 
   /**
    * 隐藏添加组模态框
    */
   hideAddGroupModal() {
-    this.hideModal('addGroupModal');
+    this.hideModal("addGroupModal");
   }
 
   /**
@@ -737,14 +758,14 @@ export class ModalManager {
     this.currentGroupId = groupId;
     this.currentRuleIndex = null;
     this.resetAddRuleModalState();
-    this.showModal('addRuleModal');
+    this.showModal("addRuleModal");
   }
 
   /**
    * 隐藏添加规则模态框
    */
   hideAddRuleModal() {
-    this.hideModal('addRuleModal');
+    this.hideModal("addRuleModal");
   }
 
   /**
@@ -774,12 +795,12 @@ export class ModalManager {
     this.resetAddRuleModalState();
 
     // 填充现有数据
-    const selectorInput = document.getElementById('cssSelector');
-    const modalTitle = document.querySelector('#addRuleModal .modal-title');
-    const confirmBtn = document.getElementById('confirmAddRule');
+    const selectorInput = document.getElementById("cssSelector");
+    const modalTitle = document.querySelector("#addRuleModal .modal-title");
+    const confirmBtn = document.getElementById("confirmAddRule");
 
-    if (modalTitle) modalTitle.textContent = '编辑CSS规则';
-    if (confirmBtn) confirmBtn.textContent = '保存修改';
+    if (modalTitle) modalTitle.textContent = "编辑CSS规则";
+    if (confirmBtn) confirmBtn.textContent = "保存修改";
     if (selectorInput) selectorInput.value = rule.selector;
 
     // 填充CSS属性
@@ -795,26 +816,31 @@ export class ModalManager {
         }
 
         // 添加属性编辑器
-        this.addPropertyEditor(prop, propertyConfig || { type: 'text', name: prop });
+        this.addPropertyEditor(
+          prop,
+          propertyConfig || { type: "text", name: prop }
+        );
 
         // 设置属性值
-        const propertyInput = document.querySelector(`[data-property="${prop}"]`);
+        const propertyInput = document.querySelector(
+          `[data-property="${prop}"]`
+        );
         if (propertyInput) {
           propertyInput.value = value;
         }
       });
     }
 
-    this.showModal('addRuleModal');
+    this.showModal("addRuleModal");
   }
 
   /**
    * 重置添加组模态框状态
    */
   resetAddGroupModalState() {
-    const groupNameInput = document.getElementById('groupName');
+    const groupNameInput = document.getElementById("groupName");
     if (groupNameInput) {
-      groupNameInput.value = '';
+      groupNameInput.value = "";
     }
   }
 
@@ -822,32 +848,32 @@ export class ModalManager {
    * 重置添加规则模态框状态
    */
   resetAddRuleModalState() {
-    const selectorInput = document.getElementById('cssSelector');
-    const propertiesContainer = document.getElementById('cssProperties');
-    const indicator = document.getElementById('selectorStatusIndicator');
-    const suggestions = document.getElementById('selectorSuggestions');
-    const modalTitle = document.querySelector('#addRuleModal .modal-title');
-    const confirmBtn = document.getElementById('confirmAddRule');
+    const selectorInput = document.getElementById("cssSelector");
+    const propertiesContainer = document.getElementById("cssProperties");
+    const indicator = document.getElementById("selectorStatusIndicator");
+    const suggestions = document.getElementById("selectorSuggestions");
+    const modalTitle = document.querySelector("#addRuleModal .modal-title");
+    const confirmBtn = document.getElementById("confirmAddRule");
 
-    if (selectorInput) selectorInput.value = '';
-    if (propertiesContainer) propertiesContainer.innerHTML = '';
-    if (modalTitle) modalTitle.textContent = '添加CSS规则';
-    if (confirmBtn) confirmBtn.textContent = '添加规则';
-    
-    if (indicator) indicator.className = 'selector-status-indicator';
+    if (selectorInput) selectorInput.value = "";
+    if (propertiesContainer) propertiesContainer.innerHTML = "";
+    if (modalTitle) modalTitle.textContent = "添加CSS规则";
+    if (confirmBtn) confirmBtn.textContent = "添加规则";
+
+    if (indicator) indicator.className = "selector-status-indicator";
     if (suggestions) {
       // 添加隐藏动画
-      if (suggestions.classList.contains('show')) {
-        suggestions.className = 'selector-suggestions hide';
+      if (suggestions.classList.contains("show")) {
+        suggestions.className = "selector-suggestions hide";
         setTimeout(() => {
-          suggestions.textContent = '';
-          suggestions.className = 'selector-suggestions';
-          suggestions.style.display = 'none';
+          suggestions.textContent = "";
+          suggestions.className = "selector-suggestions";
+          suggestions.style.display = "none";
         }, 200); // 等待动画完成
       } else {
-        suggestions.textContent = '';
-        suggestions.className = 'selector-suggestions';
-        suggestions.style.display = 'none';
+        suggestions.textContent = "";
+        suggestions.className = "selector-suggestions";
+        suggestions.style.display = "none";
       }
     }
   }
@@ -867,22 +893,24 @@ export class ModalManager {
    */
   openBackgroundHelper() {
     // 先关闭属性选择模态框
-    this.hideModal('propertySelectModal', true);
-    
+    this.hideModal("propertySelectModal", true);
+
     // 获取当前已有的背景相关样式
     const currentStyles = this.getCurrentBackgroundStyles();
-    
+
     // 导入背景助手并显示
-    import('../components/background-helper.js').then(({ backgroundHelper }) => {
-      backgroundHelper.show(currentStyles, (appliedStyles) => {
-        console.log('++++ appliedStyles', appliedStyles);
-        
-        this.applyBackgroundStyles(appliedStyles);
+    import("../components/background-helper.js")
+      .then(({ backgroundHelper }) => {
+        backgroundHelper.show(currentStyles, (appliedStyles) => {
+          console.log("++++ appliedStyles", appliedStyles);
+
+          this.applyBackgroundStyles(appliedStyles);
+        });
+      })
+      .catch((error) => {
+        console.error("加载背景助手失败:", error);
+        Utils.showToast("背景助手加载失败", "error");
       });
-    }).catch(error => {
-      console.error('加载背景助手失败:', error);
-      Utils.showToast('背景助手加载失败', 'error');
-    });
   }
 
   /**
@@ -891,26 +919,32 @@ export class ModalManager {
    */
   getCurrentBackgroundStyles() {
     const styles = {};
-    const container = document.getElementById('cssProperties');
+    const container = document.getElementById("cssProperties");
     if (!container) return styles;
-    
+
     // 收集所有背景相关的属性
     const backgroundProperties = [
-      'background-color', 'background-image', 'background-size',
-      'background-position', 'background-repeat', 'background-attachment',
-      'background-clip', 'background-origin', 'background-blend-mode'
+      "background-color",
+      "background-image",
+      "background-size",
+      "background-position",
+      "background-repeat",
+      "background-attachment",
+      "background-clip",
+      "background-origin",
+      "background-blend-mode",
     ];
-    
-    container.querySelectorAll('.css-property-item').forEach(item => {
+
+    container.querySelectorAll(".css-property-item").forEach((item) => {
       const property = item.dataset.property;
       if (backgroundProperties.includes(property)) {
-        const valueInput = item.querySelector('.property-value');
+        const valueInput = item.querySelector(".property-value");
         if (valueInput && valueInput.value.trim()) {
           styles[property] = valueInput.value.trim();
         }
       }
     });
-    
+
     return styles;
   }
 
@@ -922,19 +956,23 @@ export class ModalManager {
     Object.entries(styles).forEach(([property, value]) => {
       if (value && value.trim()) {
         // 查找现有的属性编辑器
-        const container = document.getElementById('cssProperties');
-        let existingEditor = container?.querySelector(`[data-property="${property}"]`);
-        console.log('-----1 existingEditor', existingEditor);
-        
+        const container = document.getElementById("cssProperties");
+        let existingEditor = container?.querySelector(
+          `[data-property="${property}"]`
+        );
+        console.log("-----1 existingEditor", existingEditor);
+
         if (existingEditor) {
           // 更新现有编辑器的值
-          const valueInput = existingEditor.querySelector('.property-value');
-        console.log('-----2 valueInput', valueInput);
+          const valueInput = existingEditor.querySelector(".property-value");
+          console.log("-----2 valueInput", valueInput);
 
           if (valueInput) {
             valueInput.value = value;
             // 触发输入事件以更新状态
-            valueInput.dispatchEvent(new Event('input', { bubbles: true }));
+            valueInput.dispatchEvent(new Event("input", { bubbles: true }));
+            // 立即应用预览效果
+            this.previewStyle(property, value);
           }
         } else {
           // 添加新的属性编辑器
@@ -942,21 +980,25 @@ export class ModalManager {
           if (config) {
             this.addPropertyEditor(property, config);
             // 设置值 - 现在可以立即获取到元素
-            const newEditor = container?.querySelector(`[data-property="${property}"]`);
-            const valueInput = newEditor?.querySelector('.property-value');
+            const newEditor = container?.querySelector(
+              `[data-property="${property}"]`
+            );
+            const valueInput = newEditor?.querySelector(".property-value");
             if (valueInput) {
               valueInput.value = value;
-              valueInput.dispatchEvent(new Event('input', { bubbles: true }));
+              valueInput.dispatchEvent(new Event("input", { bubbles: true }));
+              // 立即应用预览效果
+              this.previewStyle(property, value);
             }
           }
         }
       }
     });
-    
+
     // 检测修改并更新按钮状态
     window.themeManager?.handleThemeChange();
-    
-    Utils.showToast('背景样式已应用', 'success');
+
+    Utils.showToast("背景样式已应用", "success");
   }
 
   /**
