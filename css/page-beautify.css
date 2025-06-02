@@ -1577,6 +1577,37 @@ body {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
+  line-height: 1.5;
+  vertical-align: middle;
+}
+
+/* 通用select样式 - 确保所有select元素都垂直居中 */
+select.form-input,
+select.form-select,
+.form-select {
+  display: flex;
+  align-items: center;
+  line-height: 1.5;
+  vertical-align: middle;
+  text-align: left;
+}
+
+/* datalist样式优化 */
+input[list]::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
+
+input[list] {
+  position: relative;
+}
+
+/* 为combo类型的输入框添加下拉箭头指示 */
+input[list].property-value {
+  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 0.75rem;
+  padding-right: 1.5rem;
 }
 
 .css-property-item .property-name {

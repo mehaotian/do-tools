@@ -2267,6 +2267,16 @@ export class ThemeManager {
             .join('')}
         </select>`;
         break;
+      case 'combo':
+        const datalistId = `datalist-${property}-${Date.now()}`;
+        inputHtml = `<input type="text" class="form-input property-value" ${dataAttributes} 
+                     placeholder="输入${config.name}或选择预设值" list="${datalistId}">
+                     <datalist id="${datalistId}">
+                       ${config.options
+                         .map((option) => `<option value="${option}">${option}</option>`)
+                         .join('')}
+                     </datalist>`;
+        break;
       default:
         inputHtml = `<input type="text" class="form-input property-value" ${dataAttributes} placeholder="输入${config.name}">`;
     }
