@@ -1193,11 +1193,12 @@ export class ThemeManager {
         await this.appState.setAppliedThemeId(themeData.id);
         
         const success = await chromeApi.applyTheme(themeData);
-        if (!success) {
-          throw new Error('主题应用失败');
+        if (success) {
+          Utils.showToast(`主题 "${themeData.name}" 导入成功并已应用`, 'success');
+        } else {
+          // 应用失败但不抛出错误，可能是URL不匹配导致的
+          Utils.showToast(`主题 "${themeData.name}" 导入成功，但当前页面不适用`, 'warning');
         }
-        
-        Utils.showToast(`主题 "${themeData.name}" 导入成功并已应用`, 'success');
       } else {
         // URL不匹配，不应用主题但显示导入成功
         Utils.showToast(`主题 "${themeData.name}" 导入成功${urlMatchMessage}`, 'success');
@@ -1530,6 +1531,20 @@ export class ThemeManager {
   createGroupCard(group) {
     const card = document.createElement('div');
     card.className = 'group-card';
+    
+    // 检查当前主题是否为预制主题
+    const currentTheme = this.appState.getCurrentTheme();
+    const isPresetTheme = currentTheme && currentTheme.originalId && this.appState.getPresetThemes().some(t => t.id === currentTheme.originalId);
+    
+    // 根据是否为预制主题决定是否显示编辑按钮
+    const actionButtons = isPresetTheme ? '' : `
+      <button class="btn btn-sm btn-outline" data-action="add-rule" data-group-id="${
+        group.id
+      }">添加规则</button>
+      <button class="btn btn-sm btn-outline" data-action="delete-group" data-group-id="${
+        group.id
+      }">删除组</button>`;
+    
     card.innerHTML = `
       <div class="group-header" data-group-id="${group.id}">
         <div>
@@ -1537,18 +1552,13 @@ export class ThemeManager {
           <div class="group-description">${Utils.escapeHtml(group.description || '')}</div>
         </div>
         <div class="group-actions">
-          <button class="btn btn-sm btn-outline" data-action="add-rule" data-group-id="${
-            group.id
-          }">添加规则</button>
-          <button class="btn btn-sm btn-outline" data-action="delete-group" data-group-id="${
-            group.id
-          }">删除组</button>
+          ${actionButtons}
           <span class="group-toggle">▼</span>
         </div>
       </div>
       <div class="group-content" id="group-content-${group.id}">
         <div class="css-rules-list" id="rules-list-${group.id}">
-          ${this.renderCSSRules(group.rules, group.id)}
+          ${this.renderCSSRules(group.rules, group.id, isPresetTheme)}
         </div>
       </div>
     `;
@@ -1563,11 +1573,13 @@ export class ThemeManager {
    * 渲染CSS规则
    * @param {Array} rules - CSS规则数组
    * @param {string} groupId - 组ID
+   * @param {boolean} isPresetTheme - 是否为预制主题
    * @returns {string} 规则HTML字符串
    */
-  renderCSSRules(rules, groupId) {
+  renderCSSRules(rules, groupId, isPresetTheme = false) {
     if (!rules || rules.length === 0) {
-      return '<div class="empty-rules">暂无CSS规则，点击"添加规则"开始添加</div>';
+      const emptyMessage = isPresetTheme ? '暂无CSS规则' : '暂无CSS规则，点击"添加规则"开始添加';
+      return `<div class="empty-rules">${emptyMessage}</div>`;
     }
 
     return rules.map((rule, index) => {
@@ -1591,6 +1603,25 @@ export class ThemeManager {
         })
         .join('');
 
+      // 根据是否为预制主题决定是否显示编辑按钮
+      const ruleActions = isPresetTheme ? '' : `
+        <div class="css-rule-actions">
+          <button class="btn-icon edit-rule-btn" title="修改规则" data-rule-index="${index}" data-group-id="${groupId}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="btn-icon delete-rule-btn" title="删除规则" data-rule-index="${index}" data-group-id="${groupId}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3,6 5,6 21,6"></polyline>
+              <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+        </div>`;
+      
       return `
         <div class="css-rule-item" data-rule-selector="${Utils.escapeHtml(rule.selector)}" data-rule-index="${index}" data-group-id="${groupId}">
           <div class="css-rule-header">
@@ -1598,22 +1629,7 @@ export class ThemeManager {
               <span class="selector-text">${Utils.escapeHtml(rule.selector)}</span>
               <span class="selector-status" data-status="unknown">●</span>
             </div>
-            <div class="css-rule-actions">
-              <button class="btn-icon edit-rule-btn" title="修改规则" data-rule-index="${index}" data-group-id="${groupId}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-              </button>
-              <button class="btn-icon delete-rule-btn" title="删除规则" data-rule-index="${index}" data-group-id="${groupId}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3,6 5,6 21,6"></polyline>
-                  <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
-                  <line x1="10" y1="11" x2="10" y2="17"></line>
-                  <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
-              </button>
-            </div>
+            ${ruleActions}
           </div>
           <div class="css-rule-properties">
             ${propertiesHtml}
@@ -2799,22 +2815,29 @@ export class ThemeManager {
     // 清空现有内容
     container.innerHTML = '';
 
+    // 检查是否为预制主题
+    const isPresetTheme = theme.originalId && this.appState.getPresetThemes().some(t => t.id === theme.originalId);
+
     // 获取URL模式列表
     const urlPatterns = theme.urlPatterns || [];
 
     if (urlPatterns.length === 0) {
-      // 显示空状态
+      // 根据主题类型显示不同的空状态提示
+      const emptyMessage = isPresetTheme ? 
+        '<small>此预制主题暂无配置网站</small>' : 
+        '<small>点击下方按钮添加适用的网站</small>';
+      
       container.innerHTML = `
         <div class="url-pattern-empty">
           <div class="empty-icon">🌐</div>
           <p>暂无配置网站</p>
-          <small>点击下方按钮添加适用的网站</small>
+          ${emptyMessage}
         </div>
       `;
     } else {
       // 渲染URL模式列表
       urlPatterns.forEach((urlPattern, index) => {
-        const patternItem = this.createUrlPatternItem(urlPattern, index);
+        const patternItem = this.createUrlPatternItem(urlPattern, index, isPresetTheme);
         container.appendChild(patternItem);
       });
     }
@@ -2826,27 +2849,36 @@ export class ThemeManager {
    * 创建URL模式项
    * @param {Object} urlPattern - URL模式数据
    * @param {number} index - 索引
+   * @param {boolean} isPresetTheme - 是否为预制主题
    * @returns {HTMLElement} URL模式项元素
    */
-  createUrlPatternItem(urlPattern, index) {
+  createUrlPatternItem(urlPattern, index, isPresetTheme = false) {
     const item = document.createElement('div');
     item.className = `url-pattern-item ${urlPattern.enabled ? '' : 'disabled'}`;
     item.dataset.index = index;
 
+    // 根据是否为预制主题决定是否显示删除按钮和禁用编辑
+    const removeButton = isPresetTheme ? '' : `
+      <button type="button" class="url-pattern-remove" 
+              data-index="${index}" title="删除此模式">×</button>`;
+    
+    const inputReadonly = isPresetTheme ? 'readonly' : '';
+    const selectDisabled = isPresetTheme ? 'disabled' : '';
+    const toggleDisabled = isPresetTheme ? 'style="pointer-events: none; opacity: 0.6;"' : '';
+
     item.innerHTML = `
       <div class="url-pattern-toggle ${urlPattern.enabled ? 'enabled' : ''}" 
-           data-index="${index}" title="${urlPattern.enabled ? '禁用' : '启用'}此模式"></div>
+           data-index="${index}" title="${urlPattern.enabled ? '禁用' : '启用'}此模式" ${toggleDisabled}></div>
       <input type="text" class="url-pattern-input" 
              value="${Utils.escapeHtml(urlPattern.pattern || '')}" 
              placeholder="输入网站地址或模式" 
-             data-index="${index}">
-      <select class="url-pattern-type" data-index="${index}">
+             data-index="${index}" ${inputReadonly}>
+      <select class="url-pattern-type" data-index="${index}" ${selectDisabled}>
         <option value="wildcard" ${urlPattern.type === 'wildcard' ? 'selected' : ''}>通配符</option>
         <option value="exact" ${urlPattern.type === 'exact' ? 'selected' : ''}>精确匹配</option>
         <option value="regex" ${urlPattern.type === 'regex' ? 'selected' : ''}>正则表达式</option>
       </select>
-      <button type="button" class="url-pattern-remove" 
-              data-index="${index}" title="删除此模式">×</button>
+      ${removeButton}
     `;
 
     // 立即验证URL模式并应用样式
@@ -3370,14 +3402,14 @@ export class ThemeManager {
       }
     }
 
-    // 禁用/启用添加组按钮
+    // 隐藏/显示添加组按钮
     const addGroupBtn = document.getElementById('addGroupBtn');
     if (addGroupBtn) {
-      addGroupBtn.disabled = readOnly;
       if (readOnly) {
-        addGroupBtn.style.opacity = '0.6';
-        addGroupBtn.style.cursor = 'not-allowed';
+        addGroupBtn.style.display = 'none';
       } else {
+        addGroupBtn.style.display = '';
+        addGroupBtn.disabled = false;
         addGroupBtn.style.opacity = '';
         addGroupBtn.style.cursor = '';
       }
@@ -3469,20 +3501,31 @@ export class ThemeManager {
        }
      });
 
-    // 禁用/启用URL规则编辑
+    // 隐藏/显示URL规则编辑按钮
     const urlPatternsContainer = document.querySelector('.url-patterns-container');
     if (urlPatternsContainer) {
-      const editableElements = urlPatternsContainer.querySelectorAll('input, button');
-      editableElements.forEach(element => {
-        element.disabled = readOnly;
+      // 隐藏/显示添加按钮
+      const actionButtons = urlPatternsContainer.querySelectorAll('.url-pattern-actions button');
+      actionButtons.forEach(button => {
         if (readOnly) {
-          element.style.opacity = '0.6';
-          element.style.cursor = 'not-allowed';
+          button.style.display = 'none';
         } else {
-          element.style.opacity = '';
-          element.style.cursor = '';
+          button.style.display = '';
+          button.disabled = false;
+          button.style.opacity = '';
+          button.style.cursor = '';
         }
       });
+      
+      // 对于非预制主题，恢复其他元素的正常状态
+      if (!readOnly) {
+        const otherElements = urlPatternsContainer.querySelectorAll('input:not([readonly]), select:not([disabled])');
+        otherElements.forEach(element => {
+          element.disabled = false;
+          element.style.opacity = '';
+          element.style.cursor = '';
+        });
+      }
     }
   }
 }

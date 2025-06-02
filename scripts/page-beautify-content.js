@@ -424,8 +424,22 @@ class PageBeautifyContent {
         case "APPLY_THEME":
           // 统一使用data字段，保持向后兼容
           const themeData = request.data || request.theme;
-          this.applyTheme(themeData);
-          sendResponse({ success: true });
+          
+          // 检查主题是否匹配当前URL
+          const currentUrl = window.location.href;
+          const isUrlMatch = this.isThemeMatchUrl(themeData, currentUrl);
+          console.log('[Content Script] APPLY_THEME URL匹配检查结果:', isUrlMatch, '当前URL:', currentUrl);
+          
+          if (isUrlMatch) {
+            this.applyTheme(themeData);
+            console.log('[Content Script] 主题已应用:', themeData.name || '未命名主题');
+            sendResponse({ success: true });
+          } else {
+            console.log('[Content Script] 主题不匹配当前URL，不应用主题');
+            // 清除现有样式，因为当前页面不应该有这个主题的样式
+            this.resetAllStyles();
+            sendResponse({ success: false, reason: 'URL不匹配' });
+          }
           break;
 
         case "RESET_STYLES":
