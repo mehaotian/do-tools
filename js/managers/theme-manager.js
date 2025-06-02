@@ -2124,12 +2124,7 @@ export class ThemeManager {
         }
 
         // 设置属性值
-        const propertyInput = propertiesContainer.querySelector(
-          `[data-property="${prop}"]`
-        );
-        if (propertyInput) {
-          propertyInput.value = value;
-        }
+        this.setPropertyValue(prop, value, propertyConfig);
       });
     }
 
@@ -2206,6 +2201,144 @@ export class ThemeManager {
   hideModal(modalId, immediate = false) {
     if (window.modalManager) {
       window.modalManager.hideModal(modalId, immediate);
+    }
+  }
+
+  /**
+   * 将CSS颜色值转换为RGB格式
+   * @param {string} colorValue - CSS颜色值
+   * @returns {Object|null} 包含hex和alpha的对象，如果转换失败返回null
+   */
+  convertColorToRgb(colorValue) {
+    try {
+      // 创建一个临时元素来利用浏览器的颜色解析能力
+      const tempElement = document.createElement('div');
+      tempElement.style.color = colorValue;
+      document.body.appendChild(tempElement);
+      
+      // 获取计算后的颜色值
+      const computedColor = window.getComputedStyle(tempElement).color;
+      document.body.removeChild(tempElement);
+      
+      if (computedColor && computedColor !== 'rgba(0, 0, 0, 0)') {
+        // 解析rgb或rgba值
+        const rgbaMatch = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (rgbaMatch) {
+          const [, r, g, b, a] = rgbaMatch;
+          const hex = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+          const alpha = a !== undefined ? parseFloat(a) : 1;
+          return { hex, alpha };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('颜色转换失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 设置属性值
+   * @param {string} property - CSS属性名
+   * @param {string} value - 属性值
+   * @param {Object} config - 属性配置
+   */
+  setPropertyValue(property, value, config) {
+    const propertiesContainer = document.getElementById('cssProperties');
+    if (!propertiesContainer || !value) return;
+
+    const propertyEditor = propertiesContainer.querySelector(`[data-property="${property}"]`);
+    if (!propertyEditor) return;
+
+    if (config && config.type === 'color') {
+      // 处理颜色类型的特殊设置
+      const colorPicker = propertyEditor.querySelector('.color-picker');
+      const alphaSlider = propertyEditor.querySelector('.alpha-slider');
+      const alphaValue = propertyEditor.querySelector('.alpha-value');
+      const hiddenInput = propertyEditor.querySelector('.rgba-value');
+      
+      let hexColor = '#ffffff';
+      let alpha = 1;
+      
+      console.log(`设置颜色属性 ${property}:`, value); // 调试日志
+      
+      if (value) {
+        if (value === 'transparent') {
+          // 处理transparent值
+          hexColor = '#000000';
+          alpha = 0;
+        } else if (value.startsWith('rgba(')) {
+          const rgbaMatch = value.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+          if (rgbaMatch) {
+            const [, r, g, b, a] = rgbaMatch;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            alpha = parseFloat(a);
+          }
+        } else if (value.startsWith('rgb(')) {
+          const rgbMatch = value.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+          if (rgbMatch) {
+            const [, r, g, b] = rgbMatch;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            alpha = 1;
+          }
+        } else if (value.startsWith('#')) {
+          // 处理十六进制颜色值
+          if (value.length === 4) {
+            // 3位格式转6位格式
+            hexColor = `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`;
+          } else {
+            hexColor = value;
+          }
+          alpha = 1;
+        } else {
+          // 处理CSS颜色名称或其他格式
+          // 对于无法解析的颜色值，尝试转换为RGB
+          const convertedColor = this.convertColorToRgb(value);
+          if (convertedColor) {
+            hexColor = convertedColor.hex;
+            alpha = convertedColor.alpha;
+          } else {
+            // 如果无法转换，保持原值不变，不设置颜色选择器
+            console.warn(`无法解析颜色值: ${value}，将保持原值`);
+            // 直接设置到隐藏输入框，不修改颜色选择器
+            if (hiddenInput) {
+              hiddenInput.value = value;
+            }
+            return;
+          }
+        }
+      }
+      
+      // 设置颜色选择器和透明度滑块的值
+      if (colorPicker) colorPicker.value = hexColor;
+      if (alphaSlider) alphaSlider.value = alpha;
+      if (alphaValue) alphaValue.textContent = Math.round(alpha * 100) + '%';
+      if (hiddenInput) {
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+        hiddenInput.value = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+      
+      console.log(`颜色属性设置完成: hex=${hexColor}, alpha=${alpha}`); // 调试日志
+    } else {
+      // 处理其他类型的属性
+      const propertyInput = propertyEditor.querySelector('.property-value');
+      if (propertyInput) {
+        propertyInput.value = value;
+        
+        // 对于select类型，确保选中正确的选项
+        if (config && config.type === 'select') {
+          const options = propertyInput.querySelectorAll('option');
+          for (const option of options) {
+            if (option.value === value) {
+              option.selected = true;
+              break;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -2349,8 +2482,7 @@ export class ThemeManager {
       colorPicker.addEventListener('input', updateRGBA);
       alphaSlider.addEventListener('input', updateRGBA);
       
-      // 初始化RGBA值
-      updateRGBA();
+      // 注意：不在这里初始化RGBA值，由setPropertyValue方法来设置正确的初始值
     } else {
       const propertyInput = editor.querySelector('.property-value');
       propertyInput.addEventListener('input', (e) => {
