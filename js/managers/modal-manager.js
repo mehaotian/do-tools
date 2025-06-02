@@ -529,15 +529,15 @@ export class ModalManager {
         // 检测修改并更新按钮状态
         window.themeManager?.handleThemeChange();
       });
-    }
-
-    // 对于select和combo类型，也要监听change事件
-    if (config.type === "select" || config.type === "combo") {
-      propertyInput.addEventListener("change", (e) => {
-        this.previewStyle(property, e.target.value);
-        // 检测修改并更新按钮状态
-        window.themeManager?.handleThemeChange();
-      });
+      
+      // 对于select和combo类型，也要监听change事件
+      if (config.type === "select" || config.type === "combo") {
+        propertyInput.addEventListener("change", (e) => {
+          this.previewStyle(property, e.target.value);
+          // 检测修改并更新按钮状态
+          window.themeManager?.handleThemeChange();
+        });
+      }
     }
 
     container.appendChild(editor);
@@ -956,6 +956,9 @@ export class ModalManager {
 
     // 获取当前已有的背景相关样式
     const currentStyles = this.getCurrentBackgroundStyles();
+    
+    // 获取当前的CSS选择器
+    const currentSelector = document.getElementById("cssSelector")?.value || 'body';
 
     // 导入背景助手并显示
     import("../components/background-helper.js")
@@ -964,7 +967,7 @@ export class ModalManager {
           console.log("++++ appliedStyles", appliedStyles);
 
           this.applyBackgroundStyles(appliedStyles);
-        });
+        }, currentSelector);
       })
       .catch((error) => {
         console.error("加载背景助手失败:", error);
@@ -1087,7 +1090,13 @@ export class ModalManager {
     let alpha = 1;
     
     if (value) {
-      if (value.startsWith('rgba(')) {
+      if (value === 'transparent') {
+        // 处理transparent值，显示为完全透明
+        hexColor = '#000000';
+        alpha = 0;
+        console.log(`解析transparent成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
+        console.log(`hexColor长度检查: ${hexColor.length}`); // 调试hexColor长度
+      } else if (value.startsWith('rgba(')) {
         const rgbaMatch = value.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
         if (rgbaMatch) {
           const [, r, g, b, a] = rgbaMatch;
@@ -1104,7 +1113,13 @@ export class ModalManager {
           console.log(`解析RGB成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
         }
       } else if (value.startsWith('#')) {
-        hexColor = value;
+        // 处理十六进制颜色值，确保是6位格式
+        if (value.length === 4) {
+          // 3位格式转6位格式 (#000 -> #000000)
+          hexColor = `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`;
+        } else {
+          hexColor = value;
+        }
         alpha = 1;
         console.log(`解析HEX成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
       }

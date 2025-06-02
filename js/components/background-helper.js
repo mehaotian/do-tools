@@ -14,6 +14,7 @@ export class BackgroundHelper {
     this.isVisible = false;
     this.currentCallback = null;
     this.currentStyles = {};
+    this.isPreviewActive = false; // 预览状态
     
     this.createHelperModal();
     this.bindEvents();
@@ -59,16 +60,13 @@ export class BackgroundHelper {
             </div>
           </div>
           
-          <!-- 预览区域 -->
+          <!-- 预览提示区域 -->
           <div class="background-preview-section">
             <div class="section-header">
-              <h4>效果预览</h4>
+              <h4>实时预览</h4>
             </div>
-            <div class="background-preview" id="backgroundPreview">
-              <div class="preview-content">
-                <p>这是背景效果预览</p>
-                <p>您可以在这里看到背景样式的实际效果</p>
-              </div>
+            <div class="preview-tip">
+              <p>样式变更将直接在页面上预览，点击"应用"确认更改，点击"取消"恢复之前的样式</p>
             </div>
           </div>
         </div>
@@ -94,7 +92,7 @@ export class BackgroundHelper {
     
     // 取消按钮
     this.modal.querySelector('#cancelBackgroundHelper').addEventListener('click', () => {
-      this.hide();
+      this.cancelPreview();
     });
     
     // 应用按钮
@@ -125,14 +123,16 @@ export class BackgroundHelper {
    * 显示背景助手
    * @param {Object} currentStyles - 当前样式
    * @param {Function} callback - 应用样式的回调函数
+   * @param {string} selector - CSS选择器
    */
-  show(currentStyles = {}, callback = null) {
+  show(currentStyles = {}, callback = null, selector = 'body') {
     this.currentStyles = { ...currentStyles };
     this.currentCallback = callback;
+    this.currentSelector = selector; // 保存选择器
+    this.isPreviewActive = false;
     
     this.renderPresets();
     this.renderCustomProperties();
-    this.updatePreview();
     
     // 使用与其他模态框一致的显示方式
     this.modal.style.display = 'flex';
@@ -147,6 +147,9 @@ export class BackgroundHelper {
    * 隐藏背景助手
    */
   hide() {
+    // 清除预览效果
+    this.clearPagePreview();
+    
     // 添加隐藏动画
     this.modal.classList.add('hiding');
     this.modal.classList.remove('show');
@@ -307,7 +310,12 @@ export class BackgroundHelper {
       console.log(`解析颜色属性 ${property}:`, currentValue); // 调试日志
       
       if (currentValue) {
-        if (currentValue.startsWith('rgba(')) {
+        if (currentValue === 'transparent') {
+          // 处理transparent值，显示为完全透明
+          hexColor = '#000000';
+          alpha = 0;
+          console.log(`解析transparent成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
+        } else if (currentValue.startsWith('rgba(')) {
           const rgbaMatch = currentValue.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
           if (rgbaMatch) {
             const [, r, g, b, a] = rgbaMatch;
@@ -324,7 +332,13 @@ export class BackgroundHelper {
             console.log(`解析RGB成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
           }
         } else if (currentValue.startsWith('#')) {
-          hexColor = currentValue;
+          // 处理十六进制颜色值，确保是6位格式
+          if (currentValue.length === 4) {
+            // 3位格式转6位格式 (#000 -> #000000)
+            hexColor = `#${currentValue[1]}${currentValue[1]}${currentValue[2]}${currentValue[2]}${currentValue[3]}${currentValue[3]}`;
+          } else {
+            hexColor = currentValue;
+          }
           alpha = 1;
           console.log(`解析HEX成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
         }
@@ -423,7 +437,8 @@ export class BackgroundHelper {
       delete this.currentStyles[property];
     }
     
-    this.updatePreview();
+    // 直接预览到页面
+    this.previewToPage();
   }
 
   /**
@@ -438,8 +453,8 @@ export class BackgroundHelper {
     // 重新渲染属性编辑器以显示新值
     this.renderCustomProperties();
     
-    // 更新预览
-    this.updatePreview();
+    // 直接预览到页面
+    this.previewToPage();
     
     // 高亮选中的预设
     this.modal.querySelectorAll('.preset-item').forEach(item => {
@@ -460,16 +475,81 @@ export class BackgroundHelper {
   resetStyles() {
     this.currentStyles = {};
     this.renderCustomProperties();
-    this.updatePreview();
+    // 直接预览到页面
+    this.previewToPage();
   }
 
   /**
-   * 更新预览
+   * 预览样式到页面
    */
-  updatePreview() {
-    const preview = this.modal.querySelector('#backgroundPreview');
-    const cssText = this.stylesToCss(this.currentStyles);
-    preview.style.cssText = cssText;
+  async previewToPage() {
+    // 清除之前的预览（不重置预览状态）
+    await this.clearPagePreview(false);
+    
+    // 设置预览状态
+    this.isPreviewActive = true;
+    
+    // 应用新的预览样式
+    for (const [property, value] of Object.entries(this.currentStyles)) {
+      if (value && value.trim()) {
+        try {
+          await this.previewStyle(this.currentSelector || 'body', property, value);
+        } catch (error) {
+          console.warn(`预览样式失败 ${property}: ${value}`, error);
+        }
+      }
+    }
+  }
+  
+  /**
+   * 预览单个样式属性
+   * @param {string} selector - CSS选择器
+   * @param {string} property - CSS属性名
+   * @param {string} value - CSS属性值
+   */
+  async previewStyle(selector, property, value) {
+    // 导入Chrome API服务
+    const { chromeApi } = await import('../services/chrome-api.js');
+    return await chromeApi.previewStyle(selector, property, value);
+  }
+  
+  /**
+   * 清除页面预览效果
+   * @param {boolean} resetState - 是否重置预览状态，默认为true
+   */
+  async clearPagePreview(resetState = true) {
+    if (!this.isPreviewActive && resetState) {
+      return;
+    }
+    
+    try {
+      // 导入Chrome API服务
+      const { chromeApi } = await import('../services/chrome-api.js');
+      await chromeApi.clearAllPreview();
+      if (resetState) {
+        this.isPreviewActive = false;
+      }
+    } catch (error) {
+      console.warn('清除预览效果失败:', error);
+    }
+  }
+  
+  /**
+   * 取消预览
+   */
+  async cancelPreview() {
+    // 清除预览效果
+    await this.clearPagePreview();
+    
+    // 重新应用当前主题以恢复之前的状态
+    setTimeout(() => {
+      if (window.themeManager) {
+        window.themeManager.applyCurrentTheme();
+      }
+    }, 100);
+    
+    // 关闭模态框
+    this.hide();
   }
 
   /**
@@ -523,12 +603,19 @@ export class BackgroundHelper {
    * 应用样式
    */
   applyStyles() {
+    console.log("应用样式:", this.currentStyles);
+    
     if (this.currentCallback) {
-      console.log('----应用的样式:', this.currentStyles); // 调试日志
-      
       this.currentCallback(this.currentStyles);
     }
-    this.hide();
+    
+    // 直接关闭窗口，不清理样式
+    this.modal.style.display = 'none';
+    this.modal.classList.remove('show');
+    this.isVisible = false;
+    
+    // 恢复页面滚动
+    document.body.style.overflow = '';
   }
 }
 
