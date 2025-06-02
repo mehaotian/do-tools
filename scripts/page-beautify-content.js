@@ -78,66 +78,53 @@ class PageBeautifyContent {
     this.appliedStyles = new Map();
     // 存储预览样式的映射：selector -> { property -> originalValue }
     this.previewStyles = new Map();
-    // 存储页面真正的原始状态（在任何主题应用之前）
+    // 存储页面真正的原始状态（按需记录）
     this.originalPageState = new Map();
-    // 标记是否已经记录了原始状态
-    this.hasRecordedOriginalState = false;
     this.init();
   }
 
   async init() {
     console.log("页面美化内容脚本初始化完成");
     
-    // 首先记录页面的真正原始状态
-    this.recordOriginalPageState();
-    
-    // 然后自动加载并应用保存的主题
+    // 自动加载并应用保存的主题（按需记录原始状态）
     await this.loadAndApplyStoredTheme();
   }
 
   /**
-   * 记录页面的真正原始状态
-   * 在任何主题应用之前调用，确保记录的是未被修改的原始状态
+   * 记录特定元素的原始状态
+   * 按需记录，只在实际需要应用样式时才记录相关元素的原始状态
+   * @param {Element} element - 需要记录原始状态的元素
+   * @param {Array} properties - 需要记录的CSS属性列表
    */
-  recordOriginalPageState() {
-    if (this.hasRecordedOriginalState) {
-      return; // 避免重复记录
+  recordElementOriginalState(element, properties) {
+    if (!element || this.originalPageState.has(element)) {
+      return; // 元素无效或已记录过
     }
     
-    console.log('[Content Script] 开始记录页面原始状态');
+    const computedStyle = getComputedStyle(element);
+    const elementOriginalStyles = new Map();
     
-    // 获取所有可能被主题修改的元素
-    const allElements = document.querySelectorAll('*');
-    
-    allElements.forEach(element => {
-      const computedStyle = getComputedStyle(element);
-      const elementOriginalStyles = new Map();
-      
-      // 记录常用的CSS属性的原始值
-      const commonProperties = [
-        'color', 'background-color', 'background-image', 'background',
-        'border', 'border-color', 'border-width', 'border-style',
-        'font-size', 'font-weight', 'font-family', 'line-height',
-        'margin', 'padding', 'width', 'height', 'display',
-        'position', 'top', 'left', 'right', 'bottom',
-        'opacity', 'visibility', 'z-index', 'transform',
-        'box-shadow', 'text-shadow', 'border-radius'
-      ];
-      
-      commonProperties.forEach(property => {
-        const value = computedStyle.getPropertyValue(property);
-        if (value) {
-          elementOriginalStyles.set(property, value);
-        }
-      });
-      
-      if (elementOriginalStyles.size > 0) {
-        this.originalPageState.set(element, elementOriginalStyles);
+    properties.forEach(property => {
+      const value = computedStyle.getPropertyValue(property);
+      if (value) {
+        elementOriginalStyles.set(property, value);
       }
     });
     
-    this.hasRecordedOriginalState = true;
-    console.log(`[Content Script] 页面原始状态记录完成，记录了 ${this.originalPageState.size} 个元素的样式`);
+    if (elementOriginalStyles.size > 0) {
+      this.originalPageState.set(element, elementOriginalStyles);
+    }
+  }
+
+  /**
+   * 批量记录元素的原始状态
+   * @param {NodeList|Array} elements - 元素列表
+   * @param {Array} properties - 需要记录的CSS属性列表
+   */
+  recordElementsOriginalState(elements, properties) {
+    elements.forEach(element => {
+      this.recordElementOriginalState(element, properties);
+    });
   }
 
   /**
@@ -312,10 +299,8 @@ class PageBeautifyContent {
       // 清除当前应用的样式
       this.clearAllStyles();
       
-      // 重新记录页面原始状态（因为URL变化可能导致页面内容变化）
-      this.hasRecordedOriginalState = false;
+      // 清除原始状态记录（因为URL变化可能导致页面内容变化）
       this.originalPageState.clear();
-      this.recordOriginalPageState();
       
       // 重新加载并应用匹配的主题
       await this.loadAndApplyStoredTheme();
@@ -536,9 +521,13 @@ class PageBeautifyContent {
 
     try {
       const elements = document.querySelectorAll(rule.selector);
+      const properties = Object.keys(rule.properties);
+      
+      // 先记录这些元素的原始状态（按需记录）
+      this.recordElementsOriginalState(elements, properties);
 
       elements.forEach((element) => {
-        // 保存原始样式
+        // 保存原始样式到appliedStyles（用于重置）
         if (!this.appliedStyles.has(element)) {
           this.appliedStyles.set(element, new Map());
         }
@@ -551,11 +540,10 @@ class PageBeautifyContent {
             let originalValue = '';
             
             // 优先从记录的原始页面状态中获取真正的原始值
-            if (this.hasRecordedOriginalState && this.originalPageState.has(element)) {
+            if (this.originalPageState.has(element)) {
               const elementOriginalStyles = this.originalPageState.get(element);
               if (elementOriginalStyles.has(property)) {
                 originalValue = elementOriginalStyles.get(property);
-                console.log(`[Content Script] 使用记录的原始值 ${property}: ${originalValue}`);
               }
             }
             
@@ -564,7 +552,6 @@ class PageBeautifyContent {
               originalValue =
                 element.style.getPropertyValue(property) ||
                 getComputedStyle(element).getPropertyValue(property);
-              console.log(`[Content Script] 使用当前值作为原始值 ${property}: ${originalValue}`);
             }
             
             elementStyles.set(property, originalValue);
@@ -587,18 +574,17 @@ class PageBeautifyContent {
   resetAllStyles() {
     console.log('[Content Script] 开始重置所有样式到原始状态');
     
-    // 优先使用真正的原始状态进行恢复
-    if (this.hasRecordedOriginalState && this.originalPageState.size > 0) {
+    // 首先清除所有内联样式
+    this.appliedStyles.forEach((elementStyles, element) => {
+      elementStyles.forEach((originalValue, property) => {
+        element.style.removeProperty(property);
+      });
+    });
+    
+    // 然后恢复到真正的原始状态（如果有记录的话）
+    if (this.originalPageState.size > 0) {
       console.log('[Content Script] 使用记录的原始页面状态进行恢复');
       
-      // 首先清除所有内联样式
-      this.appliedStyles.forEach((elementStyles, element) => {
-        elementStyles.forEach((originalValue, property) => {
-          element.style.removeProperty(property);
-        });
-      });
-      
-      // 然后恢复到真正的原始状态
       this.originalPageState.forEach((elementStyles, element) => {
         // 检查元素是否还在DOM中
         if (document.contains(element)) {
@@ -612,17 +598,7 @@ class PageBeautifyContent {
       
       console.log('[Content Script] 已恢复到页面原始状态');
     } else {
-      // 回退到旧的恢复方式
-      console.log('[Content Script] 使用appliedStyles进行恢复（回退方式）');
-      this.appliedStyles.forEach((elementStyles, element) => {
-        elementStyles.forEach((originalValue, property) => {
-          if (originalValue) {
-            element.style.setProperty(property, originalValue);
-          } else {
-            element.style.removeProperty(property);
-          }
-        });
-      });
+      console.log('[Content Script] 没有记录的原始状态，仅清除了内联样式');
     }
 
     this.appliedStyles.clear();

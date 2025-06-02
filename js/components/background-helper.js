@@ -422,6 +422,8 @@ export class BackgroundHelper {
    */
   applyStyles() {
     if (this.currentCallback) {
+      console.log('----应用的样式:', this.currentStyles); // 调试日志
+      
       this.currentCallback(this.currentStyles);
     }
     this.hide();

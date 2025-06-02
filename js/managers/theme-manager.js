@@ -2227,6 +2227,7 @@ export class ThemeManager {
 
     const editor = document.createElement('div');
     editor.className = 'css-property-item';
+    editor.setAttribute('data-property', property);
 
     // 获取当前编辑的规则信息
     const currentSelector = document.getElementById('cssSelector')?.value || '';
@@ -2285,6 +2286,7 @@ export class ThemeManager {
         <div class="property-name-cn">${chineseName}</div>
         <div class="property-name-en">${property}</div>
       </div>
+      <input type="hidden" readonly value="${property}" class="property-name-input">
       ${inputHtml}
       <button type="button" class="property-remove">×</button>
     `;
@@ -2494,13 +2496,17 @@ export class ThemeManager {
    * 添加或更新CSS规则
    */
   addCSSRule() {
-    const selector = document.getElementById('cssSelector').value;
+    const selectorElement = document.getElementById('cssSelector');
+    const selector = selectorElement?.value || '';
     const properties = {};
 
     // 收集属性
     document.querySelectorAll('.css-property-item').forEach((editor) => {
-      const propertyName = editor.querySelector('input[readonly]').value;
-      const propertyValue = editor.querySelector('.property-value').value;
+      const propertyNameElement = editor.querySelector('.property-name-input');
+      const propertyValueElement = editor.querySelector('.property-value');
+      
+      const propertyName = propertyNameElement?.value;
+      const propertyValue = propertyValueElement?.value;
 
       if (propertyName && propertyValue) {
         properties[propertyName] = propertyValue;

@@ -410,6 +410,7 @@ export class ModalManager {
 
     const editor = document.createElement('div');
     editor.className = 'css-property-item';
+    editor.setAttribute('data-property', property);
     
     let inputHtml = '';
     switch (config.type) {
@@ -444,6 +445,7 @@ export class ModalManager {
         <div class="property-name-cn">${chineseName}</div>
         <div class="property-name-en">${property}</div>
       </div>
+      <input type="hidden" readonly value="${property}" class="property-name-input">
       ${inputHtml}
       <button type="button" class="property-remove">×</button>
     `;
@@ -646,8 +648,11 @@ export class ModalManager {
 
     // 收集属性
     document.querySelectorAll('.css-property-item').forEach(editor => {
-      const propertyName = editor.querySelector('input[readonly]')?.value;
-      const propertyValue = editor.querySelector('.property-value')?.value;
+      const propertyNameElement = editor.querySelector('.property-name-input');
+      const propertyValueElement = editor.querySelector('.property-value');
+      
+      const propertyName = propertyNameElement?.value;
+      const propertyValue = propertyValueElement?.value;
 
       if (propertyName && propertyValue) {
         properties[propertyName] = propertyValue;
@@ -870,6 +875,8 @@ export class ModalManager {
     // 导入背景助手并显示
     import('../components/background-helper.js').then(({ backgroundHelper }) => {
       backgroundHelper.show(currentStyles, (appliedStyles) => {
+        console.log('++++ appliedStyles', appliedStyles);
+        
         this.applyBackgroundStyles(appliedStyles);
       });
     }).catch(error => {
@@ -917,10 +924,13 @@ export class ModalManager {
         // 查找现有的属性编辑器
         const container = document.getElementById('cssProperties');
         let existingEditor = container?.querySelector(`[data-property="${property}"]`);
+        console.log('-----1 existingEditor', existingEditor);
         
         if (existingEditor) {
           // 更新现有编辑器的值
           const valueInput = existingEditor.querySelector('.property-value');
+        console.log('-----2 valueInput', valueInput);
+
           if (valueInput) {
             valueInput.value = value;
             // 触发输入事件以更新状态
@@ -931,15 +941,13 @@ export class ModalManager {
           const config = this.findPropertyConfig(property);
           if (config) {
             this.addPropertyEditor(property, config);
-            // 设置值
-            setTimeout(() => {
-              const newEditor = container?.querySelector(`[data-property="${property}"]`);
-              const valueInput = newEditor?.querySelector('.property-value');
-              if (valueInput) {
-                valueInput.value = value;
-                valueInput.dispatchEvent(new Event('input', { bubbles: true }));
-              }
-            }, 0);
+            // 设置值 - 现在可以立即获取到元素
+            const newEditor = container?.querySelector(`[data-property="${property}"]`);
+            const valueInput = newEditor?.querySelector('.property-value');
+            if (valueInput) {
+              valueInput.value = value;
+              valueInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
           }
         }
       }
