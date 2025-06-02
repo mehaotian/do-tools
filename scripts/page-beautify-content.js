@@ -78,14 +78,66 @@ class PageBeautifyContent {
     this.appliedStyles = new Map();
     // 存储预览样式的映射：selector -> { property -> originalValue }
     this.previewStyles = new Map();
+    // 存储页面真正的原始状态（在任何主题应用之前）
+    this.originalPageState = new Map();
+    // 标记是否已经记录了原始状态
+    this.hasRecordedOriginalState = false;
     this.init();
   }
 
   async init() {
     console.log("页面美化内容脚本初始化完成");
     
-    // 自动加载并应用保存的主题
+    // 首先记录页面的真正原始状态
+    this.recordOriginalPageState();
+    
+    // 然后自动加载并应用保存的主题
     await this.loadAndApplyStoredTheme();
+  }
+
+  /**
+   * 记录页面的真正原始状态
+   * 在任何主题应用之前调用，确保记录的是未被修改的原始状态
+   */
+  recordOriginalPageState() {
+    if (this.hasRecordedOriginalState) {
+      return; // 避免重复记录
+    }
+    
+    console.log('[Content Script] 开始记录页面原始状态');
+    
+    // 获取所有可能被主题修改的元素
+    const allElements = document.querySelectorAll('*');
+    
+    allElements.forEach(element => {
+      const computedStyle = getComputedStyle(element);
+      const elementOriginalStyles = new Map();
+      
+      // 记录常用的CSS属性的原始值
+      const commonProperties = [
+        'color', 'background-color', 'background-image', 'background',
+        'border', 'border-color', 'border-width', 'border-style',
+        'font-size', 'font-weight', 'font-family', 'line-height',
+        'margin', 'padding', 'width', 'height', 'display',
+        'position', 'top', 'left', 'right', 'bottom',
+        'opacity', 'visibility', 'z-index', 'transform',
+        'box-shadow', 'text-shadow', 'border-radius'
+      ];
+      
+      commonProperties.forEach(property => {
+        const value = computedStyle.getPropertyValue(property);
+        if (value) {
+          elementOriginalStyles.set(property, value);
+        }
+      });
+      
+      if (elementOriginalStyles.size > 0) {
+        this.originalPageState.set(element, elementOriginalStyles);
+      }
+    });
+    
+    this.hasRecordedOriginalState = true;
+    console.log(`[Content Script] 页面原始状态记录完成，记录了 ${this.originalPageState.size} 个元素的样式`);
   }
 
   /**
@@ -260,6 +312,11 @@ class PageBeautifyContent {
       // 清除当前应用的样式
       this.clearAllStyles();
       
+      // 重新记录页面原始状态（因为URL变化可能导致页面内容变化）
+      this.hasRecordedOriginalState = false;
+      this.originalPageState.clear();
+      this.recordOriginalPageState();
+      
       // 重新加载并应用匹配的主题
       await this.loadAndApplyStoredTheme();
       
@@ -336,21 +393,13 @@ class PageBeautifyContent {
 
   /**
    * 清除所有应用的样式
-   * 移除当前页面上所有通过插件应用的样式
    */
   clearAllStyles() {
     try {
       console.log('[Content Script] 清除所有应用的样式');
       
-      // 移除所有应用的样式元素
-      this.appliedStyles.forEach((styleElement, selector) => {
-        if (styleElement && styleElement.parentNode) {
-          styleElement.parentNode.removeChild(styleElement);
-        }
-      });
-      
-      // 清空样式映射
-      this.appliedStyles.clear();
+      // 重置所有样式到原始状态
+      this.resetAllStyles();
       
       // 清除预览样式
       this.clearAllPreview();
@@ -485,9 +534,25 @@ class PageBeautifyContent {
         Object.entries(rule.properties).forEach(([property, value]) => {
           // 保存原始值
           if (!elementStyles.has(property)) {
-            const originalValue =
-              element.style.getPropertyValue(property) ||
-              getComputedStyle(element).getPropertyValue(property);
+            let originalValue = '';
+            
+            // 优先从记录的原始页面状态中获取真正的原始值
+            if (this.hasRecordedOriginalState && this.originalPageState.has(element)) {
+              const elementOriginalStyles = this.originalPageState.get(element);
+              if (elementOriginalStyles.has(property)) {
+                originalValue = elementOriginalStyles.get(property);
+                console.log(`[Content Script] 使用记录的原始值 ${property}: ${originalValue}`);
+              }
+            }
+            
+            // 如果没有记录的原始值，则使用当前值作为回退
+            if (!originalValue) {
+              originalValue =
+                element.style.getPropertyValue(property) ||
+                getComputedStyle(element).getPropertyValue(property);
+              console.log(`[Content Script] 使用当前值作为原始值 ${property}: ${originalValue}`);
+            }
+            
             elementStyles.set(property, originalValue);
           }
 
@@ -506,18 +571,48 @@ class PageBeautifyContent {
    * 重置所有应用的样式
    */
   resetAllStyles() {
-    this.appliedStyles.forEach((elementStyles, element) => {
-      elementStyles.forEach((originalValue, property) => {
-        if (originalValue) {
-          element.style.setProperty(property, originalValue);
-        } else {
+    console.log('[Content Script] 开始重置所有样式到原始状态');
+    
+    // 优先使用真正的原始状态进行恢复
+    if (this.hasRecordedOriginalState && this.originalPageState.size > 0) {
+      console.log('[Content Script] 使用记录的原始页面状态进行恢复');
+      
+      // 首先清除所有内联样式
+      this.appliedStyles.forEach((elementStyles, element) => {
+        elementStyles.forEach((originalValue, property) => {
           element.style.removeProperty(property);
+        });
+      });
+      
+      // 然后恢复到真正的原始状态
+      this.originalPageState.forEach((elementStyles, element) => {
+        // 检查元素是否还在DOM中
+        if (document.contains(element)) {
+          elementStyles.forEach((originalValue, property) => {
+            if (originalValue && originalValue !== 'initial' && originalValue !== 'inherit') {
+              element.style.setProperty(property, originalValue);
+            }
+          });
         }
       });
-    });
+      
+      console.log('[Content Script] 已恢复到页面原始状态');
+    } else {
+      // 回退到旧的恢复方式
+      console.log('[Content Script] 使用appliedStyles进行恢复（回退方式）');
+      this.appliedStyles.forEach((elementStyles, element) => {
+        elementStyles.forEach((originalValue, property) => {
+          if (originalValue) {
+            element.style.setProperty(property, originalValue);
+          } else {
+            element.style.removeProperty(property);
+          }
+        });
+      });
+    }
 
     this.appliedStyles.clear();
-    console.log("所有样式已重置");
+    console.log('[Content Script] 所有样式已重置');
   }
 
   /**

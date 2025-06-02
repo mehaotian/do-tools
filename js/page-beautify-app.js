@@ -19,17 +19,17 @@ import { ModalManager } from './managers/modal-manager.js';
 class PageBeautifyApp {
   constructor() {
     // 应用状态
-    this.isInitialized = false;
-    this.isExtensionEnvironment = false;
+    this.isInitialized = false; // 应用是否已初始化
+    this.isExtensionEnvironment = false; // 是否在Chrome扩展环境中
     
     // 核心服务
-    this.appState = null;
-    this.storageService = null;
-    this.styleApplier = null;
+    this.appState = null; // 应用状态
+    this.storageService = null; // 存储服务
+    this.styleApplier = null; // 样式应用器
     
     // 管理器
-    this.themeManager = null;
-    this.modalManager = null;
+    this.themeManager = null; // 主题管理器
+    this.modalManager = null; // 模态框管理器
     
     // 错误处理
     this.errorHandler = this.createErrorHandler();
@@ -90,6 +90,8 @@ class PageBeautifyApp {
 
   /**
    * 检查运行环境
+   * 主要检测是否在Chrome扩展环境中，以及是否存在必要的DOM元素
+   * 同时验证html中 预设主题 自定义主题列表 模态框 这些元素是否存在，理论上讲是必然存在
    */
   async checkEnvironment() {
     // 检查是否在Chrome扩展环境中
@@ -101,13 +103,13 @@ class PageBeautifyApp {
     
     // 检查必要的DOM元素
     const requiredElements = [
-      'presetThemes',
-      'customThemesList',
-      'addGroupModal',
-      'addRuleModal',
-      'propertySelectModal'
+      'presetThemes', // 预设主题
+      'customThemesList', // 自定义主题列表
+      'addGroupModal', // 添加组模态框
+      'addRuleModal', // 添加规则模态框
+      'propertySelectModal' // 属性选择模态框
     ];
-    
+
     const missingElements = requiredElements.filter(id => !document.getElementById(id));
     if (missingElements.length > 0) {
       throw new Error(`缺少必要的DOM元素: ${missingElements.join(', ')}`);
@@ -272,6 +274,17 @@ class PageBeautifyApp {
       if (saveAsThemeBtn) {
         saveAsThemeBtn.addEventListener('click', () => {
           this.themeManager.saveAsNewTheme();
+        });
+      }
+      
+      // 删除主题按钮
+      const deleteThemeBtn = document.getElementById('deleteThemeBtn');
+      if (deleteThemeBtn) {
+        deleteThemeBtn.addEventListener('click', async () => {
+          const currentThemeId = this.themeManager.getCurrentEditingThemeId();
+          if (currentThemeId) {
+            await this.themeManager.deleteCustomTheme(currentThemeId);
+          }
         });
       }
       

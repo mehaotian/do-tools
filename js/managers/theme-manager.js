@@ -108,8 +108,11 @@ export class ThemeManager {
    */
   async initialize() {
     try {
+       // 初始化模态框
       this.initializeModals();
+       // 初始化主题列表
       this.renderThemes();
+       // 尝试恢复上次应用的主题
       await this.restoreAppliedTheme();
       
       // 初始化URL模式事件绑定（一次性绑定）
@@ -373,15 +376,11 @@ export class ThemeManager {
         <p>${Utils.escapeHtml(theme.description || '')}</p>
       `;
     } else {
-      // 自定义主题使用带操作按钮的布局
+      // 自定义主题使用简洁布局
       card.innerHTML = `
         <div class="custom-theme-info">
           <h5>${Utils.escapeHtml(theme.name)}</h5>
           <p>${Utils.escapeHtml(theme.description || '无描述')}</p>
-        </div>
-        <div class="custom-theme-actions">
-          <button title="编辑" data-action="edit" data-id="${theme.id}">✏️</button>
-          <button title="删除" data-action="delete" data-id="${theme.id}">🗑️</button>
         </div>
       `;
     }
@@ -406,24 +405,21 @@ export class ThemeManager {
       });
     } else {
       // 自定义主题点击选择
-      card.addEventListener('click', async (e) => {
-        if (!e.target.closest('.custom-theme-actions')) {
-          await this.selectCustomTheme(theme);
-        }
+      card.addEventListener('click', async () => {
+        await this.selectCustomTheme(theme);
       });
 
-      // 处理操作按钮
-      card.addEventListener('click', async (e) => {
-        const action = e.target.dataset.action;
-        const id = e.target.dataset.id;
 
-        if (action === 'edit') {
-          await this.editCustomTheme(id);
-        } else if (action === 'delete') {
-          await this.deleteCustomTheme(id);
-        }
-      });
     }
+  }
+
+  /**
+   * 获取当前正在编辑的主题ID
+   * @returns {string|null} 主题ID
+   */
+  getCurrentEditingThemeId() {
+    const currentTheme = this.appState.getCurrentTheme();
+    return currentTheme ? currentTheme.id : null;
   }
 
   /**
@@ -747,7 +743,28 @@ export class ThemeManager {
    */
   async deleteCustomTheme(themeId) {
     const theme = this.appState.customThemes.find(t => t.id === themeId);
-    if (theme) {
+    if (!theme) {
+      return;
+    }
+
+    // 检查是否正在编辑该主题且有未保存的更改
+    const isEditingThisTheme = this.appState.currentTheme && this.appState.currentTheme.id === themeId;
+    if (isEditingThisTheme && this.hasUnsavedChanges) {
+      const discardConfirmed = await this.showConfirmDialog(
+        `主题 "${theme.name}" 有未保存的更改，删除后这些更改将丢失。确定要删除吗？`,
+        {
+          title: '删除主题',
+          type: 'danger',
+          confirmText: '删除',
+          cancelText: '取消'
+        }
+      );
+      
+      if (!discardConfirmed) {
+        return;
+      }
+    } else {
+      // 普通删除确认
       const confirmed = await this.showConfirmDialog(`确定要删除主题 "${theme.name}" 吗？`, {
         title: '删除主题',
         type: 'danger',
@@ -755,24 +772,26 @@ export class ThemeManager {
         cancelText: '取消'
       });
       
-      if (confirmed) {
-        const wasAppliedTheme = this.appState.appliedThemeId === themeId;
-        await this.appState.removeCustomTheme(themeId);
-      
-        // 如果删除的是当前主题，清空编辑器
-        if (this.appState.currentTheme && this.appState.currentTheme.id === themeId) {
-          this.appState.setCurrentTheme(null);
-          this.hideThemeEditor();
-        }
-        
-        // 如果删除的是当前应用的主题，或者没有任何主题被选中，自动选择无主题
-        if (wasAppliedTheme || !this.appState.appliedThemeId) {
-          await this.selectNoneTheme(true);
-        }
-        
-        Utils.showToast(`主题 "${theme.name}" 已删除`, 'success');
+      if (!confirmed) {
+        return;
       }
     }
+
+    // 执行删除操作
+    const wasAppliedTheme = this.appState.appliedThemeId === themeId;
+    await this.appState.removeCustomTheme(themeId);
+  
+    // 如果删除的是当前主题，清空编辑器并重置未保存状态
+    if (isEditingThisTheme) {
+      this.appState.setCurrentTheme(null);
+      this.hasUnsavedChanges = false;
+      this.hideThemeEditor();
+    }
+    
+    // 删除任何自定义主题后都切换到无主题
+    await this.selectNoneTheme(true);
+    
+    Utils.showToast(`主题 "${theme.name}" 已删除`, 'success');
   }
 
   /**
@@ -1002,8 +1021,12 @@ export class ThemeManager {
         ...Utils.deepClone(currentTheme),
         id: Utils.generateId(),
         name: newName,
-        isCustom: true
+        isCustom: true,
+        originalId: undefined // 移除originalId，确保不被识别为预制主题
       };
+      
+      // 删除originalId属性
+      delete newTheme.originalId;
 
       // 保存新主题
       await this.appState.addCustomTheme(newTheme);
@@ -1130,17 +1153,56 @@ export class ThemeManager {
 
       await this.appState.addCustomTheme(themeData);
       
-      // 自动切换并应用导入的主题
-      await this.appState.setAppliedThemeId(themeData.id);
+      // 设置为当前编辑的主题
       this.appState.setCurrentTheme(themeData);
       
-      // 直接应用主题样式，避免重复的状态设置和toast消息
-      const success = await chromeApi.applyTheme(themeData);
-      if (!success) {
-        throw new Error('主题应用失败');
+      // 检查是否需要应用主题（URL匹配检查）
+      let shouldApplyTheme = true;
+      let urlMatchMessage = '';
+      
+      // 如果主题配置了URL模式，需要检查是否匹配当前页面
+      if (themeData.urlPatterns && Array.isArray(themeData.urlPatterns) && themeData.urlPatterns.length > 0) {
+        try {
+          // 获取当前活动标签页的URL
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          const currentUrl = tabs[0]?.url;
+          
+          if (currentUrl) {
+            const isUrlMatch = Utils.isThemeMatchUrl(themeData, currentUrl);
+            console.log('导入主题URL匹配检查结果:', isUrlMatch, '当前URL:', currentUrl);
+            
+            if (!isUrlMatch) {
+              shouldApplyTheme = false;
+              const domain = Utils.extractDomain(currentUrl);
+              urlMatchMessage = ` (当前网站 ${domain || '此页面'} 不在适用范围内)`;
+            }
+          } else {
+            // 无法获取当前URL时，不应用主题
+            shouldApplyTheme = false;
+            urlMatchMessage = ' (无法获取当前页面信息)';
+          }
+        } catch (error) {
+          console.warn('获取当前标签页URL失败:', error);
+          shouldApplyTheme = false;
+          urlMatchMessage = ' (无法检查页面匹配)';
+        }
       }
       
-      Utils.showToast(`主题 "${themeData.name}" 导入成功并已应用`, 'success');
+      if (shouldApplyTheme) {
+        // URL匹配或没有配置URL模式，应用主题
+        await this.appState.setAppliedThemeId(themeData.id);
+        
+        const success = await chromeApi.applyTheme(themeData);
+        if (!success) {
+          throw new Error('主题应用失败');
+        }
+        
+        Utils.showToast(`主题 "${themeData.name}" 导入成功并已应用`, 'success');
+      } else {
+        // URL不匹配，不应用主题但显示导入成功
+        Utils.showToast(`主题 "${themeData.name}" 导入成功${urlMatchMessage}`, 'success');
+      }
+      
       this.showThemeEditor(themeData);
     } catch (error) {
       console.error('导入主题失败:', error);
@@ -1364,24 +1426,51 @@ export class ThemeManager {
   updateThemeActions(theme) {
     const saveBtn = document.getElementById('saveThemeBtn');
     const saveAsBtn = document.getElementById('saveAsThemeBtn');
+    const deleteBtn = document.getElementById('deleteThemeBtn');
+    const resetBtn = document.getElementById('resetPreviewBtn');
+    const exportBtn = document.getElementById('exportThemeBtn');
 
-    if (!saveBtn || !saveAsBtn) return;
+    if (!saveBtn || !saveAsBtn || !deleteBtn) return;
 
-    // 检查当前主题是否已存在于自定义主题中
-    const existingTheme = this.appState.customThemes.find((t) => t.id === theme.id);
-    const isExistingCustomTheme = existingTheme && theme.isCustom;
-
-    if (isExistingCustomTheme) {
-      // 已存在的自定义主题 - 显示保存按钮，显示另存为按钮（用于另存为副本）
-      saveBtn.style.display = 'inline-block';
-      saveAsBtn.style.display = 'inline-block';
-      
-      // 初始化保存按钮状态
-      this.updateSaveButtonState();
-    } else {
-      // 新主题或预设主题 - 隐藏保存按钮，显示另存为按钮
+    // 检查是否为预制主题（通过originalId判断）
+    const isPresetTheme = theme.originalId && this.appState.getPresetThemes().some(t => t.id === theme.originalId);
+    
+    if (isPresetTheme) {
+      // 预制主题 - 只显示另存为按钮，隐藏其他所有按钮
       saveBtn.style.display = 'none';
       saveAsBtn.style.display = 'inline-block';
+      deleteBtn.style.display = 'none';
+      if (resetBtn) resetBtn.style.display = 'none';
+      if (exportBtn) exportBtn.style.display = 'none';
+      
+      // 禁用编辑功能
+      this.setThemeEditorReadOnly(true);
+    } else {
+      // 检查当前主题是否已存在于自定义主题中
+      const existingTheme = this.appState.customThemes.find((t) => t.id === theme.id);
+      const isExistingCustomTheme = existingTheme && theme.isCustom;
+
+      if (isExistingCustomTheme) {
+        // 已存在的自定义主题 - 显示保存按钮，显示另存为按钮，显示删除按钮
+        saveBtn.style.display = 'inline-block';
+        saveAsBtn.style.display = 'inline-block';
+        deleteBtn.style.display = 'inline-block';
+        if (resetBtn) resetBtn.style.display = 'inline-block';
+        if (exportBtn) exportBtn.style.display = 'inline-block';
+        
+        // 初始化保存按钮状态
+        this.updateSaveButtonState();
+      } else {
+        // 新主题 - 隐藏保存按钮，显示另存为按钮，隐藏删除按钮
+        saveBtn.style.display = 'none';
+        saveAsBtn.style.display = 'inline-block';
+        deleteBtn.style.display = 'none';
+        if (resetBtn) resetBtn.style.display = 'inline-block';
+        if (exportBtn) exportBtn.style.display = 'inline-block';
+      }
+      
+      // 启用编辑功能
+      this.setThemeEditorReadOnly(false);
     }
   }
 
@@ -1550,6 +1639,13 @@ export class ThemeManager {
         // 如果点击的是按钮，不触发展开/收起
         if (e.target.closest('button')) return;
         
+        // 检查组切换是否被禁用
+        if (toggle.style.pointerEvents === 'none') {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        
         const isExpanded = content.classList.contains('expanded');
         content.classList.toggle('expanded');
         header.classList.toggle('expanded', !isExpanded);
@@ -1566,9 +1662,20 @@ export class ThemeManager {
 
     // 事件委托处理按钮点击
     card.addEventListener('click', (e) => {
-      const action = e.target.dataset.action;
-      const groupId = e.target.dataset.groupId;
-      const ruleIndex = e.target.dataset.ruleIndex;
+      // 获取实际的按钮元素
+      const button = e.target.closest('button[data-action]');
+      if (!button) return;
+      
+      // 检查是否为只读模式
+      if (button.disabled) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
+      const action = button.dataset.action;
+      const groupId = button.dataset.groupId;
+      const ruleIndex = button.dataset.ruleIndex;
 
       switch (action) {
         case 'add-rule':
@@ -1584,6 +1691,12 @@ export class ThemeManager {
     card.addEventListener('click', async (e) => {
       if (e.target.closest('.edit-rule-btn')) {
         const btn = e.target.closest('.edit-rule-btn');
+        // 检查是否为只读模式
+        if (btn.disabled) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         const ruleIndex = parseInt(btn.dataset.ruleIndex);
         const groupId = btn.dataset.groupId;
         // 移除高亮效果
@@ -1591,6 +1704,12 @@ export class ThemeManager {
         this.editRule(groupId, ruleIndex);
       } else if (e.target.closest('.delete-rule-btn')) {
         const btn = e.target.closest('.delete-rule-btn');
+        // 检查是否为只读模式
+        if (btn.disabled) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         const ruleIndex = parseInt(btn.dataset.ruleIndex);
         const groupId = btn.dataset.groupId;
         // 移除高亮效果
@@ -3216,7 +3335,154 @@ export class ThemeManager {
    */
   validateDomainFormat(domain) {
     // 基本域名格式校验
-    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*$/;
+    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     return domainRegex.test(domain) && domain.length <= 253;
+  }
+
+  /**
+   * 设置主题编辑器只读状态
+   * @param {boolean} readOnly - 是否只读
+   */
+  setThemeEditorReadOnly(readOnly) {
+    // 禁用/启用主题名称输入框
+    const themeNameInput = document.getElementById('themeName');
+    if (themeNameInput) {
+      themeNameInput.disabled = readOnly;
+      if (readOnly) {
+        themeNameInput.style.backgroundColor = '#f5f5f5';
+        themeNameInput.style.cursor = 'not-allowed';
+      } else {
+        themeNameInput.style.backgroundColor = '';
+        themeNameInput.style.cursor = '';
+      }
+    }
+
+    // 禁用/启用主题描述输入框
+    const themeDescInput = document.getElementById('themeDescription');
+    if (themeDescInput) {
+      themeDescInput.disabled = readOnly;
+      if (readOnly) {
+        themeDescInput.style.backgroundColor = '#f5f5f5';
+        themeDescInput.style.cursor = 'not-allowed';
+      } else {
+        themeDescInput.style.backgroundColor = '';
+        themeDescInput.style.cursor = '';
+      }
+    }
+
+    // 禁用/启用添加组按钮
+    const addGroupBtn = document.getElementById('addGroupBtn');
+    if (addGroupBtn) {
+      addGroupBtn.disabled = readOnly;
+      if (readOnly) {
+        addGroupBtn.style.opacity = '0.6';
+        addGroupBtn.style.cursor = 'not-allowed';
+      } else {
+        addGroupBtn.style.opacity = '';
+        addGroupBtn.style.cursor = '';
+      }
+    }
+
+    // 禁用/启用所有组的编辑功能
+    const groupsSection = document.getElementById('groupsSection');
+    if (groupsSection) {
+      const editableElements = groupsSection.querySelectorAll('input, textarea, select, button');
+      editableElements.forEach(element => {
+        // 排除另存为按钮
+        if (element.id === 'saveAsThemeBtn') {
+          return;
+        }
+        
+        element.disabled = readOnly;
+        if (readOnly) {
+          element.style.opacity = '0.6';
+          element.style.cursor = 'not-allowed';
+        } else {
+          element.style.opacity = '';
+          element.style.cursor = '';
+        }
+      });
+    }
+
+    // 特别禁用添加规则和删除组按钮
+    const addRuleButtons = document.querySelectorAll('[data-action="add-rule"]');
+    addRuleButtons.forEach(button => {
+      button.disabled = readOnly;
+      if (readOnly) {
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+      } else {
+        button.style.opacity = '';
+        button.style.cursor = '';
+      }
+    });
+
+    const deleteGroupButtons = document.querySelectorAll('[data-action="delete-group"]');
+    deleteGroupButtons.forEach(button => {
+      button.disabled = readOnly;
+      if (readOnly) {
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+      } else {
+        button.style.opacity = '';
+        button.style.cursor = '';
+      }
+    });
+
+    // 禁用删除规则按钮
+    const deleteRuleButtons = document.querySelectorAll('.delete-rule-btn');
+    deleteRuleButtons.forEach(button => {
+      button.disabled = readOnly;
+      if (readOnly) {
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+      } else {
+        button.style.opacity = '';
+        button.style.cursor = '';
+      }
+    });
+
+    // 禁用编辑规则按钮
+    const editRuleButtons = document.querySelectorAll('.edit-rule-btn');
+    editRuleButtons.forEach(button => {
+      button.disabled = readOnly;
+      if (readOnly) {
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+      } else {
+        button.style.opacity = '';
+        button.style.cursor = '';
+      }
+    });
+
+    // 禁用组切换按钮
+     const groupToggles = document.querySelectorAll('.group-toggle');
+     groupToggles.forEach(toggle => {
+       if (readOnly) {
+         toggle.style.pointerEvents = 'none';
+         toggle.style.opacity = '0.6';
+         toggle.style.cursor = 'not-allowed';
+       } else {
+         toggle.style.pointerEvents = '';
+         toggle.style.opacity = '';
+         toggle.style.cursor = '';
+       }
+     });
+
+    // 禁用/启用URL规则编辑
+    const urlPatternsContainer = document.querySelector('.url-patterns-container');
+    if (urlPatternsContainer) {
+      const editableElements = urlPatternsContainer.querySelectorAll('input, button');
+      editableElements.forEach(element => {
+        element.disabled = readOnly;
+        if (readOnly) {
+          element.style.opacity = '0.6';
+          element.style.cursor = 'not-allowed';
+        } else {
+          element.style.opacity = '';
+          element.style.cursor = '';
+        }
+      });
+    }
   }
 }

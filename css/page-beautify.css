@@ -318,37 +318,7 @@ body {
   margin-bottom: 0.5rem;
 }
 
-.custom-theme-actions {
-  display: flex;
-  gap: 0.25rem;
-  align-self: flex-end;
-  margin-top: auto;
-}
 
-.custom-theme-actions button {
-  padding: 0.25rem;
-  border: none;
-  background: none;
-  color: hsl(var(--muted-foreground));
-  cursor: pointer;
-  border-radius: calc(var(--radius) - 2px);
-  transition: all 0.2s ease;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.custom-theme-actions button:hover {
-  background: hsl(var(--muted));
-  color: hsl(var(--foreground));
-}
-
-.custom-theme-actions button.delete:hover {
-  background: hsl(var(--destructive) / 0.1);
-  color: hsl(var(--destructive));
-}
 
 /* 中间编辑面板 - 现代化设计 */
 .middle-panel {
@@ -1036,6 +1006,27 @@ body {
 
 .btn-warning:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-danger-light {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-danger-light:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 2px 4px 0 rgba(239, 68, 68, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-danger-light:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  background: rgba(239, 68, 68, 0.2);
   box-shadow: var(--shadow-sm);
 }
 

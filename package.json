@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "name": "do-tools",
+  "version": "1.0.0",
+  "description": "Chrome extension for page beautification"
+}
