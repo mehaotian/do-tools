@@ -454,10 +454,15 @@ export class ModalManager {
       case "combo":
         const datalistId = `datalist-${property}-${Date.now()}`;
         inputHtml = `<input type="text" class="form-input property-value" data-property="${property}" 
-                     placeholder="输入${config.name}或选择预设值" list="${datalistId}">
+                     placeholder="输入${
+                       config.name
+                     }或选择预设值" list="${datalistId}">
                      <datalist id="${datalistId}">
                        ${config.options
-                         .map((option) => `<option value="${option}">${option}</option>`)
+                         .map(
+                           (option) =>
+                             `<option value="${option}">${option}</option>`
+                         )
                          .join("")}
                      </datalist>`;
         break;
@@ -494,55 +499,65 @@ export class ModalManager {
     });
 
     // 添加实时预览事件
-    if (config.type === 'color') {
+    if (config.type === "color") {
       // 处理颜色选择器的特殊逻辑
-      const colorPicker = editor.querySelector('.color-picker');
-      const colorTextInput = editor.querySelector('.color-text-input');
-      const alphaSlider = editor.querySelector('.alpha-slider');
-      const alphaValue = editor.querySelector('.alpha-value');
-      const hiddenInput = editor.querySelector('.rgba-value');
-      
+      const colorPicker = editor.querySelector(".color-picker");
+      const colorTextInput = editor.querySelector(".color-text-input");
+      const alphaSlider = editor.querySelector(".alpha-slider");
+      const alphaValue = editor.querySelector(".alpha-value");
+      const hiddenInput = editor.querySelector(".rgba-value");
+
       const updateRGBA = () => {
         const hex = colorPicker.value;
         const alpha = parseFloat(alphaSlider.value);
-        
+
         // 将hex转换为RGB
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
-        
+
         // 生成RGBA值
         const rgba = `rgba(${r}, ${g}, ${b}, ${alpha})`;
         hiddenInput.value = rgba;
         colorTextInput.value = rgba;
-        alphaValue.textContent = Math.round(alpha * 100) + '%';
-        
+        alphaValue.textContent = Math.round(alpha * 100) + "%";
+
         this.previewStyle(property, rgba);
         // 检测修改并更新按钮状态
         window.themeManager?.handleThemeChange();
       };
-      
+
       // 从文本输入框更新颜色的函数
       const updateFromText = () => {
         const textValue = colorTextInput.value.trim();
-        let hexColor = '#ffffff';
+        let hexColor = "#ffffff";
         let alpha = 1;
-        
-        if (textValue.startsWith('rgba(')) {
-          const rgbaMatch = textValue.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+
+        if (textValue.startsWith("rgba(")) {
+          const rgbaMatch = textValue.match(
+            /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/
+          );
           if (rgbaMatch) {
             const [, r, g, b, a] = rgbaMatch;
-            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, "0")}${parseInt(
+              g
+            )
+              .toString(16)
+              .padStart(2, "0")}${parseInt(b).toString(16).padStart(2, "0")}`;
             alpha = parseFloat(a);
           }
-        } else if (textValue.startsWith('rgb(')) {
+        } else if (textValue.startsWith("rgb(")) {
           const rgbMatch = textValue.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
           if (rgbMatch) {
             const [, r, g, b] = rgbMatch;
-            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, "0")}${parseInt(
+              g
+            )
+              .toString(16)
+              .padStart(2, "0")}${parseInt(b).toString(16).padStart(2, "0")}`;
             alpha = 1;
           }
-        } else if (textValue.startsWith('#')) {
+        } else if (textValue.startsWith("#")) {
           if (textValue.length === 4) {
             hexColor = `#${textValue[1]}${textValue[1]}${textValue[2]}${textValue[2]}${textValue[3]}${textValue[3]}`;
           } else if (textValue.length === 7) {
@@ -550,28 +565,31 @@ export class ModalManager {
           }
           alpha = 1;
         }
-        
+
         colorPicker.value = hexColor;
         alphaSlider.value = alpha;
-        alphaValue.textContent = Math.round(alpha * 100) + '%';
-        
-        const rgba = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
+        alphaValue.textContent = Math.round(alpha * 100) + "%";
+
+        const rgba = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(
+          hexColor.slice(3, 5),
+          16
+        )}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
         hiddenInput.value = rgba;
-        
+
         this.previewStyle(property, rgba);
         // 检测修改并更新按钮状态
         window.themeManager?.handleThemeChange();
       };
-      
-      colorPicker.addEventListener('input', updateRGBA);
-      alphaSlider.addEventListener('input', updateRGBA);
-      colorTextInput.addEventListener('blur', updateFromText);
-      colorTextInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
+
+      colorPicker.addEventListener("input", updateRGBA);
+      alphaSlider.addEventListener("input", updateRGBA);
+      colorTextInput.addEventListener("blur", updateFromText);
+      colorTextInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
           updateFromText();
         }
       });
-      
+
       // 初始化RGBA值
       updateRGBA();
     } else {
@@ -581,7 +599,7 @@ export class ModalManager {
         // 检测修改并更新按钮状态
         window.themeManager?.handleThemeChange();
       });
-      
+
       // 对于select和combo类型，也要监听change事件
       if (config.type === "select" || config.type === "combo") {
         propertyInput.addEventListener("change", (e) => {
@@ -595,10 +613,14 @@ export class ModalManager {
     container.appendChild(editor);
 
     // 对于select类型，立即应用默认选中的值
-    if (config.type === "select" && config.options && config.options.length > 0) {
+    if (
+      config.type === "select" &&
+      config.options &&
+      config.options.length > 0
+    ) {
       this.previewStyle(property, config.options[0]);
     }
-    
+
     // 注意：color类型的默认值现在由updateRGBA函数处理
   }
 
@@ -609,17 +631,13 @@ export class ModalManager {
    */
   async previewStyle(property, value) {
     const selector = document.getElementById("cssSelector")?.value;
-    console.log('-=-=-= 3 selector, property, value', selector, property, value);
-    
     if (!selector || !property || !value) {
       return;
     }
 
     try {
       await chromeApi.previewStyle(selector, property, value);
-    } catch (error) {
-      console.warn("实时预览失败:", error);
-    }
+    } catch (error) {}
   }
 
   /**
@@ -720,9 +738,7 @@ export class ModalManager {
   async clearSelectorHighlight() {
     try {
       await chromeApi.clearSelectorHighlight();
-    } catch (error) {
-      console.log("清除高亮失败:", error);
-    }
+    } catch (error) {}
   }
 
   /**
@@ -1008,18 +1024,21 @@ export class ModalManager {
 
     // 获取当前已有的背景相关样式
     const currentStyles = this.getCurrentBackgroundStyles();
-    
+
     // 获取当前的CSS选择器
-    const currentSelector = document.getElementById("cssSelector")?.value || 'body';
+    const currentSelector =
+      document.getElementById("cssSelector")?.value || "body";
 
     // 导入背景助手并显示
     import("../components/background-helper.js")
       .then(({ backgroundHelper }) => {
-        backgroundHelper.show(currentStyles, (appliedStyles) => {
-          console.log("++++ appliedStyles", appliedStyles);
-
-          this.applyBackgroundStyles(appliedStyles);
-        }, currentSelector);
+        backgroundHelper.show(
+          currentStyles,
+          (appliedStyles) => {
+            this.applyBackgroundStyles(appliedStyles);
+          },
+          currentSelector
+        );
       })
       .catch((error) => {
         console.error("加载背景助手失败:", error);
@@ -1074,16 +1093,15 @@ export class ModalManager {
         let existingEditor = container?.querySelector(
           `[data-property="${property}"]`
         );
-        console.log("-----1 existingEditor", existingEditor);
-
         if (existingEditor) {
           // 更新现有编辑器的值
           const valueInput = existingEditor.querySelector(".property-value");
-          console.log("-----2 valueInput", valueInput);
-
           if (valueInput) {
             // 特殊处理颜色属性
-            if (property.includes('color') && existingEditor.querySelector('.color-input-container')) {
+            if (
+              property.includes("color") &&
+              existingEditor.querySelector(".color-input-container")
+            ) {
               this.updateColorEditor(existingEditor, value);
             } else {
               valueInput.value = value;
@@ -1105,7 +1123,10 @@ export class ModalManager {
             const valueInput = newEditor?.querySelector(".property-value");
             if (valueInput) {
               // 特殊处理颜色属性
-              if (property.includes('color') && newEditor.querySelector('.color-input-container')) {
+              if (
+                property.includes("color") &&
+                newEditor.querySelector(".color-input-container")
+              ) {
                 this.updateColorEditor(newEditor, value);
               } else {
                 valueInput.value = value;
@@ -1131,40 +1152,41 @@ export class ModalManager {
    * @param {string} value - 颜色值
    */
   updateColorEditor(editor, value) {
-    const colorPicker = editor.querySelector('.color-picker');
-    const colorTextInput = editor.querySelector('.color-text-input');
-    const alphaSlider = editor.querySelector('.alpha-slider');
-    const alphaValue = editor.querySelector('.alpha-value');
-    const hiddenInput = editor.querySelector('.rgba-value');
-    
-    console.log('更新颜色编辑器:', value); // 调试日志
-    
-    let hexColor = '#ffffff';
+    const colorPicker = editor.querySelector(".color-picker");
+    const colorTextInput = editor.querySelector(".color-text-input");
+    const alphaSlider = editor.querySelector(".alpha-slider");
+    const alphaValue = editor.querySelector(".alpha-value");
+    const hiddenInput = editor.querySelector(".rgba-value");
+
+    let hexColor = "#ffffff";
     let alpha = 1;
-    
+
     if (value) {
-      if (value === 'transparent') {
+      if (value === "transparent") {
         // 处理transparent值，颜色选择器显示白色，透明度为0，文本输入框显示transparent
-        hexColor = '#ffffff';
+        hexColor = "#ffffff";
         alpha = 0;
-        console.log(`解析transparent成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
-      } else if (value.startsWith('rgba(')) {
-        const rgbaMatch = value.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+      } else if (value.startsWith("rgba(")) {
+        const rgbaMatch = value.match(
+          /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/
+        );
         if (rgbaMatch) {
           const [, r, g, b, a] = rgbaMatch;
-          hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+          hexColor = `#${parseInt(r).toString(16).padStart(2, "0")}${parseInt(g)
+            .toString(16)
+            .padStart(2, "0")}${parseInt(b).toString(16).padStart(2, "0")}`;
           alpha = parseFloat(a);
-          console.log(`解析RGBA成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
         }
-      } else if (value.startsWith('rgb(')) {
+      } else if (value.startsWith("rgb(")) {
         const rgbMatch = value.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
         if (rgbMatch) {
           const [, r, g, b] = rgbMatch;
-          hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+          hexColor = `#${parseInt(r).toString(16).padStart(2, "0")}${parseInt(g)
+            .toString(16)
+            .padStart(2, "0")}${parseInt(b).toString(16).padStart(2, "0")}`;
           alpha = 1;
-          console.log(`解析RGB成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
         }
-      } else if (value.startsWith('#')) {
+      } else if (value.startsWith("#")) {
         // 处理十六进制颜色值，确保是6位格式
         if (value.length === 4) {
           // 3位格式转6位格式 (#000 -> #000000)
@@ -1173,18 +1195,15 @@ export class ModalManager {
           hexColor = value;
         }
         alpha = 1;
-        console.log(`解析HEX成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
       }
     }
-    
+
     // 更新UI元素
     if (colorPicker) colorPicker.value = hexColor;
     if (alphaSlider) alphaSlider.value = alpha;
-    if (alphaValue) alphaValue.textContent = Math.round(alpha * 100) + '%';
+    if (alphaValue) alphaValue.textContent = Math.round(alpha * 100) + "%";
     if (hiddenInput) hiddenInput.value = value;
     if (colorTextInput) colorTextInput.value = value;
-    
-    console.log('颜色编辑器更新完成'); // 调试日志
   }
 
   /**

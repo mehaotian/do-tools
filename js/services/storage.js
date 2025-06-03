@@ -15,7 +15,6 @@ export class StorageService {
     // 使用 chrome.storage.sync 确保数据同步
     this.storage = chrome?.storage?.sync || null;
     this.isAvailable = !!this.storage;
-    console.log('[StorageService] 初始化，使用存储类型:', this.storage ? 'chrome.storage.sync' : '不可用');
   }
 
   /**
@@ -204,7 +203,6 @@ export class StorageService {
     try {
       const result = await this.get(APP_CONFIG.STORAGE_KEYS.APPLIED_THEME_ID);
       const themeId = result[APP_CONFIG.STORAGE_KEYS.APPLIED_THEME_ID] || null;
-      console.log('从存储中读取到的主题ID:', themeId);
       return themeId;
     } catch (error) {
       console.error('获取应用主题ID失败:', error);
@@ -219,15 +217,12 @@ export class StorageService {
    */
   async saveAppliedThemeId(themeId) {
     try {
-      console.log('准备保存主题ID到存储:', themeId);
       if (themeId === null) {
         await this.remove(APP_CONFIG.STORAGE_KEYS.APPLIED_THEME_ID);
-        console.log('已从存储中移除主题ID');
       } else {
         await this.set({
           [APP_CONFIG.STORAGE_KEYS.APPLIED_THEME_ID]: themeId
         });
-        console.log('主题ID已保存到存储:', themeId);
       }
     } catch (error) {
       console.error('保存应用主题ID失败:', error);

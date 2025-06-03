@@ -245,7 +245,7 @@ export class ChromeApiService {
       
       return response?.success || false;
     } catch (error) {
-      console.log('清除高亮失败:', error);
+      console.error('清除高亮失败:', error);
       return false;
     }
   }

@@ -42,7 +42,6 @@ export class StyleApplier {
 
     // 防止重复应用
     if (this.isApplying) {
-      console.log('正在应用主题，跳过重复请求');
       return false;
     }
 
@@ -53,7 +52,6 @@ export class StyleApplier {
       const css = this.generateThemeCSS(theme);
       
       if (!css.trim()) {
-        console.log('主题CSS为空，清除现有样式');
         await this.clearStyles();
         return true;
       }
@@ -65,7 +63,6 @@ export class StyleApplier {
         this.currentStyleId = theme.id;
         // 缓存样式
         this.styleCache.set(theme.id, css);
-        console.log('主题应用成功:', theme.name || theme.id);
       } else {
         console.error('主题应用失败:', theme.name || theme.id);
       }
@@ -229,7 +226,6 @@ export class StyleApplier {
       if (result && result.success) {
         this.currentStyleId = null;
         this.styleCache.clear();
-        console.log('样式已清除');
         return true;
       } else {
         console.warn('清除样式失败:', result?.error);

@@ -24,7 +24,7 @@ class GlobalTimerManager {
       remainingSeconds: 0,
       startTime: null,
       isPaused: false, // 新增：是否暂停
-      pausedTime: null // 新增：暂停时间点
+      pausedTime: null, // 新增：暂停时间点
     };
     this.isDestroyed = false; // 标记是否已销毁
 
@@ -64,7 +64,7 @@ class GlobalTimerManager {
       remainingSeconds: minutes * 60,
       startTime: Date.now(),
       isPaused: false,
-      pausedTime: null
+      pausedTime: null,
     };
 
     // 立即广播初始状态到所有标签页
@@ -376,16 +376,12 @@ class MessageHandler {
    */
   static async handlePageBeautify(request) {
     try {
-      console.log("收到页面美化消息:", request);
-
       // 获取当前活动标签页
       const [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true,
       });
       if (tab) {
-        console.log("tabs[0]", tab);
-
         // 转发消息到内容脚本
         const response = await chrome.tabs
           .sendMessage(tab.id, {
@@ -393,7 +389,7 @@ class MessageHandler {
             type: request.type,
             data: request.data,
             // 为了兼容可能存在的旧格式，保留直接属性
-            ...(request.theme && { theme: request.theme })
+            ...(request.theme && { theme: request.theme }),
           })
           .catch((error) => {
             console.error("Failed to send message to content script:", error);
@@ -490,25 +486,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   // 只在页面完全加载完成时处理
-  if (changeInfo.status === 'complete' && tab.url) {
+  if (changeInfo.status === "complete" && tab.url) {
     // 排除chrome内部页面和扩展页面
-    if (tab.url.startsWith('chrome://') || 
-        tab.url.startsWith('chrome-extension://') || 
-        tab.url.startsWith('moz-extension://')) {
+    if (
+      tab.url.startsWith("chrome://") ||
+      tab.url.startsWith("chrome-extension://") ||
+      tab.url.startsWith("moz-extension://")
+    ) {
       return;
     }
 
     try {
       // 向该标签页发送URL变化通知
       await chrome.tabs.sendMessage(tabId, {
-        action: 'urlChanged',
+        action: "urlChanged",
         url: tab.url,
-        tabId: tabId
+        tabId: tabId,
       });
-      console.log(`[Background] 通知标签页 ${tabId} URL已变化:`, tab.url);
     } catch (error) {
       // 忽略无法发送消息的错误（可能是页面还未准备好接收消息）
-      console.debug(`[Background] 无法向标签页 ${tabId} 发送URL变化通知:`, error.message);
+      console.debug(
+        `[Background] 无法向标签页 ${tabId} 发送URL变化通知:`,
+        error.message
+      );
     }
   }
 });
@@ -521,24 +521,27 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     // 获取激活标签页的详细信息
     const tab = await chrome.tabs.get(activeInfo.tabId);
-    
+
     // 排除chrome内部页面和扩展页面
-    if (tab.url && 
-        !tab.url.startsWith('chrome://') && 
-        !tab.url.startsWith('chrome-extension://') && 
-        !tab.url.startsWith('moz-extension://')) {
-      
+    if (
+      tab.url &&
+      !tab.url.startsWith("chrome://") &&
+      !tab.url.startsWith("chrome-extension://") &&
+      !tab.url.startsWith("moz-extension://")
+    ) {
       // 向激活的标签页发送激活通知
       await chrome.tabs.sendMessage(activeInfo.tabId, {
-        action: 'tabActivated',
+        action: "tabActivated",
         url: tab.url,
-        tabId: activeInfo.tabId
+        tabId: activeInfo.tabId,
       });
-      console.log(`[Background] 通知标签页 ${activeInfo.tabId} 已激活:`, tab.url);
     }
   } catch (error) {
     // 忽略无法发送消息的错误
-    console.debug(`[Background] 无法向激活标签页 ${activeInfo.tabId} 发送激活通知:`, error.message);
+    console.debug(
+      `[Background] 无法向激活标签页 ${activeInfo.tabId} 发送激活通知:`,
+      error.message
+    );
   }
 });
 
@@ -547,7 +550,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
  */
 chrome.runtime.onInstalled.addListener((details) => {
   // 扩展安装或更新时的初始化逻辑
-  console.log('[Background] 扩展已安装/更新:', details.reason);
+  // TODO 暂时没有需求使用
 });
 
 /**
@@ -555,5 +558,5 @@ chrome.runtime.onInstalled.addListener((details) => {
  */
 chrome.runtime.onStartup.addListener(() => {
   // 扩展启动时的初始化逻辑
-  console.log('[Background] 扩展已启动');
+  // TODO 暂时没有需求使用
 });
