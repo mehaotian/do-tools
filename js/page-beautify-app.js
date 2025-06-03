@@ -591,7 +591,12 @@ class PageBeautifyApp {
         sendResponse({ success: true });
       }
     } catch (error) {
-      console.error("[PageBeautifyApp] 处理background消息失败:", error);
+      // Background消息处理失败通常是正常的页面状态变化导致的
+      if (typeof ErrorHandler !== 'undefined') {
+        ErrorHandler.handlePageSwitchError('Background消息处理', error);
+      } else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+        console.warn('[Debug] Background消息处理失败:', error.message);
+      }
       if (sendResponse) {
         sendResponse({ success: false, error: error.message });
       }

@@ -392,15 +392,29 @@ class MessageHandler {
             ...(request.theme && { theme: request.theme }),
           })
           .catch((error) => {
-            console.error("Failed to send message to content script:", error);
+            // 连接失败通常是因为页面刷新或切换导致的，属于正常情况
+            // 在开发环境下输出调试信息
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest().name.includes('开发')) {
+              console.warn('Content script通信: 页面切换导致的连接失败', error.message);
+            }
             throw error;
           });
         return response;
       } else {
-        throw new Error("未找到活动标签页");
+        // 静默处理：未找到活动标签页通常是因为用户切换了页面或关闭了标签页
+        const error = new Error("未找到活动标签页");
+        // 在开发环境下输出调试信息
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest().name.includes('开发')) {
+          console.warn('页面美化消息处理: 页面切换导致的连接失败', error.message);
+        }
+        throw error;
       }
     } catch (error) {
-      console.error("页面美化消息处理失败:", error);
+      // 这些错误通常是正常的页面切换导致的通信失败，不需要在扩展页面显示
+      // 在开发环境下输出调试信息
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest().name.includes('开发')) {
+        console.warn('页面美化消息处理: 页面切换导致的连接失败', error.message);
+      }
       throw error;
     }
   }
@@ -413,6 +427,26 @@ class MessageHandler {
    */
   static handleUnknownAction(request) {
     // 静默处理未知消息类型
+  }
+
+  /**
+   * 处理页面切换相关的错误
+   * @param {string} context - 错误上下文
+   * @param {Error} error - 错误对象
+   */
+  static handlePageSwitchError(context, error) {
+    const isConnectionError = error.message.includes('Could not establish connection') ||
+                             error.message.includes('未找到活动标签页') ||
+                             error.message.includes('Receiving end does not exist');
+    
+    if (isConnectionError) {
+      // 仅在开发环境显示这些正常的连接错误
+      if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+        console.warn(`[SoftError] ${context}: 页面切换导致的连接失败`, error.message);
+      }
+    } else {
+      console.error(`[Error] ${context}: 未知错误`, error);
+    }
   }
 }
 

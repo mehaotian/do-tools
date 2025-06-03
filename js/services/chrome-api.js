@@ -62,7 +62,12 @@ export class ChromeApiService {
         lastError = error;
         
         if (i < maxRetries) {
-          console.warn(`消息发送失败，正在重试 (${i + 1}/${maxRetries}):`, error.message);
+          // 消息发送失败通常是页面切换导致的正常情况
+        if (typeof ErrorHandler !== 'undefined') {
+          ErrorHandler.softError(`消息发送失败，正在重试 (${i + 1}/${maxRetries})`, error.message);
+        } else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+          console.warn(`[Debug] 消息发送失败，正在重试 (${i + 1}/${maxRetries}):`, error.message);
+        }
           await this.delay(this.retryDelay * (i + 1));
         }
       }

@@ -711,7 +711,12 @@ class PageBeautifyContent {
         }
       });
     } else {
-      console.error("[Content Script] 没有记录的原始状态，仅清除了内联样式");
+      // 没有记录的原始状态是正常情况，通常发生在页面刷新或首次清除时
+      if (typeof ErrorHandler !== 'undefined') {
+        ErrorHandler.info('没有记录的原始状态，仅清除了内联样式');
+      } else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+        console.info('[Debug] 没有记录的原始状态，仅清除了内联样式');
+      }
     }
 
     this.appliedStyles.clear();
