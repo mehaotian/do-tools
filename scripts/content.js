@@ -420,6 +420,9 @@ let globalTimerDisplay = null;
 // 初始化函数
 function initializeTimerDisplay() {
   if (!globalTimerDisplay) {
+    // 首先注入字体样式
+    addFontStylesGlobal();
+    
     globalTimerDisplay = new GlobalTimerDisplay();
     
     // 监听来自background的消息
@@ -451,6 +454,28 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeTimerDisplay);
 } else {
   initializeTimerDisplay();
+}
+
+/**
+ * 全局添加字体样式
+ */
+function addFontStylesGlobal() {
+  // 检查是否已经添加过字体样式
+  if (document.getElementById('do-timer-font-styles-global')) {
+    return;
+  }
+
+  const style = document.createElement('style');
+  style.id = 'do-timer-font-styles-global';
+  style.textContent = `
+    @font-face {
+      font-family: 'Digital';
+      src: url(chrome-extension://${chrome.runtime.id}/fonts/digital.ttf) format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 /**

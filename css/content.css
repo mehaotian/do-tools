@@ -1,12 +1,6 @@
 /* DO助手内容样式 */
 
-/* 字体定义 */
-@font-face {
-  font-family: 'Digital';
-  src: url('../fonts/digital.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-}
+/* 字体定义 - 由content.js动态注入 */
 
 /* 定时器主体样式 */
 .deep-work-timer {
