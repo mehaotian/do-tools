@@ -3112,7 +3112,77 @@ export class ThemeManager {
       this.hideModal("propertySelectModal")
     );
 
+    // 初始化自由CSS输入组件
+    this.setupFreeCSSInput();
+    
     this.renderPropertyCategories();
+  }
+
+  /**
+   * 设置自由CSS输入组件
+   */
+  async setupFreeCSSInput() {
+    try {
+      // 动态导入自由CSS输入组件
+      const { FreeCSSInput } = await import('../components/free-css-input.js');
+      
+      const container = document.getElementById('freeCssInputContainer');
+      if (!container) {
+        console.warn('自由CSS输入容器未找到');
+        return;
+      }
+
+      // 创建自由CSS输入组件实例
+      this.freeCSSInput = new FreeCSSInput(container, {
+        placeholder: '输入CSS属性名 (如: margin, color)',
+        onPropertyAdd: (property) => {
+          this.handleFreeCSSPropertyAdd(property);
+        },
+        onPropertyChange: (property) => {
+          // 实时预览可以在这里处理
+        },
+        maxSuggestions: 8,
+        showSuggestions: true
+      });
+      
+    } catch (error) {
+      console.error('初始化自由CSS输入组件失败:', error);
+    }
+  }
+
+  /**
+   * 处理自由CSS属性添加
+   * @param {string} property - CSS属性名
+   */
+  handleFreeCSSPropertyAdd(property) {
+    // 创建属性配置对象
+    const config = {
+      name: property,
+      type: 'text',
+      placeholder: `输入${property}值`
+    };
+    
+    // 添加属性编辑器
+    this.addPropertyEditor(property, config);
+    
+    // 设置默认空值
+    setTimeout(() => {
+      const propertyEditor = document.querySelector(`[data-property="${property}"] .property-value`);
+      if (propertyEditor) {
+        propertyEditor.value = '';
+        // 触发change事件以保存值
+        propertyEditor.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }, 100);
+    
+    // 检测修改并更新按钮状态
+    this.handleThemeChange();
+    
+    // 关闭模态框
+    this.hideModal('propertySelectModal', true);
+    
+    // 显示成功提示
+    Utils.showToast(`已添加CSS属性: ${property}`, 'success');
   }
 
   /**

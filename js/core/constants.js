@@ -175,89 +175,10 @@ export const CSS_PROPERTIES = {
 };
 
 /**
- * CSS属性分组配置 - 用于属性编辑器的分类显示
+ * CSS属性分组配置 - 为了向后兼容，使用CSS_PROPERTIES的别名
+ * @deprecated 请直接使用 CSS_PROPERTIES
  */
-export const CSS_PROPERTY_GROUPS = {
-  layout: {
-    name: "布局",
-    properties: {
-      display: { name: "显示方式", type: "select", options: ["block", "inline", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "none"] },
-      position: { name: "定位方式", type: "select", options: ["static", "relative", "absolute", "fixed", "sticky"] },
-      // Flex容器属性
-      "flex-direction": { name: "Flex方向", type: "select", options: ["row", "row-reverse", "column", "column-reverse"] },
-      "flex-wrap": { name: "Flex换行", type: "select", options: ["nowrap", "wrap", "wrap-reverse"] },
-      "justify-content": { name: "主轴对齐", type: "select", options: ["flex-start", "flex-end", "center", "space-between", "space-around", "space-evenly"] },
-      "align-items": { name: "交叉轴对齐", type: "select", options: ["stretch", "flex-start", "flex-end", "center", "baseline"] },
-      "align-content": { name: "多行对齐", type: "select", options: ["stretch", "flex-start", "flex-end", "center", "space-between", "space-around", "space-evenly"] },
-      "gap": { name: "间距", type: "text" },
-      "row-gap": { name: "行间距", type: "text" },
-      "column-gap": { name: "列间距", type: "text" },
-      // Flex项目属性
-      "flex": { name: "Flex缩放", type: "text", placeholder: "1 1 auto" },
-      "flex-grow": { name: "Flex增长", type: "text" },
-      "flex-shrink": { name: "Flex收缩", type: "text" },
-      "flex-basis": { name: "Flex基准", type: "text" },
-      "align-self": { name: "自身对齐", type: "select", options: ["auto", "stretch", "flex-start", "flex-end", "center", "baseline"] },
-      "order": { name: "排序", type: "text" },
-      width: { name: "宽度", type: "text" },
-      height: { name: "高度", type: "text" },
-      "min-width": { name: "最小宽度", type: "text" },
-      "max-width": { name: "最大宽度", type: "text" },
-      "min-height": { name: "最小高度", type: "text" },
-      "max-height": { name: "最大高度", type: "text" },
-      margin: { name: "外边距", type: "text" },
-      padding: { name: "内边距", type: "text" },
-      top: { name: "顶部距离", type: "text" },
-      left: { name: "左侧距离", type: "text" },
-      right: { name: "右侧距离", type: "text" },
-      bottom: { name: "底部距离", type: "text" },
-      "z-index": { name: "层级", type: "text" }
-    }
-  },
-  appearance: {
-    name: "外观",
-    properties: {
-      "background-color": { name: "背景颜色", type: "color" },
-      "background-image": { name: "背景图片", type: "text", placeholder: "url(image.jpg) 或 linear-gradient(...)" },
-      "background-size": { name: "背景尺寸", type: "combo", options: ["auto", "cover", "contain", "100%", "100% 100%", "50%", "200px", "200px 100px"] },
-      "background-repeat": { name: "背景重复", type: "combo", options: ["repeat", "no-repeat", "repeat-x", "repeat-y", "space", "round"] },
-      "background-position": { name: "背景位置", type: "combo", options: ["center", "top", "bottom", "left", "right", "top left", "top right", "bottom left", "bottom right", "center top", "center bottom"] },
-      "background-attachment": { name: "背景附着", type: "combo", options: ["scroll", "fixed", "local"] },
-      "background-clip": { name: "背景裁剪", type: "combo", options: ["border-box", "padding-box", "content-box", "text"] },
-      "background-origin": { name: "背景原点", type: "combo", options: ["border-box", "padding-box", "content-box"] },
-      "background-blend-mode": { name: "背景混合模式", type: "combo", options: ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"] },
-      color: { name: "文字颜色", type: "color" },
-      border: { name: "边框", type: "text" },
-      "border-radius": { name: "圆角", type: "text" },
-      "box-shadow": { name: "阴影", type: "text" },
-      opacity: { name: "透明度", type: "range", min: 0, max: 1, step: 0.1 }
-    }
-  },
-  typography: {
-    name: "文字",
-    properties: {
-      "font-size": { name: "字体大小", type: "text" },
-      "font-weight": { name: "字体粗细", type: "select", options: ["normal", "bold", "lighter", "bolder", "100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-      "font-family": { name: "字体", type: "text" },
-      "line-height": { name: "行高", type: "text" },
-      "text-align": { name: "文字对齐", type: "select", options: ["left", "center", "right", "justify"] },
-      "text-decoration": { name: "文字装饰", type: "select", options: ["none", "underline", "overline", "line-through"] },
-      "text-transform": { name: "文字转换", type: "select", options: ["none", "uppercase", "lowercase", "capitalize"] },
-      "letter-spacing": { name: "字母间距", type: "text" },
-      "word-spacing": { name: "单词间距", type: "text" }
-    }
-  },
-  effects: {
-    name: "效果",
-    properties: {
-      transform: { name: "变换", type: "text" },
-      transition: { name: "过渡", type: "text" },
-      animation: { name: "动画", type: "text" },
-      filter: { name: "滤镜", type: "text" },
-      "backdrop-filter": { name: "背景滤镜", type: "text" }
-    }
-  }
-};
+export const CSS_PROPERTY_GROUPS = CSS_PROPERTIES;
 
 /**
  * 预设主题配置

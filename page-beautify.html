@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/url-patterns.css" />
     <link rel="stylesheet" href="css/background-helper.css" />
     <link rel="stylesheet" href="css/color-picker.css" />
+    <link rel="stylesheet" href="css/free-css-input.css" />
   </head>
   <body>
     <!-- 顶部工具栏 -->
@@ -194,6 +195,20 @@
           <button class="modal-close" id="closePropertySelectModal">&times;</button>
         </div>
         <div class="modal-body">
+          <!-- 自由CSS输入区域 -->
+          <div class="free-css-section">
+            <h4 class="section-title">自由输入CSS属性</h4>
+            <div class="free-css-input-container" id="freeCssInputContainer">
+              <!-- 自由CSS输入组件将在这里动态生成 -->
+            </div>
+          </div>
+          
+          <!-- 分隔线 -->
+          <div class="section-divider">
+            <span>或选择预设属性</span>
+          </div>
+          
+          <!-- 预设属性分类 -->
           <div class="property-categories" id="propertyCategories">
             <!-- 属性分类将动态生成 -->
           </div>

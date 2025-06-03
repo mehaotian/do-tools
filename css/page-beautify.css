@@ -538,7 +538,7 @@ body {
 }
 
 .group-content.expanded {
-  max-height: 1000px;
+  max-height: none; /* 修改为none，避免内容被截断 */
   opacity: 1;
   padding: 1.5rem;
 }
@@ -3017,4 +3017,63 @@ input[list].property-value::placeholder {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 自由CSS输入区域样式 */
+.free-css-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: hsl(var(--muted) / 0.3);
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-title::before {
+  content: "✨";
+  font-size: 1.1rem;
+}
+
+.free-css-input-container {
+  margin-top: 0.5rem;
+}
+
+/* 分隔线样式 */
+.section-divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: hsl(var(--border));
+}
+
+.section-divider span {
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--background));
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  font-weight: 500;
+}
+
+/* 预设属性分类标题调整 */
+.property-categories {
+  margin-top: 0;
 }
