@@ -25,9 +25,7 @@
     "notifications",
     "sidePanel"
   ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
   },
@@ -35,20 +33,26 @@
     {
       "js": ["scripts/content.js"],
       "css": ["css/content.css"],
-      "matches": [
-        "<all_urls>"
-      ]
+      "matches": ["<all_urls>"]
     },
     {
       "js": ["scripts/page-beautify-content.js"],
-      "matches": [
-        "<all_urls>"
-      ]
+      "matches": ["<all_urls>"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["index.html", "css/*", "js/*", "modules/*", "images/*", "settings.html", "settings.js", "page-beautify.html"],
+      "resources": [
+        "index.html",
+        "css/*",
+        "js/*",
+        "fonts/*.ttf",
+        "modules/*",
+        "images/*",
+        "settings.html",
+        "settings.js",
+        "page-beautify.html"
+      ],
       "matches": ["<all_urls>"]
     }
   ],

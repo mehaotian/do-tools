@@ -200,16 +200,47 @@ class GlobalTimerDisplay {
       return;
     }
 
-    const content = this.formatTimeDisplay(
-      timerState.remainingSeconds,
-      timerState.originalMinutes || 25
-    );
+    // 检查是否已经有时间显示元素
+    let timeDisplayElement = this.timerElement.querySelector('.timer-time-display');
+    let statusTextElement = this.timerElement.querySelector('.timer-status-text');
     
-    this.timerElement.innerHTML = content;
-    
-    // 重新添加悬停遮罩和事件
-    this.createHoverOverlay();
-    this.addMouseEvents();
+    if (!timeDisplayElement || !statusTextElement) {
+      // 如果没有找到时间显示元素，说明需要重新创建整个内容
+      const content = this.formatTimeDisplay(
+        timerState.remainingSeconds,
+        timerState.originalMinutes || 25
+      );
+      
+      this.timerElement.innerHTML = content;
+      
+      // 重新添加悬停遮罩和事件
+      this.createHoverOverlay();
+      this.addMouseEvents();
+    } else {
+      // 只更新时间显示，不重新创建整个DOM结构
+      const hours = Math.floor(timerState.remainingSeconds / 3600);
+      const mins = Math.floor((timerState.remainingSeconds % 3600) / 60);
+      const secs = timerState.remainingSeconds % 60;
+
+      let timeText = "";
+      if (hours > 0) {
+        timeText = `${hours.toString().padStart(2, "0")}:${mins
+          .toString()
+          .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      } else {
+        timeText = `${mins.toString().padStart(2, "0")}:${secs
+          .toString()
+          .padStart(2, "0")}`;
+      }
+
+      // 只更新时间文本，保持DOM结构不变
+      timeDisplayElement.textContent = timeText;
+      
+      // 根据暂停状态更新状态文本
+      if (statusTextElement) {
+        statusTextElement.textContent = timerState.isPaused ? '计时器已暂停' : '疯狂摄取知识中';
+      }
+    }
   }
 
   /**

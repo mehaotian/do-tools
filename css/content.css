@@ -3,7 +3,7 @@
 /* 字体定义 */
 @font-face {
   font-family: 'Digital';
-  src: url(chrome-extension://EXTENSION_ID/fonts/digital.ttf) format('truetype');
+  src: url('../fonts/digital.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }

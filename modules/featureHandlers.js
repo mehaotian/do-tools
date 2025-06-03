@@ -475,6 +475,52 @@ class TimerHandler {
   }
 
   /**
+   * 暂停计时器
+   */
+  static async pause() {
+    try {
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
+      await ChromeAPIManager.sendMessage({ action: "pauseTimer" });
+      showNotification('计时器已暂停', 'info');
+    } catch (error) {
+      console.error('Failed to pause timer:', error);
+      
+      let errorMessage = '暂停计时器失败';
+      if (error.message.includes('Extension context is invalid')) {
+        errorMessage = '扩展已失效，请刷新页面重试';
+      }
+      
+      showNotification(errorMessage, 'error');
+    }
+  }
+
+  /**
+   * 继续计时器
+   */
+  static async resume() {
+    try {
+      if (!ChromeAPIManager.isExtensionContextValid()) {
+        throw new Error('Extension context is invalid');
+      }
+      
+      await ChromeAPIManager.sendMessage({ action: "resumeTimer" });
+      showNotification('计时器已继续', 'info');
+    } catch (error) {
+      console.error('Failed to resume timer:', error);
+      
+      let errorMessage = '继续计时器失败';
+      if (error.message.includes('Extension context is invalid')) {
+        errorMessage = '扩展已失效，请刷新页面重试';
+      }
+      
+      showNotification(errorMessage, 'error');
+    }
+  }
+
+  /**
    * 获取计时器状态
    * @returns {Promise<Object>} 计时器状态
    */

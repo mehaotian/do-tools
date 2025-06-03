@@ -23,6 +23,8 @@ class GlobalTimerManager {
       totalMinutes: 0,
       remainingSeconds: 0,
       startTime: null,
+      isPaused: false, // 新增：是否暂停
+      pausedTime: null // 新增：暂停时间点
     };
     this.isDestroyed = false; // 标记是否已销毁
 
@@ -61,6 +63,8 @@ class GlobalTimerManager {
       totalMinutes: minutes,
       remainingSeconds: minutes * 60,
       startTime: Date.now(),
+      isPaused: false,
+      pausedTime: null
     };
 
     // 立即广播初始状态到所有标签页
@@ -74,6 +78,11 @@ class GlobalTimerManager {
         return;
       }
 
+      // 如果计时器暂停，不更新剩余时间
+      if (this.timerState.isPaused) {
+        return;
+      }
+
       this.timerState.remainingSeconds--;
 
       if (this.timerState.remainingSeconds <= 0) {
@@ -84,6 +93,32 @@ class GlobalTimerManager {
         await this.broadcastTimerState();
       }
     }, 1000);
+  }
+
+  /**
+   * 暂停计时器
+   */
+  async pauseTimer() {
+    if (!this.timerState.isActive || this.timerState.isPaused) {
+      return;
+    }
+
+    this.timerState.isPaused = true;
+    this.timerState.pausedTime = Date.now();
+    await this.broadcastTimerState();
+  }
+
+  /**
+   * 继续计时器
+   */
+  async resumeTimer() {
+    if (!this.timerState.isActive || !this.timerState.isPaused) {
+      return;
+    }
+
+    this.timerState.isPaused = false;
+    this.timerState.pausedTime = null;
+    await this.broadcastTimerState();
   }
 
   /**
@@ -282,6 +317,34 @@ class MessageHandler {
   }
 
   /**
+   * 处理暂停计时器消息
+   * @param {Object} request - 消息请求对象
+   */
+  static async handlePauseTimer(request) {
+    try {
+      await globalTimer.pauseTimer();
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to pause timer:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * 处理继续计时器消息
+   * @param {Object} request - 消息请求对象
+   */
+  static async handleResumeTimer(request) {
+    try {
+      await globalTimer.resumeTimer();
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to resume timer:", error);
+      throw error;
+    }
+  }
+
+  /**
    * 处理获取计时器状态消息
    * @param {Function} sendResponse - 响应函数
    */
@@ -363,6 +426,8 @@ class MessageHandler {
 const messageRouter = {
   startTimer: MessageHandler.handleStartTimer,
   stopTimer: MessageHandler.handleStopTimer,
+  pauseTimer: MessageHandler.handlePauseTimer,
+  resumeTimer: MessageHandler.handleResumeTimer,
   getTimerState: MessageHandler.handleGetTimerState,
   showNotification: MessageHandler.handleShowNotification,
   pageBeautify: MessageHandler.handlePageBeautify,

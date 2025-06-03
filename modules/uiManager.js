@@ -257,10 +257,13 @@ class TimerSettingsManager {
         <div class="timer-settings-content">
           <div class="timer-status" id="timer-status" style="display: none;">
             <div class="status-info">
-              <span class="status-text">计时器正在运行中...</span>
+              <span class="status-text" id="status-text">计时器正在运行中...</span>
               <span class="remaining-time" id="remaining-time"></span>
             </div>
-            <button class="stop-timer-btn" type="button">停止计时器</button>
+            <div class="timer-controls">
+              <button class="pause-resume-btn" id="pause-resume-btn" type="button">暂停</button>
+              <button class="stop-timer-btn" type="button">停止计时器</button>
+            </div>
           </div>
           <div class="time-input-group" id="time-input-group">
             <div class="input-mode-toggle">
@@ -498,8 +501,38 @@ class TimerSettingsManager {
         font-size: 16px;
       }
 
+      .timer-controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      .pause-resume-btn {
+        flex: 1;
+        padding: 10px;
+        background: #f59e0b;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .pause-resume-btn:hover {
+        background: #d97706;
+      }
+
+      .pause-resume-btn.paused {
+        background: #10b981;
+      }
+
+      .pause-resume-btn.paused:hover {
+        background: #059669;
+      }
+
       .stop-timer-btn {
-        width: 100%;
+        flex: 1;
         padding: 10px;
         background: #ef4444;
         color: white;
@@ -629,6 +662,12 @@ class TimerSettingsManager {
         this.addEventListenerTracked(stopBtn, "click", () => this.stopTimer());
       }
 
+      // 暂停/继续按钮
+      const pauseResumeBtn = this.settingsContainer.querySelector("#pause-resume-btn");
+      if (pauseResumeBtn) {
+        this.addEventListenerTracked(pauseResumeBtn, "click", () => this.togglePauseResume());
+      }
+
       // 模式切换按钮
       const modeBtns = this.settingsContainer.querySelectorAll(".mode-btn");
       modeBtns.forEach((btn) => {
@@ -742,6 +781,8 @@ class TimerSettingsManager {
               isRunning: response.timerState.isActive,
               remainingSeconds: response.timerState.remainingSeconds,
               originalMinutes: response.timerState.originalMinutes,
+              isPaused: response.timerState.isPaused || false,
+              pausedTime: response.timerState.pausedTime
             });
           } else {
             resolve(null);
@@ -784,6 +825,33 @@ class TimerSettingsManager {
   }
 
   /**
+   * 切换暂停/继续状态
+   */
+  async togglePauseResume() {
+    if (this.isDestroyed) return;
+
+    try {
+      const status = await this.getTimerStatus();
+      if (status && status.isRunning) {
+        if (status.isPaused) {
+          await TimerHandler.resume();
+        } else {
+          await TimerHandler.pause();
+        }
+        // 重新检查状态以更新UI
+        setTimeout(() => {
+          if (!this.isDestroyed) {
+            this.checkTimerStatus();
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error("切换暂停/继续状态失败:", error);
+      showToast("操作失败，请重试！", "error");
+    }
+  }
+
+  /**
    * 更新状态显示
    * @param {Object} status - 计时器状态
    */
@@ -793,14 +861,12 @@ class TimerSettingsManager {
     }
 
     const statusDiv = this.settingsContainer.querySelector("#timer-status");
-    const inputGroup =
-      this.settingsContainer.querySelector("#time-input-group");
-    const presetButtons =
-      this.settingsContainer.querySelector("#preset-buttons");
-    const actionButtons =
-      this.settingsContainer.querySelector("#action-buttons");
-    const remainingTimeSpan =
-      this.settingsContainer.querySelector("#remaining-time");
+    const inputGroup = this.settingsContainer.querySelector("#time-input-group");
+    const presetButtons = this.settingsContainer.querySelector("#preset-buttons");
+    const actionButtons = this.settingsContainer.querySelector("#action-buttons");
+    const remainingTimeSpan = this.settingsContainer.querySelector("#remaining-time");
+    const statusText = this.settingsContainer.querySelector("#status-text");
+    const pauseResumeBtn = this.settingsContainer.querySelector("#pause-resume-btn");
 
     if (status.isRunning) {
       // 显示运行状态
@@ -809,12 +875,27 @@ class TimerSettingsManager {
       if (presetButtons) presetButtons.style.display = "none";
       if (actionButtons) actionButtons.style.display = "none";
 
+      // 更新状态文本
+      if (statusText) {
+        statusText.textContent = status.isPaused ? "计时器已暂停" : "计时器正在运行中...";
+      }
+
+      // 更新剩余时间显示
       if (remainingTimeSpan && status.remainingSeconds) {
         const minutes = Math.floor(status.remainingSeconds / 60);
         const seconds = status.remainingSeconds % 60;
-        remainingTimeSpan.textContent = `${minutes}:${seconds
-          .toString()
-          .padStart(2, "0")}`;
+        remainingTimeSpan.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+      }
+
+      // 更新暂停/继续按钮
+      if (pauseResumeBtn) {
+        if (status.isPaused) {
+          pauseResumeBtn.textContent = "继续";
+          pauseResumeBtn.classList.add("paused");
+        } else {
+          pauseResumeBtn.textContent = "暂停";
+          pauseResumeBtn.classList.remove("paused");
+        }
       }
     } else {
       // 显示设置状态
