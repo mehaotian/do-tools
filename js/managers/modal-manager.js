@@ -1132,6 +1132,7 @@ export class ModalManager {
    */
   updateColorEditor(editor, value) {
     const colorPicker = editor.querySelector('.color-picker');
+    const colorTextInput = editor.querySelector('.color-text-input');
     const alphaSlider = editor.querySelector('.alpha-slider');
     const alphaValue = editor.querySelector('.alpha-value');
     const hiddenInput = editor.querySelector('.rgba-value');
@@ -1143,11 +1144,10 @@ export class ModalManager {
     
     if (value) {
       if (value === 'transparent') {
-        // 处理transparent值，显示为完全透明
-        hexColor = '#000000';
+        // 处理transparent值，颜色选择器显示白色，透明度为0，文本输入框显示transparent
+        hexColor = '#ffffff';
         alpha = 0;
         console.log(`解析transparent成功: hex=${hexColor}, alpha=${alpha}`); // 调试日志
-        console.log(`hexColor长度检查: ${hexColor.length}`); // 调试hexColor长度
       } else if (value.startsWith('rgba(')) {
         const rgbaMatch = value.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
         if (rgbaMatch) {
@@ -1182,6 +1182,7 @@ export class ModalManager {
     if (alphaSlider) alphaSlider.value = alpha;
     if (alphaValue) alphaValue.textContent = Math.round(alpha * 100) + '%';
     if (hiddenInput) hiddenInput.value = value;
+    if (colorTextInput) colorTextInput.value = value;
     
     console.log('颜色编辑器更新完成'); // 调试日志
   }

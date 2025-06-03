@@ -2332,9 +2332,14 @@ export class ThemeManager {
         const r = parseInt(hexColor.slice(1, 3), 16);
         const g = parseInt(hexColor.slice(3, 5), 16);
         const b = parseInt(hexColor.slice(5, 7), 16);
-        const rgba = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        hiddenInput.value = rgba;
-        if (colorTextInput) colorTextInput.value = rgba;
+        let colorValue;
+        if (alpha === 0) {
+          colorValue = 'transparent';
+        } else {
+          colorValue = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        hiddenInput.value = colorValue;
+        if (colorTextInput) colorTextInput.value = colorValue;
       }
       
       console.log(`颜色属性设置完成: hex=${hexColor}, alpha=${alpha}`); // 调试日志
@@ -2489,13 +2494,19 @@ export class ThemeManager {
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
         
-        // 生成RGBA值
-        const rgba = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        hiddenInput.value = rgba;
-        colorTextInput.value = rgba;
+        // 生成颜色值
+        let colorValue;
+        if (alpha === 0) {
+          colorValue = 'transparent';
+        } else {
+          colorValue = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        
+        hiddenInput.value = colorValue;
+        colorTextInput.value = colorValue;
         alphaValue.textContent = Math.round(alpha * 100) + '%';
         
-        this.previewStyle(property, rgba);
+        this.previewStyle(property, colorValue);
         // 检测修改并更新按钮状态
         this.handleThemeChange();
       };
@@ -2506,7 +2517,11 @@ export class ThemeManager {
         let hexColor = '#ffffff';
         let alpha = 1;
         
-        if (textValue.startsWith('rgba(')) {
+        if (textValue === 'transparent') {
+          // 处理transparent值
+          hexColor = '#ffffff';
+          alpha = 0;
+        } else if (textValue.startsWith('rgba(')) {
           const rgbaMatch = textValue.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
           if (rgbaMatch) {
             const [, r, g, b, a] = rgbaMatch;
@@ -2533,10 +2548,16 @@ export class ThemeManager {
         alphaSlider.value = alpha;
         alphaValue.textContent = Math.round(alpha * 100) + '%';
         
-        const rgba = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
-        hiddenInput.value = rgba;
+        let colorValue;
+        if (alpha === 0) {
+          colorValue = 'transparent';
+        } else {
+          colorValue = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
+        }
         
-        this.previewStyle(property, rgba);
+        hiddenInput.value = colorValue;
+        
+        this.previewStyle(property, colorValue);
         // 检测修改并更新按钮状态
         this.handleThemeChange();
       };

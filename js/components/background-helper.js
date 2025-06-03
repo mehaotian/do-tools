@@ -361,8 +361,13 @@ export class BackgroundHelper {
       alphaValue.textContent = Math.round(alpha * 100) + '%';
       
       // 设置文本输入框的初始值
-      const initialRgba = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
-      colorTextInput.value = initialRgba;
+      let initialValue;
+      if (alpha === 0) {
+        initialValue = 'transparent';
+      } else {
+        initialValue = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
+      }
+      colorTextInput.value = initialValue;
       
       // 更新RGBA值的函数
       const updateRGBA = () => {
@@ -372,13 +377,19 @@ export class BackgroundHelper {
         const b = parseInt(hex.slice(5, 7), 16);
         const a = parseFloat(alphaSlider.value);
         
-        const rgba = `rgba(${r}, ${g}, ${b}, ${a})`;
-        input.value = rgba;
-        colorTextInput.value = rgba;
+        let colorValue;
+        if (a === 0) {
+          colorValue = 'transparent';
+        } else {
+          colorValue = `rgba(${r}, ${g}, ${b}, ${a})`;
+        }
+        
+        input.value = colorValue;
+        colorTextInput.value = colorValue;
         alphaValue.textContent = Math.round(a * 100) + '%';
         
         // 触发属性更新
-        this.updateProperty(property, rgba);
+        this.updateProperty(property, colorValue);
       };
       
       // 从文本输入框更新颜色的函数
@@ -387,7 +398,11 @@ export class BackgroundHelper {
         let hexColor = '#ffffff';
         let alpha = 1;
         
-        if (textValue.startsWith('rgba(')) {
+        if (textValue === 'transparent') {
+          // 处理transparent值
+          hexColor = '#ffffff';
+          alpha = 0;
+        } else if (textValue.startsWith('rgba(')) {
           const rgbaMatch = textValue.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
           if (rgbaMatch) {
             const [, r, g, b, a] = rgbaMatch;
@@ -414,11 +429,17 @@ export class BackgroundHelper {
         alphaSlider.value = alpha;
         alphaValue.textContent = Math.round(alpha * 100) + '%';
         
-        const rgba = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
-        input.value = rgba;
+        let colorValue;
+        if (alpha === 0) {
+          colorValue = 'transparent';
+        } else {
+          colorValue = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
+        }
+        
+        input.value = colorValue;
         
         // 触发属性更新
-        this.updateProperty(property, rgba);
+        this.updateProperty(property, colorValue);
       };
       
       // 绑定事件
