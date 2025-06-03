@@ -2220,7 +2220,15 @@ export class ThemeManager {
     }
 
     if (selectorInput) {
-      selectorInput.value = rule.selector;
+      // 解析选择器中的伪类部分
+      const { baseSelector, pseudoClass } = this.parseSelectorWithPseudo(rule.selector);
+      selectorInput.value = baseSelector;
+      
+      // 设置伪类选择器
+      const pseudoClassSelector = document.getElementById("pseudoClassSelector");
+      if (pseudoClassSelector) {
+        pseudoClassSelector.value = pseudoClass || "";
+      }
     }
 
     // 填充CSS属性
@@ -2256,6 +2264,7 @@ export class ThemeManager {
   resetAddRuleModalState() {
     // 清空输入框
     const selectorInput = document.getElementById("cssSelector");
+    const pseudoClassSelector = document.getElementById("pseudoClassSelector");
     const propertiesContainer = document.getElementById("cssProperties");
     const indicator = document.getElementById("selectorStatusIndicator");
     const suggestions = document.getElementById("selectorSuggestions");
@@ -2264,6 +2273,10 @@ export class ThemeManager {
 
     if (selectorInput) {
       selectorInput.value = "";
+    }
+
+    if (pseudoClassSelector) {
+      pseudoClassSelector.value = "";
     }
 
     if (propertiesContainer) {
@@ -2798,17 +2811,56 @@ export class ThemeManager {
   }
 
   /**
+   * 解析选择器中的伪类部分
+   * @param {string} selector - 完整的选择器
+   * @returns {Object} 包含基础选择器和伪类的对象
+   */
+  parseSelectorWithPseudo(selector) {
+    if (!selector) return { baseSelector: "", pseudoClass: "" };
+    
+    // 匹配伪类和伪元素
+    const pseudoMatch = selector.match(/^(.+?)(::?[\w-]+(?:\([^)]*\))?)$/);
+    
+    if (pseudoMatch) {
+      return {
+        baseSelector: pseudoMatch[1].trim(),
+        pseudoClass: pseudoMatch[2]
+      };
+    }
+    
+    return { baseSelector: selector, pseudoClass: "" };
+  }
+
+  /**
+   * 组合基础选择器和伪类
+   * @param {string} baseSelector - 基础选择器
+   * @param {string} pseudoClass - 伪类
+   * @returns {string} 完整的选择器
+   */
+  combineSelectorWithPseudo(baseSelector, pseudoClass) {
+    if (!baseSelector.trim()) return "";
+    if (!pseudoClass) return baseSelector;
+    return baseSelector + pseudoClass;
+  }
+
+  /**
    * 验证CSS选择器
    */
   async validateSelector() {
-    const selector = document.getElementById("cssSelector").value;
+    const selectorInput = document.getElementById("cssSelector");
+    const pseudoClassSelector = document.getElementById("pseudoClassSelector");
     const indicator = document.getElementById("selectorStatusIndicator");
     const suggestions = document.getElementById("selectorSuggestions");
 
-    // 清除之前的高亮效果
-    this.clearSelectorHighlight();
+    const baseSelector = selectorInput.value;
+    const pseudoClass = pseudoClassSelector.value;
+    const fullSelector = this.combineSelectorWithPseudo(baseSelector, pseudoClass);
 
-    if (!selector.trim()) {
+    // 清除之前的高亮效果和伪类模拟
+    this.clearSelectorHighlight();
+    this.clearPseudoClassSimulation();
+
+    if (!baseSelector.trim()) {
       indicator.className = "selector-status-indicator invalid animate-in";
       suggestions.textContent = "请输入CSS选择器，例如：nav, .navbar, #header";
       suggestions.className = "selector-suggestions error";
@@ -2817,26 +2869,33 @@ export class ThemeManager {
     }
 
     try {
-      // 通过background层路由转发消息到content script
+      // 使用基础选择器进行验证
       const response = await chrome.runtime.sendMessage({
         action: "pageBeautify",
         type: "VALIDATE_SELECTOR",
-        data: { selector: selector },
+        data: { selector: baseSelector },
       });
 
       if (response && response.success) {
         if (response.isValid && response.elementCount > 0) {
           indicator.className = "selector-status-indicator valid animate-in";
-          suggestions.textContent = `找到 ${response.elementCount} 个匹配元素`;
+          const pseudoText = pseudoClass ? ` (${pseudoClass})` : "";
+          suggestions.textContent = `找到 ${response.elementCount} 个匹配元素${pseudoText}`;
           suggestions.className = "selector-suggestions success show";
           suggestions.style.display = "block";
 
           // 高亮匹配的元素
-          this.highlightElements(selector);
+          this.highlightElements(baseSelector);
 
-          // 3秒后自动清除高亮
+          // 如果选择了伪类，模拟伪类效果
+          if (pseudoClass) {
+            this.simulatePseudoClass(baseSelector, pseudoClass);
+          }
+
+          // 3秒后自动清除高亮和伪类模拟
           setTimeout(() => {
             this.clearSelectorHighlight();
+            this.clearPseudoClassSimulation();
           }, 3000);
         } else {
           indicator.className = "selector-status-indicator invalid animate-in";
@@ -2883,6 +2942,39 @@ export class ThemeManager {
   }
 
   /**
+   * 模拟伪类效果
+   * @param {string} baseSelector - 基础选择器
+   * @param {string} pseudoClass - 伪类
+   */
+  async simulatePseudoClass(baseSelector, pseudoClass) {
+    try {
+      await chrome.runtime.sendMessage({
+        action: "pageBeautify",
+        type: "SIMULATE_PSEUDO_CLASS",
+        data: { 
+          selector: baseSelector, 
+          pseudoClass: pseudoClass 
+        },
+      });
+    } catch (error) {
+      console.warn("模拟伪类效果失败:", error);
+    }
+  }
+
+  /**
+   * 清除伪类模拟效果
+   */
+  async clearPseudoClassSimulation() {
+    try {
+      await chrome.runtime.sendMessage({
+        action: "pageBeautify",
+        type: "CLEAR_PSEUDO_CLASS_SIMULATION",
+        data: {},
+      });
+    } catch (error) {}
+  }
+
+  /**
    * 添加组
    * @param {string} name - 组名
    * @param {string} description - 组描述
@@ -2915,7 +3007,10 @@ export class ThemeManager {
    */
   addCSSRule() {
     const selectorElement = document.getElementById("cssSelector");
-    const selector = selectorElement?.value || "";
+    const pseudoClassSelector = document.getElementById("pseudoClassSelector");
+    const baseSelector = selectorElement?.value || "";
+    const pseudoClass = pseudoClassSelector?.value || "";
+    const selector = this.combineSelectorWithPseudo(baseSelector, pseudoClass);
     const properties = {};
 
     // 收集属性
@@ -2931,7 +3026,7 @@ export class ThemeManager {
       }
     });
 
-    if (!selector.trim()) {
+    if (!baseSelector.trim()) {
       Utils.showToast("请输入CSS选择器", "error");
       return;
     }
@@ -3059,6 +3154,8 @@ export class ThemeManager {
 
     // 选择器输入框变化时清除高亮和预览，并添加节流验证
     const selectorInput = document.getElementById("cssSelector");
+    const pseudoClassSelector = document.getElementById("pseudoClassSelector");
+    
     if (selectorInput) {
       selectorInput.addEventListener("input", () => {
         // 延迟清除高亮，避免频繁调用
@@ -3092,6 +3189,28 @@ export class ThemeManager {
               suggestions.style.display = "none";
             }
           }
+        }
+      });
+    }
+
+    // 伪类选择器变化时清除高亮和预览效果
+    if (pseudoClassSelector) {
+      pseudoClassSelector.addEventListener("change", () => {
+        // 清除之前的高亮和伪类模拟效果
+        this.clearSelectorHighlight();
+        this.clearPseudoClassSimulation();
+        
+        // 检测修改并更新按钮状态
+        this.handleThemeChange();
+        
+        // 如果有基础选择器，重新验证
+        const baseSelector = selectorInput?.value?.trim();
+        if (baseSelector) {
+          // 延迟验证，避免频繁调用
+          clearTimeout(this.validateSelectorTimer);
+          this.validateSelectorTimer = setTimeout(() => {
+            this.validateSelector();
+          }, 300);
         }
       });
     }

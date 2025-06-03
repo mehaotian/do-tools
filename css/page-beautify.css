@@ -1241,6 +1241,64 @@ body {
   flex: 1;
 }
 
+/* 伪类选择器下拉框 */
+.pseudo-class-select {
+  min-width: 120px;
+  max-width: 150px;
+  font-size: 0.875rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  padding: 0.5rem 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.pseudo-class-select:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.pseudo-class-select option {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  padding: 0.25rem 0.5rem;
+}
+
+/* 伪类模拟样式 */
+.page-beautify-pseudo-hover {
+  /* 强制应用hover样式 */
+  pointer-events: auto !important;
+}
+
+.page-beautify-pseudo-focus {
+  /* 强制应用focus样式 */
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
+.page-beautify-pseudo-active {
+  /* 强制应用active样式 */
+  transform: scale(0.98) !important;
+  transition: transform 0.1s ease !important;
+}
+
+.page-beautify-pseudo-visited {
+  /* 强制应用visited样式（仅对链接） */
+  color: #8b5cf6 !important;
+}
+
+/* 通过CSS变量强制触发hover状态 */
+[data-pseudo-simulation=":hover"] {
+  /* 这里可以添加通用的hover模拟样式 */
+}
+
+/* 为了确保hover样式生效，我们需要使用更高的特异性 */
+[data-pseudo-simulation=":hover"]:not(.no-hover) {
+  /* 模拟hover状态的通用样式 */
+}
+
 .selector-status-indicator {
   width: 8px;
   height: 8px;

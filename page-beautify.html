@@ -164,6 +164,17 @@
             <label for="cssSelector">CSS选择器</label>
             <div class="selector-input-group">
               <input type="text" id="cssSelector" class="form-input" placeholder="例如：nav, .navbar, #header">
+              <select id="pseudoClassSelector" class="form-select pseudo-class-select">
+                <option value="">元素</option>
+                <option value=":hover">:hover</option>
+                <option value=":focus">:focus</option>
+                <option value=":active">:active</option>
+                <option value=":visited">:visited</option>
+                <option value="::before">::before</option>
+                <option value="::after">::after</option>
+                <option value="::first-line">::first-line</option>
+                <option value="::first-letter">::first-letter</option>
+              </select>
               <button class="btn btn-sm btn-outline" id="validateSelector">验证</button>
               <div class="selector-status-indicator" id="selectorStatusIndicator"></div>
             </div>

@@ -468,6 +468,19 @@ class PageBeautifyContent {
           sendResponse({ success: true });
           break;
 
+        case "SIMULATE_PSEUDO_CLASS":
+          this.simulatePseudoClass(
+            request.data.selector,
+            request.data.pseudoClass
+          );
+          sendResponse({ success: true });
+          break;
+
+        case "CLEAR_PSEUDO_CLASS_SIMULATION":
+          this.clearPseudoClassSimulation();
+          sendResponse({ success: true });
+          break;
+
         default:
           console.warn("未知的消息类型:", request.type);
           sendResponse({ success: false, error: "未知的消息类型" });
@@ -894,6 +907,130 @@ class PageBeautifyContent {
   /**
    * 清除选择器高亮效果
    */
+  /**
+   * 模拟伪类效果
+   * @param {string} selector - 基础选择器
+   * @param {string} pseudoClass - 伪类
+   */
+  simulatePseudoClass(selector, pseudoClass) {
+    try {
+      // 先清除之前的模拟效果
+      this.clearPseudoClassSimulation();
+      
+      const elements = document.querySelectorAll(selector);
+      if (elements.length === 0) {
+        console.warn("未找到匹配的元素:", selector);
+        return;
+      }
+
+      elements.forEach((element) => {
+        // 标记为伪类模拟元素
+        element.setAttribute("data-pseudo-simulation", pseudoClass);
+        
+        switch (pseudoClass) {
+          case ":hover":
+             // 模拟hover状态
+             element.classList.add("page-beautify-pseudo-hover");
+             // 强制触发hover样式 - 通过添加特殊属性来模拟hover
+             element.setAttribute("data-force-hover", "true");
+             // 手动触发mouseenter事件来激活hover样式
+             const mouseEnterEvent = new MouseEvent('mouseenter', {
+               bubbles: true,
+               cancelable: true,
+               view: window
+             });
+             element.dispatchEvent(mouseEnterEvent);
+             break;
+            
+          case ":focus":
+            // 模拟focus状态
+            element.classList.add("page-beautify-pseudo-focus");
+            element.focus();
+            break;
+            
+          case ":active":
+            // 模拟active状态
+            element.classList.add("page-beautify-pseudo-active");
+            break;
+            
+          case ":visited":
+            // 模拟visited状态（仅对链接有效）
+            if (element.tagName.toLowerCase() === "a") {
+              element.classList.add("page-beautify-pseudo-visited");
+            }
+            break;
+            
+          case "::before":
+          case "::after":
+          case "::first-line":
+          case "::first-letter":
+            // 伪元素通常不需要特殊模拟，CSS会自动处理
+            element.classList.add(`page-beautify-pseudo${pseudoClass.replace(":", "-")}`);
+            break;
+            
+          default:
+            console.warn("不支持的伪类:", pseudoClass);
+        }
+      });
+      
+      console.log(`已为 ${elements.length} 个元素模拟 ${pseudoClass} 效果`);
+    } catch (error) {
+      console.error("模拟伪类效果失败:", error);
+    }
+  }
+
+  /**
+   * 清除伪类模拟效果
+   */
+  clearPseudoClassSimulation() {
+    try {
+      // 查找所有带有伪类模拟标记的元素
+      const simulatedElements = document.querySelectorAll("[data-pseudo-simulation]");
+      
+      simulatedElements.forEach((element) => {
+        const pseudoClass = element.getAttribute("data-pseudo-simulation");
+        
+        // 移除相关的类名
+        element.classList.remove(
+          "page-beautify-pseudo-hover",
+          "page-beautify-pseudo-focus", 
+          "page-beautify-pseudo-active",
+          "page-beautify-pseudo-visited",
+          "page-beautify-pseudo--before",
+          "page-beautify-pseudo--after",
+          "page-beautify-pseudo--first-line",
+          "page-beautify-pseudo--first-letter"
+        );
+        
+        // 移除自定义属性和强制hover属性
+         element.style.removeProperty("--pseudo-hover");
+         element.removeAttribute("data-force-hover");
+         
+         // 如果是hover状态，触发mouseleave事件来清除hover效果
+         if (pseudoClass === ":hover") {
+           const mouseLeaveEvent = new MouseEvent('mouseleave', {
+             bubbles: true,
+             cancelable: true,
+             view: window
+           });
+           element.dispatchEvent(mouseLeaveEvent);
+         }
+         
+         // 如果是focus状态，取消焦点
+         if (pseudoClass === ":focus" && document.activeElement === element) {
+           element.blur();
+         }
+        
+        // 移除标记属性
+        element.removeAttribute("data-pseudo-simulation");
+      });
+      
+      console.log(`已清除 ${simulatedElements.length} 个元素的伪类模拟效果`);
+    } catch (error) {
+      console.error("清除伪类模拟效果失败:", error);
+    }
+  }
+
   /**
    * 清除选择器高亮效果
    */
