@@ -8,6 +8,24 @@
   margin-bottom: 1rem;
 }
 
+/* 输入提示文字样式 */
+.css-input-hint {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.css-input-hint .hint-text {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground) / 0.7);
+  font-weight: 400;
+  letter-spacing: 0.025em;
+  transition: color 0.2s ease;
+}
+
+.css-input-container:focus-within + .css-input-hint .hint-text {
+  color: hsl(var(--muted-foreground) / 0.9);
+}
+
 .css-input-container {
   display: flex;
   align-items: center;

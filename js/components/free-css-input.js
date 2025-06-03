@@ -52,6 +52,9 @@ export class FreeCSSInput {
           <div class="css-suggestions property-suggestions" style="display: none;"></div>
           <button type="button" class="css-add-btn" title="添加属性">+</button>
         </div>
+        <div class="css-input-hint">
+          <span class="hint-text">Tab 自动补全 • 回车 确认添加</span>
+        </div>
       </div>
     `;
     
@@ -156,7 +159,7 @@ export class FreeCSSInput {
 
   
   /**
-   * 处理属性输入框键盘事件
+   * 处理属性输入的键盘事件
    * @param {KeyboardEvent} e - 键盘事件
    */
   handlePropertyKeydown(e) {
@@ -190,7 +193,8 @@ export class FreeCSSInput {
       case 'Enter':
         e.preventDefault();
         if (this.selectedSuggestionIndex >= 0) {
-          this.selectProperty(this.suggestions[this.selectedSuggestionIndex]);
+          // 回车键：选择建议项并直接添加属性
+          this.selectPropertyAndAdd(this.suggestions[this.selectedSuggestionIndex]);
         } else if (this.currentProperty && this.currentProperty.trim().length > 0) {
           this.addProperty();
         }
@@ -201,11 +205,14 @@ export class FreeCSSInput {
         break;
         
       case 'Tab':
+        e.preventDefault();
         if (this.selectedSuggestionIndex >= 0) {
-          e.preventDefault();
-          this.selectProperty(this.suggestions[this.selectedSuggestionIndex]);
+          // Tab键：只自动补全，不直接添加属性
+          this.autoCompleteProperty(this.suggestions[this.selectedSuggestionIndex]);
+        } else if (this.suggestions.length > 0) {
+          // 如果没有选中项但有建议，自动补全第一个
+          this.autoCompleteProperty(this.suggestions[0]);
         }
-        this.hidePropertySuggestions();
         break;
     }
   }
@@ -270,6 +277,36 @@ export class FreeCSSInput {
     this.updateAddButtonState();
     
     // 选择属性后可以直接添加
+    if (property && property.trim().length > 0) {
+      this.addProperty();
+    }
+  }
+  
+  /**
+   * 自动补全属性（Tab键功能）
+   * @param {string} property - 属性名
+   */
+  autoCompleteProperty(property) {
+    this.currentProperty = property;
+    this.propertyInput.value = property;
+    this.hidePropertySuggestions();
+    this.updateAddButtonState();
+    
+    // 自动补全后不直接添加，等待用户进一步操作
+    // 可以继续输入或按回车确认
+  }
+  
+  /**
+   * 选择属性并直接添加（回车键功能）
+   * @param {string} property - 属性名
+   */
+  selectPropertyAndAdd(property) {
+    this.currentProperty = property;
+    this.propertyInput.value = property;
+    this.hidePropertySuggestions();
+    this.updateAddButtonState();
+    
+    // 直接添加属性
     if (property && property.trim().length > 0) {
       this.addProperty();
     }
