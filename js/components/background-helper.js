@@ -274,10 +274,20 @@ export class BackgroundHelper {
       const colorContainer = document.createElement('div');
       colorContainer.className = 'color-input-container';
       
+      // 创建颜色选择器行容器
+      const colorPickerRow = document.createElement('div');
+      colorPickerRow.className = 'color-picker-row';
+      
+      // 颜色文本输入框
+      const colorTextInput = document.createElement('input');
+      colorTextInput.type = 'text';
+      colorTextInput.className = 'form-input color-text-input';
+      colorTextInput.placeholder = '输入颜色值';
+      
       // 颜色选择器
       const colorPicker = document.createElement('input');
       colorPicker.type = 'color';
-      colorPicker.className = 'color-picker';
+      colorPicker.className = 'form-input color-picker';
       
       // 透明度滑块容器
       const alphaContainer = document.createElement('div');
@@ -350,6 +360,10 @@ export class BackgroundHelper {
       alphaSlider.value = alpha;
       alphaValue.textContent = Math.round(alpha * 100) + '%';
       
+      // 设置文本输入框的初始值
+      const initialRgba = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
+      colorTextInput.value = initialRgba;
+      
       // 更新RGBA值的函数
       const updateRGBA = () => {
         const hex = colorPicker.value;
@@ -360,7 +374,48 @@ export class BackgroundHelper {
         
         const rgba = `rgba(${r}, ${g}, ${b}, ${a})`;
         input.value = rgba;
+        colorTextInput.value = rgba;
         alphaValue.textContent = Math.round(a * 100) + '%';
+        
+        // 触发属性更新
+        this.updateProperty(property, rgba);
+      };
+      
+      // 从文本输入框更新颜色的函数
+      const updateFromText = () => {
+        const textValue = colorTextInput.value.trim();
+        let hexColor = '#ffffff';
+        let alpha = 1;
+        
+        if (textValue.startsWith('rgba(')) {
+          const rgbaMatch = textValue.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+          if (rgbaMatch) {
+            const [, r, g, b, a] = rgbaMatch;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            alpha = parseFloat(a);
+          }
+        } else if (textValue.startsWith('rgb(')) {
+          const rgbMatch = textValue.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+          if (rgbMatch) {
+            const [, r, g, b] = rgbMatch;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            alpha = 1;
+          }
+        } else if (textValue.startsWith('#')) {
+          if (textValue.length === 4) {
+            hexColor = `#${textValue[1]}${textValue[1]}${textValue[2]}${textValue[2]}${textValue[3]}${textValue[3]}`;
+          } else if (textValue.length === 7) {
+            hexColor = textValue;
+          }
+          alpha = 1;
+        }
+        
+        colorPicker.value = hexColor;
+        alphaSlider.value = alpha;
+        alphaValue.textContent = Math.round(alpha * 100) + '%';
+        
+        const rgba = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
+        input.value = rgba;
         
         // 触发属性更新
         this.updateProperty(property, rgba);
@@ -369,13 +424,22 @@ export class BackgroundHelper {
       // 绑定事件
       colorPicker.addEventListener('input', updateRGBA);
       alphaSlider.addEventListener('input', updateRGBA);
+      colorTextInput.addEventListener('blur', updateFromText);
+      colorTextInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          updateFromText();
+        }
+      });
       
       // 组装元素
       alphaContainer.appendChild(alphaLabel);
       alphaContainer.appendChild(alphaSlider);
       alphaContainer.appendChild(alphaValue);
       
-      colorContainer.appendChild(colorPicker);
+      colorPickerRow.appendChild(colorTextInput);
+      colorPickerRow.appendChild(colorPicker);
+      
+      colorContainer.appendChild(colorPickerRow);
       colorContainer.appendChild(alphaContainer);
       colorContainer.appendChild(input);
       

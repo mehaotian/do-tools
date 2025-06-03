@@ -426,7 +426,10 @@ export class ModalManager {
       case "color":
         inputHtml = `
           <div class="color-input-container">
-            <input type="color" class="form-input color-picker" data-property="${property}">
+            <div class="color-picker-row">
+              <input type="text" class="form-input color-text-input" data-property="${property}" placeholder="输入颜色值">
+              <input type="color" class="form-input color-picker" data-property="${property}">
+            </div>
             <div class="alpha-container">
               <label class="alpha-label">透明度:</label>
               <input type="range" class="alpha-slider" min="0" max="1" step="0.01" value="1" data-property="${property}">
@@ -494,6 +497,7 @@ export class ModalManager {
     if (config.type === 'color') {
       // 处理颜色选择器的特殊逻辑
       const colorPicker = editor.querySelector('.color-picker');
+      const colorTextInput = editor.querySelector('.color-text-input');
       const alphaSlider = editor.querySelector('.alpha-slider');
       const alphaValue = editor.querySelector('.alpha-value');
       const hiddenInput = editor.querySelector('.rgba-value');
@@ -510,7 +514,49 @@ export class ModalManager {
         // 生成RGBA值
         const rgba = `rgba(${r}, ${g}, ${b}, ${alpha})`;
         hiddenInput.value = rgba;
+        colorTextInput.value = rgba;
         alphaValue.textContent = Math.round(alpha * 100) + '%';
+        
+        this.previewStyle(property, rgba);
+        // 检测修改并更新按钮状态
+        window.themeManager?.handleThemeChange();
+      };
+      
+      // 从文本输入框更新颜色的函数
+      const updateFromText = () => {
+        const textValue = colorTextInput.value.trim();
+        let hexColor = '#ffffff';
+        let alpha = 1;
+        
+        if (textValue.startsWith('rgba(')) {
+          const rgbaMatch = textValue.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+          if (rgbaMatch) {
+            const [, r, g, b, a] = rgbaMatch;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            alpha = parseFloat(a);
+          }
+        } else if (textValue.startsWith('rgb(')) {
+          const rgbMatch = textValue.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+          if (rgbMatch) {
+            const [, r, g, b] = rgbMatch;
+            hexColor = `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`;
+            alpha = 1;
+          }
+        } else if (textValue.startsWith('#')) {
+          if (textValue.length === 4) {
+            hexColor = `#${textValue[1]}${textValue[1]}${textValue[2]}${textValue[2]}${textValue[3]}${textValue[3]}`;
+          } else if (textValue.length === 7) {
+            hexColor = textValue;
+          }
+          alpha = 1;
+        }
+        
+        colorPicker.value = hexColor;
+        alphaSlider.value = alpha;
+        alphaValue.textContent = Math.round(alpha * 100) + '%';
+        
+        const rgba = `rgba(${parseInt(hexColor.slice(1, 3), 16)}, ${parseInt(hexColor.slice(3, 5), 16)}, ${parseInt(hexColor.slice(5, 7), 16)}, ${alpha})`;
+        hiddenInput.value = rgba;
         
         this.previewStyle(property, rgba);
         // 检测修改并更新按钮状态
@@ -519,6 +565,12 @@ export class ModalManager {
       
       colorPicker.addEventListener('input', updateRGBA);
       alphaSlider.addEventListener('input', updateRGBA);
+      colorTextInput.addEventListener('blur', updateFromText);
+      colorTextInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          updateFromText();
+        }
+      });
       
       // 初始化RGBA值
       updateRGBA();
