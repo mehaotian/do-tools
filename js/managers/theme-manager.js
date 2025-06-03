@@ -1546,6 +1546,9 @@ export class ThemeManager {
     const container = document.getElementById("groupsList");
     if (!container) return;
 
+    // 保存当前展开状态
+    const expandedStates = this.saveGroupExpandedStates();
+
     container.innerHTML = "";
 
     if (!theme.groups || theme.groups.length === 0) {
@@ -1557,18 +1560,43 @@ export class ThemeManager {
       return;
     }
 
-    theme.groups.forEach((group) => {
-      const groupCard = this.createGroupCard(group);
+    theme.groups.forEach((group, index) => {
+      const groupCard = this.createGroupCard(group, index, expandedStates);
       container.appendChild(groupCard);
     });
   }
 
   /**
+   * 保存分组展开状态
+   * @returns {Object} 展开状态映射
+   */
+  saveGroupExpandedStates() {
+    const states = {};
+    const groupCards = document.querySelectorAll('.group-card');
+    
+    groupCards.forEach((card, index) => {
+      const content = card.querySelector('.group-content');
+      const groupId = card.querySelector('.group-header')?.dataset.groupId;
+      
+      if (content && groupId) {
+        states[groupId] = content.classList.contains('expanded');
+      } else if (content) {
+        // 如果没有groupId，使用索引作为备用标识
+        states[`index_${index}`] = content.classList.contains('expanded');
+      }
+    });
+    
+    return states;
+  }
+
+  /**
    * 创建修改组卡片
    * @param {Object} group - 组数据
+   * @param {number} index - 组索引
+   * @param {Object} expandedStates - 保存的展开状态
    * @returns {HTMLElement} 组卡片元素
    */
-  createGroupCard(group) {
+  createGroupCard(group, index = 0, expandedStates = {}) {
     const card = document.createElement("div");
     card.className = "group-card";
 
@@ -1609,7 +1637,7 @@ export class ThemeManager {
     `;
 
     // 添加事件监听
-    this.attachGroupEvents(card, group);
+    this.attachGroupEvents(card, group, index, expandedStates);
 
     return card;
   }
@@ -1702,8 +1730,10 @@ export class ThemeManager {
    * 为组卡片添加事件监听
    * @param {HTMLElement} card - 组卡片元素
    * @param {Object} group - 组数据
+   * @param {number} index - 组索引
+   * @param {Object} expandedStates - 保存的展开状态
    */
-  attachGroupEvents(card, group) {
+  attachGroupEvents(card, group, index = 0, expandedStates = {}) {
     // 组展开/收起功能
     const header = card.querySelector(".group-header");
     const content = card.querySelector(".group-content");
@@ -1728,8 +1758,20 @@ export class ThemeManager {
       });
     }
 
-    // 默认展开第一个组
-    if (document.querySelectorAll(".group-card").length === 0) {
+    // 恢复展开状态或默认展开第一个组
+    let shouldExpand = false;
+    
+    // 优先使用保存的状态
+    if (group.id && expandedStates.hasOwnProperty(group.id)) {
+      shouldExpand = expandedStates[group.id];
+    } else if (expandedStates.hasOwnProperty(`index_${index}`)) {
+      shouldExpand = expandedStates[`index_${index}`];
+    } else {
+      // 如果没有保存的状态，默认展开第一个组
+      shouldExpand = index === 0;
+    }
+    
+    if (shouldExpand) {
       content.classList.add("expanded");
       header.classList.add("expanded");
       toggle.textContent = "▲";
