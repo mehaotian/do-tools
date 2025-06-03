@@ -619,21 +619,21 @@ export class BackgroundHelper {
     // 合并预设样式到当前样式
     this.currentStyles = { ...this.currentStyles, ...presetStyles };
 
+    // 先处理预设项的高亮状态
+    this.modal.querySelectorAll(".preset-item").forEach((item) => {
+      item.classList.remove("active");
+    });
+
+    // 高亮选中项
+    if (selectedItem) {
+      selectedItem.classList.add("active");
+    }
+
     // 重新渲染属性编辑器以显示新值
     this.renderCustomProperties();
 
     // 直接预览到页面
     this.previewToPage();
-
-    // 高亮选中的预设
-    this.modal.querySelectorAll(".preset-item").forEach((item) => {
-      item.classList.remove("selected");
-    });
-
-    // 高亮选中项
-    if (selectedItem) {
-      selectedItem.classList.add("selected");
-    }
   }
 
   /**

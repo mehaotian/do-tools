@@ -148,9 +148,15 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.preset-item.selected {
-  border-color: var(--primary-color, #3b82f6);
-  background: rgba(59, 130, 246, 0.05);
+.preset-item.active {
+  border-color: var(--primary-color, #3b82f6) !important;
+  background: rgba(59, 130, 246, 0.05) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+.preset-item.active:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
 .preset-preview {
