@@ -272,6 +272,8 @@ export const PRESET_THEMES = [
     urlPatterns: [],
   },
   {
+    id: "modern-dark",
+    name: "深色主题",
     description: "深色护眼主题 ,建议主站切换为深色主题后应用",
     groups: [
       {
@@ -647,9 +649,6 @@ export const PRESET_THEMES = [
         ],
       },
     ],
-    id: "modern-dark",
-    isCustom: true,
-    name: "深色主题",
     urlPatterns: [
       {
         enabled: true,

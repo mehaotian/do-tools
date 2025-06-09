@@ -10,386 +10,399 @@ const PRESET_THEMES = [
     name: "无主题",
     description: "不应用任何样式修改",
     groups: [],
-  },{
-    "description": "深色护眼主题 ,建议主站切换为深色主题后应用",
-    "groups": [
+  },
+  {
+    id: "modern-dark",
+    name: "深色主题",
+    description: "深色护眼主题 ,建议主站切换为深色主题后应用",
+    groups: [
       {
-        "description": "背景优化",
-        "id": "id_k9kamnv9z_mbgbbtfg",
-        "name": "背景",
-        "rules": [
+        description: "背景优化",
+        id: "id_k9kamnv9z_mbgbbtfg",
+        name: "背景",
+        rules: [
           {
-            "properties": {
+            properties: {
               "background-color": "rgba(26, 31, 46, 1)",
-              "color": "rgba(232, 230, 227, 1)"
+              color: "rgba(232, 230, 227, 1)",
             },
-            "selector": "body"
-          }
-        ]
+            selector: "body",
+          },
+        ],
       },
       {
-        "description": "导航栏样式修改",
-        "id": "id_qkawy559z_mbgd079w",
-        "name": "导航栏",
-        "rules": [
+        description: "导航栏样式修改",
+        id: "id_qkawy559z_mbgd079w",
+        name: "导航栏",
+        rules: [
           {
-            "properties": {
+            properties: {
               "backdrop-filter": "saturate(50%) blur(4px)",
               "background-color": "transparent",
-              "background-image": "radial-gradient(transparent 1px, #1a1f2e 1px)",
+              "background-image":
+                "radial-gradient(transparent 1px, #1a1f2e 1px)",
               "background-size": "4px 4px",
-              "box-shadow": "0 0 0 1px #3a4553"
+              "box-shadow": "0 0 0 1px #3a4553",
             },
-            "selector": ".d-header-wrap .d-header"
+            selector: ".d-header-wrap .d-header",
           },
           {
-            "properties": {
-              "color": "rgba(74, 158, 255, 1)",
-              "font-size": "18px"
+            properties: {
+              color: "rgba(74, 158, 255, 1)",
+              "font-size": "18px",
             },
-            "selector": ".ember-application div.extra-info-wrapper a.topic-link"
-          }
-        ]
+            selector: ".ember-application div.extra-info-wrapper a.topic-link",
+          },
+        ],
       },
       {
-        "description": "侧栏样式修改",
-        "id": "id_gbk98ye33_mbgdnm3v",
-        "name": "侧栏",
-        "rules": [
+        description: "侧栏样式修改",
+        id: "id_gbk98ye33_mbgdnm3v",
+        name: "侧栏",
+        rules: [
           {
-            "properties": {
+            properties: {
               "background-color": "rgba(36, 43, 61, 1)",
               "border-radius": "8px",
-              "height": "calc(100vh - 85px);",
-              "margin": "10px"
+              height: "calc(100vh - 85px);",
+              margin: "10px",
             },
-            "selector": "#main-outlet-wrapper .sidebar-wrapper"
+            selector: "#main-outlet-wrapper .sidebar-wrapper",
           },
           {
-            "properties": {
-              "border": "1px solid #3a4553"
+            properties: {
+              border: "1px solid #3a4553",
             },
-            "selector": "#main-outlet-wrapper .sidebar-wrapper .sidebar-container"
+            selector:
+              "#main-outlet-wrapper .sidebar-wrapper .sidebar-container",
           },
           {
-            "properties": {
-              "color": "rgba(184, 181, 178, 1)",
-              "font-size": "14px"
+            properties: {
+              color: "rgba(184, 181, 178, 1)",
+              "font-size": "14px",
             },
-            "selector": "#main-outlet-wrapper .sidebar-section-link-wrapper .sidebar-section-link"
+            selector:
+              "#main-outlet-wrapper .sidebar-section-link-wrapper .sidebar-section-link",
           },
           {
-            "properties": {
-              "border": "1px solid #3a4553",
+            properties: {
+              border: "1px solid #3a4553",
               "border-radius": "5px",
-              "margin": "5px 0"
+              margin: "5px 0",
             },
-            "selector": "#main-outlet-wrapper .sidebar-section-wrapper"
+            selector: "#main-outlet-wrapper .sidebar-section-wrapper",
           },
           {
-            "properties": {
-              "padding": "1rem 0.2rem 1rem 1rem"
+            properties: {
+              padding: "1rem 0.2rem 1rem 1rem",
             },
-            "selector": "#main-outlet-wrapper .sidebar-wrapper .sidebar-sections"
+            selector: "#main-outlet-wrapper .sidebar-wrapper .sidebar-sections",
           },
           {
-            "properties": {
+            properties: {
               "background-color": "rgba(74, 158, 255, 0.15)",
               "border-right": "3px solid #4a9eff",
-              "color": "rgba(74, 158, 255, 1)"
+              color: "rgba(74, 158, 255, 1)",
             },
-            "selector": "#main-outlet-wrapper li.sidebar-section-link-wrapper a.sidebar-section-link.active"
+            selector:
+              "#main-outlet-wrapper li.sidebar-section-link-wrapper a.sidebar-section-link.active",
           },
           {
-            "properties": {
-              "background-color": "rgba(26, 31, 46, 1)"
+            properties: {
+              "background-color": "rgba(26, 31, 46, 1)",
             },
-            "selector": "#main-outlet-wrapper li.sidebar-section-link-wrapper a.sidebar-section-link:hover"
+            selector:
+              "#main-outlet-wrapper li.sidebar-section-link-wrapper a.sidebar-section-link:hover",
           },
           {
-            "properties": {
-              "background-color": "rgba(36, 43, 61, 1)"
+            properties: {
+              "background-color": "rgba(36, 43, 61, 1)",
             },
-            "selector": "#main-outlet-wrapper .sidebar-footer-wrapper"
+            selector: "#main-outlet-wrapper .sidebar-footer-wrapper",
           },
           {
-            "properties": {
-              "background": "linear-gradient(to bottom, transparent, #242b3d)"
+            properties: {
+              background: "linear-gradient(to bottom, transparent, #242b3d)",
             },
-            "selector": "#main-outlet-wrapper .sidebar-footer-wrapper .sidebar-footer-container::before"
+            selector:
+              "#main-outlet-wrapper .sidebar-footer-wrapper .sidebar-footer-container::before",
           },
           {
-            "properties": {
+            properties: {
               "background-color": "rgba(74, 158, 255, 1)",
-              "color": "rgba(255, 255, 255, 1)"
+              color: "rgba(255, 255, 255, 1)",
             },
-            "selector": "button.btn.btn-icon-text"
+            selector: "button.btn.btn-icon-text",
           },
           {
-            "properties": {
-              "color": "#fff"
+            properties: {
+              color: "#fff",
             },
-            "selector": "#d-sidebar .btn .d-icon, .d-modal.json-schema-editor-modal .je-ready button .d-icon"
+            selector:
+              "#d-sidebar .btn .d-icon, .d-modal.json-schema-editor-modal .je-ready button .d-icon",
           },
           {
-            "properties": {
-              "scrollbar-color": "rgba(26, 31, 46, 1) transparent"
+            properties: {
+              "scrollbar-color": "rgba(26, 31, 46, 1) transparent",
             },
-            "selector": "#main-outlet-wrapper .sidebar-wrapper .sidebar-sections:hover"
-          }
-        ]
+            selector:
+              "#main-outlet-wrapper .sidebar-wrapper .sidebar-sections:hover",
+          },
+        ],
       },
       {
-        "description": "主内容区的条幅提醒，主要提醒等等的样式",
-        "id": "id_w6nbkdj73_mbok6029",
-        "name": "条幅装饰灯",
-        "rules": [
+        description: "主内容区的条幅提醒，主要提醒等等的样式",
+        id: "id_w6nbkdj73_mbok6029",
+        name: "条幅装饰灯",
+        rules: [
           {
-            "properties": {
-              "background": "linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(74, 158, 255, 0.05) 100%)",
-              "border": "1px solid rgba(74, 158, 255, 0.3)",
+            properties: {
+              background:
+                "linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(74, 158, 255, 0.05) 100%)",
+              border: "1px solid rgba(74, 158, 255, 0.3)",
               "border-radius": "8px",
-              "color": "#fff",
+              color: "#fff",
               "font-size": "14px",
-              "padding": "10px 20px"
+              padding: "10px 20px",
             },
-            "selector": ".global-notice .alert.alert-info"
+            selector: ".global-notice .alert.alert-info",
           },
           {
-            "properties": {
-              "background": "linear-gradient(135deg, rgba(74, 158, 255, 1) 0%, rgba(74, 158, 255, 2) 100%)",
+            properties: {
+              background:
+                "linear-gradient(135deg, rgba(74, 158, 255, 1) 0%, rgba(74, 158, 255, 2) 100%)",
               "border-radius": "8px",
-              "color": "#fff"
+              color: "#fff",
             },
-            "selector": "#list-area .show-more .alert"
+            selector: "#list-area .show-more .alert",
           },
           {
-            "properties": {
-              "animation": "gradient 10s ease infinite",
+            properties: {
+              animation: "gradient 10s ease infinite",
               "background-color": "rgba(0, 0, 0, 1)",
-              "background-image": "linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)",
+              "background-image":
+                "linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)",
               "background-size": "400% 400%",
               "border-radius": "8px",
-              "color": "rgba(255, 255, 255, 1)"
+              color: "rgba(255, 255, 255, 1)",
             },
-            "selector": ".house-creative>a>div"
-          }
-        ]
+            selector: ".house-creative>a>div",
+          },
+        ],
       },
       {
-        "description": "内容卡片样式",
-        "id": "id_g1k0ttfo3_mbou6ds4",
-        "name": "内容卡片",
-        "rules": [
+        description: "内容卡片样式",
+        id: "id_g1k0ttfo3_mbou6ds4",
+        name: "内容卡片",
+        rules: [
           {
-            "properties": {
-              "display": "flex",
-              "flex-direction": "column"
+            properties: {
+              display: "flex",
+              "flex-direction": "column",
             },
-            "selector": ".contents .topic-list"
+            selector: ".contents .topic-list",
           },
           {
-            "properties": {
-              "border": "none",
-              "display": "flex",
-              "flex-direction": "column"
+            properties: {
+              border: "none",
+              display: "flex",
+              "flex-direction": "column",
             },
-            "selector": ".contents .topic-list-body"
+            selector: ".contents .topic-list-body",
           },
           {
-            "properties": {
+            properties: {
               "background-color": "rgba(45, 53, 72, 1)",
               "border-bottom": "1px #3a4553 solid",
-              "cursor": "pointer",
-              "padding": "8px 0"
+              cursor: "pointer",
+              padding: "8px 0",
             },
-            "selector": "tr.topic-list-item"
+            selector: "tr.topic-list-item",
           },
           {
-            "properties": {
-              "color": "#e8e6e3",
-              "font-size": "16px"
+            properties: {
+              color: "#e8e6e3",
+              "font-size": "16px",
             },
-            "selector": ".topic-list-item td.topic-list-data   a.title"
+            selector: ".topic-list-item td.topic-list-data   a.title",
           },
           {
-            "properties": {
-              "color": "#9ca3af",
-              "font-size": "14px"
+            properties: {
+              color: "#9ca3af",
+              "font-size": "14px",
             },
-            "selector": ".topic-list-item td.topic-list-data   a.topic-excerpt"
+            selector: ".topic-list-item td.topic-list-data   a.topic-excerpt",
           },
           {
-            "properties": {
-              "color": "#b8b5b2",
-              "font-size": "12px"
+            properties: {
+              color: "#b8b5b2",
+              "font-size": "12px",
             },
-            "selector": ".badge-category__wrapper .badge-category__name"
+            selector: ".badge-category__wrapper .badge-category__name",
           },
           {
-            "properties": {
+            properties: {
               "background-color": "rgba(250, 173, 20, 0.1)",
               "border-radius": "20px",
-              "color": "#faad14",
+              color: "#faad14",
               "font-size": "13px",
-              "padding": "5px 8px"
+              padding: "5px 8px",
             },
-            "selector": "a.badge-notification.unread-posts"
+            selector: "a.badge-notification.unread-posts",
           },
           {
-            "properties": {
-              "background": "rgba(74, 158, 255, 0.1)",
+            properties: {
+              background: "rgba(74, 158, 255, 0.1)",
               "border-radius": "12px",
-              "color": "#4a9eff",
+              color: "#4a9eff",
               "font-size": "12px",
-              "padding": "2px 8px"
+              padding: "2px 8px",
             },
-            "selector": ".topic-list .link-bottom-line a.discourse-tag.box"
+            selector: ".topic-list .link-bottom-line a.discourse-tag.box",
           },
           {
-            "properties": {
-              "background-color": "#34405a"
+            properties: {
+              "background-color": "#34405a",
             },
-            "selector": "tr.topic-list-item:hover"
-          }
-        ]
+            selector: "tr.topic-list-item:hover",
+          },
+        ],
       },
       {
-        "description": "内容卡片上面的tab样式",
-        "id": "id_qmgvt4so9_mbov0ynw",
-        "name": "内容卡片tab",
-        "rules": [
+        description: "内容卡片上面的tab样式",
+        id: "id_qmgvt4so9_mbov0ynw",
+        name: "内容卡片tab",
+        rules: [
           {
-            "properties": {
-              "background": "#242b3d"
+            properties: {
+              background: "#242b3d",
             },
-            "selector": ".navigation-container"
+            selector: ".navigation-container",
           },
           {
-            "properties": {
-              "color": "rgba(184, 181, 178, 1)",
-              "font-size": "16px"
+            properties: {
+              color: "rgba(184, 181, 178, 1)",
+              "font-size": "16px",
             },
-            "selector": "ul.nav-pills>li.ember-view>a"
+            selector: "ul.nav-pills>li.ember-view>a",
           },
           {
-            "properties": {
-              "color": "rgba(74, 158, 255, 1)",
-              "font-size": "16px"
+            properties: {
+              color: "rgba(74, 158, 255, 1)",
+              "font-size": "16px",
             },
-            "selector": "ul.nav-pills>li.active.ember-view>a"
+            selector: "ul.nav-pills>li.active.ember-view>a",
           },
           {
-            "properties": {
-              "border-bottom-color": "#4a9eff"
+            properties: {
+              "border-bottom-color": "#4a9eff",
             },
-            "selector": "ul.nav-pills>li a.active::after"
+            selector: "ul.nav-pills>li a.active::after",
           },
           {
-            "properties": {
+            properties: {
               "background-color": "#4a9eff",
-              "font-size": "14px"
+              "font-size": "14px",
             },
-            "selector": "button.btn.btn-icon-text"
+            selector: "button.btn.btn-icon-text",
           },
           {
-            "properties": {
-              "color": "#fff"
+            properties: {
+              color: "#fff",
             },
-            "selector": ".btn svg.d-icon"
+            selector: ".btn svg.d-icon",
           },
           {
-            "properties": {
-              "margin": "10px"
+            properties: {
+              margin: "10px",
             },
-            "selector": "ol.category-breadcrumb"
+            selector: "ol.category-breadcrumb",
           },
           {
-            "properties": {
-              "margin-bottom": "0"
+            properties: {
+              "margin-bottom": "0",
             },
-            "selector": "ul#navigation-bar"
+            selector: "ul#navigation-bar",
           },
           {
-            "properties": {
-              "margin-bottom": "0"
+            properties: {
+              "margin-bottom": "0",
             },
-            "selector": "div.navigation-controls"
-          }
-        ]
+            selector: "div.navigation-controls",
+          },
+        ],
       },
       {
-        "description": "类别，标签筛选器",
-        "id": "id_zjvzw1l35_mbovjxlr",
-        "name": "筛选器",
-        "rules": [
+        description: "类别，标签筛选器",
+        id: "id_zjvzw1l35_mbovjxlr",
+        name: "筛选器",
+        rules: [
           {
-            "properties": {
+            properties: {
               "background-color": "rgba(250, 173, 20, 0.1)",
-              "border": "2px #fff solid",
+              border: "2px #fff solid",
               "border-radius": "8px",
-              "color": "rgba(255, 255, 255, 1)"
+              color: "rgba(255, 255, 255, 1)",
             },
-            "selector": ".list-controls details.combo-box summary.combo-box-header"
+            selector:
+              ".list-controls details.combo-box summary.combo-box-header",
           },
           {
-            "properties": {
-              "color": "rgba(255, 255, 255, 1)",
-              "font-size": "14px"
+            properties: {
+              color: "rgba(255, 255, 255, 1)",
+              "font-size": "14px",
             },
-            "selector": ".select-kit.combo-box.tag-drop .selected-name .name"
+            selector: ".select-kit.combo-box.tag-drop .selected-name .name",
           },
           {
-            "properties": {
-              "color": "rgba(255, 255, 255, 1)",
-              "font-size": "14px"
+            properties: {
+              color: "rgba(255, 255, 255, 1)",
+              "font-size": "14px",
             },
-            "selector": ".select-kit .select-kit-header .selected-name .name"
+            selector: ".select-kit .select-kit-header .selected-name .name",
           },
           {
-            "properties": {
-              "color": "rgba(255, 255, 255, 1)"
+            properties: {
+              color: "rgba(255, 255, 255, 1)",
             },
-            "selector": ".select-kit.combo-box.category-drop svg.caret-icon"
+            selector: ".select-kit.combo-box.category-drop svg.caret-icon",
           },
           {
-            "properties": {
-              "color": "#fff"
+            properties: {
+              color: "#fff",
             },
-            "selector": ".select-kit.combo-box.tag-drop svg.caret-icon"
-          }
-        ]
+            selector: ".select-kit.combo-box.tag-drop svg.caret-icon",
+          },
+        ],
       },
       {
-        "description": "详情样式修改",
-        "id": "id_yxhs9cwro_mboxetzi",
-        "name": "文章详情",
-        "rules": [
+        description: "详情样式修改",
+        id: "id_yxhs9cwro_mboxetzi",
+        name: "文章详情",
+        rules: [
           {
-            "properties": {
-              "color": "rgba(232, 230, 227, 1)"
+            properties: {
+              color: "rgba(232, 230, 227, 1)",
             },
-            "selector": "nav.post-controls .btn.show-replies .d-button-label"
-          }
-        ]
-      }
+            selector: "nav.post-controls .btn.show-replies .d-button-label",
+          },
+        ],
+      },
     ],
-    "id": "modern-dark",
-    "isCustom": true,
-    "name": "深色主题",
-    "urlPatterns": [
+    
+    urlPatterns: [
       {
-        "enabled": true,
-        "pattern": "*://linux.do/*",
-        "type": "wildcard"
+        enabled: true,
+        pattern: "*://linux.do/*",
+        type: "wildcard",
       },
       {
-        "enabled": true,
-        "pattern": "*://www.linux.do/*",
-        "type": "wildcard"
-      }
-    ]
-  }
+        enabled: true,
+        pattern: "*://www.linux.do/*",
+        type: "wildcard",
+      },
+    ],
+  },
 ];
 
 class PageBeautifyContent {
@@ -1031,10 +1044,14 @@ class PageBeautifyContent {
       });
     } else {
       // 没有记录的原始状态是正常情况，通常发生在页面刷新或首次清除时
-      if (typeof ErrorHandler !== 'undefined') {
-        ErrorHandler.info('没有记录的原始状态，仅清除了内联样式');
-      } else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-        console.info('[Debug] 没有记录的原始状态，仅清除了内联样式');
+      if (typeof ErrorHandler !== "undefined") {
+        ErrorHandler.info("没有记录的原始状态，仅清除了内联样式");
+      } else if (
+        typeof process !== "undefined" &&
+        process.env &&
+        process.env.NODE_ENV === "development"
+      ) {
+        console.info("[Debug] 没有记录的原始状态，仅清除了内联样式");
       }
     }
 
@@ -1240,7 +1257,7 @@ class PageBeautifyContent {
     try {
       // 先清除之前的模拟效果
       this.clearPseudoClassSimulation();
-      
+
       const elements = document.querySelectorAll(selector);
       if (elements.length === 0) {
         console.warn("未找到匹配的元素:", selector);
@@ -1250,53 +1267,55 @@ class PageBeautifyContent {
       elements.forEach((element) => {
         // 标记为伪类模拟元素
         element.setAttribute("data-pseudo-simulation", pseudoClass);
-        
+
         switch (pseudoClass) {
           case ":hover":
-             // 模拟hover状态
-             element.classList.add("page-beautify-pseudo-hover");
-             // 强制触发hover样式 - 通过添加特殊属性来模拟hover
-             element.setAttribute("data-force-hover", "true");
-             // 手动触发mouseenter事件来激活hover样式
-             const mouseEnterEvent = new MouseEvent('mouseenter', {
-               bubbles: true,
-               cancelable: true,
-               view: window
-             });
-             element.dispatchEvent(mouseEnterEvent);
-             break;
-            
+            // 模拟hover状态
+            element.classList.add("page-beautify-pseudo-hover");
+            // 强制触发hover样式 - 通过添加特殊属性来模拟hover
+            element.setAttribute("data-force-hover", "true");
+            // 手动触发mouseenter事件来激活hover样式
+            const mouseEnterEvent = new MouseEvent("mouseenter", {
+              bubbles: true,
+              cancelable: true,
+              view: window,
+            });
+            element.dispatchEvent(mouseEnterEvent);
+            break;
+
           case ":focus":
             // 模拟focus状态
             element.classList.add("page-beautify-pseudo-focus");
             element.focus();
             break;
-            
+
           case ":active":
             // 模拟active状态
             element.classList.add("page-beautify-pseudo-active");
             break;
-            
+
           case ":visited":
             // 模拟visited状态（仅对链接有效）
             if (element.tagName.toLowerCase() === "a") {
               element.classList.add("page-beautify-pseudo-visited");
             }
             break;
-            
+
           case "::before":
           case "::after":
           case "::first-line":
           case "::first-letter":
             // 伪元素通常不需要特殊模拟，CSS会自动处理
-            element.classList.add(`page-beautify-pseudo${pseudoClass.replace(":", "-")}`);
+            element.classList.add(
+              `page-beautify-pseudo${pseudoClass.replace(":", "-")}`
+            );
             break;
-            
+
           default:
             console.warn("不支持的伪类:", pseudoClass);
         }
       });
-      
+
       console.log(`已为 ${elements.length} 个元素模拟 ${pseudoClass} 效果`);
     } catch (error) {
       console.error("模拟伪类效果失败:", error);
@@ -1309,15 +1328,17 @@ class PageBeautifyContent {
   clearPseudoClassSimulation() {
     try {
       // 查找所有带有伪类模拟标记的元素
-      const simulatedElements = document.querySelectorAll("[data-pseudo-simulation]");
-      
+      const simulatedElements = document.querySelectorAll(
+        "[data-pseudo-simulation]"
+      );
+
       simulatedElements.forEach((element) => {
         const pseudoClass = element.getAttribute("data-pseudo-simulation");
-        
+
         // 移除相关的类名
         element.classList.remove(
           "page-beautify-pseudo-hover",
-          "page-beautify-pseudo-focus", 
+          "page-beautify-pseudo-focus",
           "page-beautify-pseudo-active",
           "page-beautify-pseudo-visited",
           "page-beautify-pseudo--before",
@@ -1325,30 +1346,30 @@ class PageBeautifyContent {
           "page-beautify-pseudo--first-line",
           "page-beautify-pseudo--first-letter"
         );
-        
+
         // 移除自定义属性和强制hover属性
-         element.style.removeProperty("--pseudo-hover");
-         element.removeAttribute("data-force-hover");
-         
-         // 如果是hover状态，触发mouseleave事件来清除hover效果
-         if (pseudoClass === ":hover") {
-           const mouseLeaveEvent = new MouseEvent('mouseleave', {
-             bubbles: true,
-             cancelable: true,
-             view: window
-           });
-           element.dispatchEvent(mouseLeaveEvent);
-         }
-         
-         // 如果是focus状态，取消焦点
-         if (pseudoClass === ":focus" && document.activeElement === element) {
-           element.blur();
-         }
-        
+        element.style.removeProperty("--pseudo-hover");
+        element.removeAttribute("data-force-hover");
+
+        // 如果是hover状态，触发mouseleave事件来清除hover效果
+        if (pseudoClass === ":hover") {
+          const mouseLeaveEvent = new MouseEvent("mouseleave", {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+          });
+          element.dispatchEvent(mouseLeaveEvent);
+        }
+
+        // 如果是focus状态，取消焦点
+        if (pseudoClass === ":focus" && document.activeElement === element) {
+          element.blur();
+        }
+
         // 移除标记属性
         element.removeAttribute("data-pseudo-simulation");
       });
-      
+
       console.log(`已清除 ${simulatedElements.length} 个元素的伪类模拟效果`);
     } catch (error) {
       console.error("清除伪类模拟效果失败:", error);
