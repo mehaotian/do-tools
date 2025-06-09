@@ -10,67 +10,386 @@ const PRESET_THEMES = [
     name: "无主题",
     description: "不应用任何样式修改",
     groups: [],
-  },
-  {
-    id: "modern-light",
-    name: "现代浅色",
-    description: "简洁现代的浅色主题",
-    groups: [
+  },{
+    "description": "深色护眼主题 ,建议主站切换为深色主题后应用",
+    "groups": [
       {
-        id: "navbar",
-        name: "导航栏美化",
-        description: "为导航栏添加现代化样式",
-        rules: [
+        "description": "背景优化",
+        "id": "id_k9kamnv9z_mbgbbtfg",
+        "name": "背景",
+        "rules": [
           {
-            selector: "nav, .navbar, header",
-            properties: {
-              "background-color": "rgba(255, 255, 255, 0.9)",
-              "backdrop-filter": "blur(10px)",
-              "border-bottom": "1px solid rgba(0, 0, 0, 0.1)",
-              "box-shadow": "0 2px 10px rgba(0, 0, 0, 0.1)",
+            "properties": {
+              "background-color": "rgba(26, 31, 46, 1)",
+              "color": "rgba(232, 230, 227, 1)"
             },
-          },
-        ],
+            "selector": "body"
+          }
+        ]
       },
       {
-        id: "content",
-        name: "内容区域",
-        description: "优化内容区域的显示效果",
-        rules: [
+        "description": "导航栏样式修改",
+        "id": "id_qkawy559z_mbgd079w",
+        "name": "导航栏",
+        "rules": [
           {
-            selector: "main, .main-content, .content",
-            properties: {
-              "background-color": "#ffffff",
+            "properties": {
+              "backdrop-filter": "saturate(50%) blur(4px)",
+              "background-color": "transparent",
+              "background-image": "radial-gradient(transparent 1px, #1a1f2e 1px)",
+              "background-size": "4px 4px",
+              "box-shadow": "0 0 0 1px #3a4553"
+            },
+            "selector": ".d-header-wrap .d-header"
+          },
+          {
+            "properties": {
+              "color": "rgba(74, 158, 255, 1)",
+              "font-size": "18px"
+            },
+            "selector": ".ember-application div.extra-info-wrapper a.topic-link"
+          }
+        ]
+      },
+      {
+        "description": "侧栏样式修改",
+        "id": "id_gbk98ye33_mbgdnm3v",
+        "name": "侧栏",
+        "rules": [
+          {
+            "properties": {
+              "background-color": "rgba(36, 43, 61, 1)",
               "border-radius": "8px",
-              "box-shadow": "0 1px 3px rgba(0, 0, 0, 0.1)",
-              padding: "20px",
+              "height": "calc(100vh - 85px);",
+              "margin": "10px"
             },
+            "selector": "#main-outlet-wrapper .sidebar-wrapper"
           },
-        ],
-      },
-    ],
-  },
-  {
-    id: "modern-dark",
-    name: "现代深色",
-    description: "优雅的深色主题",
-    groups: [
-      {
-        id: "global",
-        name: "全局样式",
-        description: "深色主题的全局样式",
-        rules: [
           {
-            selector: "body",
-            properties: {
-              "background-color": "#1a1a1a",
-              color: "#ffffff",
+            "properties": {
+              "border": "1px solid #3a4553"
             },
+            "selector": "#main-outlet-wrapper .sidebar-wrapper .sidebar-container"
           },
-        ],
+          {
+            "properties": {
+              "color": "rgba(184, 181, 178, 1)",
+              "font-size": "14px"
+            },
+            "selector": "#main-outlet-wrapper .sidebar-section-link-wrapper .sidebar-section-link"
+          },
+          {
+            "properties": {
+              "border": "1px solid #3a4553",
+              "border-radius": "5px",
+              "margin": "5px 0"
+            },
+            "selector": "#main-outlet-wrapper .sidebar-section-wrapper"
+          },
+          {
+            "properties": {
+              "padding": "1rem 0.2rem 1rem 1rem"
+            },
+            "selector": "#main-outlet-wrapper .sidebar-wrapper .sidebar-sections"
+          },
+          {
+            "properties": {
+              "background-color": "rgba(74, 158, 255, 0.15)",
+              "border-right": "3px solid #4a9eff",
+              "color": "rgba(74, 158, 255, 1)"
+            },
+            "selector": "#main-outlet-wrapper li.sidebar-section-link-wrapper a.sidebar-section-link.active"
+          },
+          {
+            "properties": {
+              "background-color": "rgba(26, 31, 46, 1)"
+            },
+            "selector": "#main-outlet-wrapper li.sidebar-section-link-wrapper a.sidebar-section-link:hover"
+          },
+          {
+            "properties": {
+              "background-color": "rgba(36, 43, 61, 1)"
+            },
+            "selector": "#main-outlet-wrapper .sidebar-footer-wrapper"
+          },
+          {
+            "properties": {
+              "background": "linear-gradient(to bottom, transparent, #242b3d)"
+            },
+            "selector": "#main-outlet-wrapper .sidebar-footer-wrapper .sidebar-footer-container::before"
+          },
+          {
+            "properties": {
+              "background-color": "rgba(74, 158, 255, 1)",
+              "color": "rgba(255, 255, 255, 1)"
+            },
+            "selector": "button.btn.btn-icon-text"
+          },
+          {
+            "properties": {
+              "color": "#fff"
+            },
+            "selector": "#d-sidebar .btn .d-icon, .d-modal.json-schema-editor-modal .je-ready button .d-icon"
+          },
+          {
+            "properties": {
+              "scrollbar-color": "rgba(26, 31, 46, 1) transparent"
+            },
+            "selector": "#main-outlet-wrapper .sidebar-wrapper .sidebar-sections:hover"
+          }
+        ]
       },
+      {
+        "description": "主内容区的条幅提醒，主要提醒等等的样式",
+        "id": "id_w6nbkdj73_mbok6029",
+        "name": "条幅装饰灯",
+        "rules": [
+          {
+            "properties": {
+              "background": "linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(74, 158, 255, 0.05) 100%)",
+              "border": "1px solid rgba(74, 158, 255, 0.3)",
+              "border-radius": "8px",
+              "color": "#fff",
+              "font-size": "14px",
+              "padding": "10px 20px"
+            },
+            "selector": ".global-notice .alert.alert-info"
+          },
+          {
+            "properties": {
+              "background": "linear-gradient(135deg, rgba(74, 158, 255, 1) 0%, rgba(74, 158, 255, 2) 100%)",
+              "border-radius": "8px",
+              "color": "#fff"
+            },
+            "selector": "#list-area .show-more .alert"
+          },
+          {
+            "properties": {
+              "animation": "gradient 10s ease infinite",
+              "background-color": "rgba(0, 0, 0, 1)",
+              "background-image": "linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)",
+              "background-size": "400% 400%",
+              "border-radius": "8px",
+              "color": "rgba(255, 255, 255, 1)"
+            },
+            "selector": ".house-creative>a>div"
+          }
+        ]
+      },
+      {
+        "description": "内容卡片样式",
+        "id": "id_g1k0ttfo3_mbou6ds4",
+        "name": "内容卡片",
+        "rules": [
+          {
+            "properties": {
+              "display": "flex",
+              "flex-direction": "column"
+            },
+            "selector": ".contents .topic-list"
+          },
+          {
+            "properties": {
+              "border": "none",
+              "display": "flex",
+              "flex-direction": "column"
+            },
+            "selector": ".contents .topic-list-body"
+          },
+          {
+            "properties": {
+              "background-color": "rgba(45, 53, 72, 1)",
+              "border-bottom": "1px #3a4553 solid",
+              "cursor": "pointer",
+              "padding": "8px 0"
+            },
+            "selector": "tr.topic-list-item"
+          },
+          {
+            "properties": {
+              "color": "#e8e6e3",
+              "font-size": "16px"
+            },
+            "selector": ".topic-list-item td.topic-list-data   a.title"
+          },
+          {
+            "properties": {
+              "color": "#9ca3af",
+              "font-size": "14px"
+            },
+            "selector": ".topic-list-item td.topic-list-data   a.topic-excerpt"
+          },
+          {
+            "properties": {
+              "color": "#b8b5b2",
+              "font-size": "12px"
+            },
+            "selector": ".badge-category__wrapper .badge-category__name"
+          },
+          {
+            "properties": {
+              "background-color": "rgba(250, 173, 20, 0.1)",
+              "border-radius": "20px",
+              "color": "#faad14",
+              "font-size": "13px",
+              "padding": "5px 8px"
+            },
+            "selector": "a.badge-notification.unread-posts"
+          },
+          {
+            "properties": {
+              "background": "rgba(74, 158, 255, 0.1)",
+              "border-radius": "12px",
+              "color": "#4a9eff",
+              "font-size": "12px",
+              "padding": "2px 8px"
+            },
+            "selector": ".topic-list .link-bottom-line a.discourse-tag.box"
+          },
+          {
+            "properties": {
+              "background-color": "#34405a"
+            },
+            "selector": "tr.topic-list-item:hover"
+          }
+        ]
+      },
+      {
+        "description": "内容卡片上面的tab样式",
+        "id": "id_qmgvt4so9_mbov0ynw",
+        "name": "内容卡片tab",
+        "rules": [
+          {
+            "properties": {
+              "background": "#242b3d"
+            },
+            "selector": ".navigation-container"
+          },
+          {
+            "properties": {
+              "color": "rgba(184, 181, 178, 1)",
+              "font-size": "16px"
+            },
+            "selector": "ul.nav-pills>li.ember-view>a"
+          },
+          {
+            "properties": {
+              "color": "rgba(74, 158, 255, 1)",
+              "font-size": "16px"
+            },
+            "selector": "ul.nav-pills>li.active.ember-view>a"
+          },
+          {
+            "properties": {
+              "border-bottom-color": "#4a9eff"
+            },
+            "selector": "ul.nav-pills>li a.active::after"
+          },
+          {
+            "properties": {
+              "background-color": "#4a9eff",
+              "font-size": "14px"
+            },
+            "selector": "button.btn.btn-icon-text"
+          },
+          {
+            "properties": {
+              "color": "#fff"
+            },
+            "selector": ".btn svg.d-icon"
+          },
+          {
+            "properties": {
+              "margin": "10px"
+            },
+            "selector": "ol.category-breadcrumb"
+          },
+          {
+            "properties": {
+              "margin-bottom": "0"
+            },
+            "selector": "ul#navigation-bar"
+          },
+          {
+            "properties": {
+              "margin-bottom": "0"
+            },
+            "selector": "div.navigation-controls"
+          }
+        ]
+      },
+      {
+        "description": "类别，标签筛选器",
+        "id": "id_zjvzw1l35_mbovjxlr",
+        "name": "筛选器",
+        "rules": [
+          {
+            "properties": {
+              "background-color": "rgba(250, 173, 20, 0.1)",
+              "border": "2px #fff solid",
+              "border-radius": "8px",
+              "color": "rgba(255, 255, 255, 1)"
+            },
+            "selector": ".list-controls details.combo-box summary.combo-box-header"
+          },
+          {
+            "properties": {
+              "color": "rgba(255, 255, 255, 1)",
+              "font-size": "14px"
+            },
+            "selector": ".select-kit.combo-box.tag-drop .selected-name .name"
+          },
+          {
+            "properties": {
+              "color": "rgba(255, 255, 255, 1)",
+              "font-size": "14px"
+            },
+            "selector": ".select-kit .select-kit-header .selected-name .name"
+          },
+          {
+            "properties": {
+              "color": "rgba(255, 255, 255, 1)"
+            },
+            "selector": ".select-kit.combo-box.category-drop svg.caret-icon"
+          },
+          {
+            "properties": {
+              "color": "#fff"
+            },
+            "selector": ".select-kit.combo-box.tag-drop svg.caret-icon"
+          }
+        ]
+      },
+      {
+        "description": "详情样式修改",
+        "id": "id_yxhs9cwro_mboxetzi",
+        "name": "文章详情",
+        "rules": [
+          {
+            "properties": {
+              "color": "rgba(232, 230, 227, 1)"
+            },
+            "selector": "nav.post-controls .btn.show-replies .d-button-label"
+          }
+        ]
+      }
     ],
-  },
+    "id": "modern-dark",
+    "isCustom": true,
+    "name": "深色主题",
+    "urlPatterns": [
+      {
+        "enabled": true,
+        "pattern": "*://linux.do/*",
+        "type": "wildcard"
+      },
+      {
+        "enabled": true,
+        "pattern": "*://www.linux.do/*",
+        "type": "wildcard"
+      }
+    ]
+  }
 ];
 
 class PageBeautifyContent {
